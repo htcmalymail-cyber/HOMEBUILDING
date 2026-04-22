@@ -1,19 +1,46 @@
 {
   "payments": [
     {
-      "id": "p1776864944739",
-      "payer": "11",
-      "month": "2026-04",
+      "id": "p1",
+      "payer": "רונית כהן (דירה 4)",
+      "month": "2025-04",
       "amount": 500
+    },
+    {
+      "id": "p2",
+      "payer": "דוד לוי (דירה 9)",
+      "month": "2025-04",
+      "amount": 70
+    },
+    {
+      "id": "p3",
+      "payer": "רונית כהן (דירה 4)",
+      "month": "2025-03",
+      "amount": 70
+    },
+    {
+      "id": "p4",
+      "payer": "דוד לוי (דירה 9)",
+      "month": "2025-03",
+      "amount": 70
     }
   ],
   "expenses": [
     {
-      "id": "e1776887452340",
-      "desc": "פיצוץ מים ראשי",
-      "amount": 7000,
-      "month": "2026-04",
-      "fileName": "1776887452318-721239315.jpg"
+      "id": "e1",
+      "desc": "תיקון מעלית",
+      "amount": 300,
+      "month": "2025-04",
+      "cloudUrl": "",
+      "fileName": ""
+    },
+    {
+      "id": "e2",
+      "desc": "חשמל חדר מדרגות",
+      "amount": 100,
+      "month": "2025-04",
+      "cloudUrl": "",
+      "fileName": ""
     }
   ],
   "forum": [
@@ -21,13 +48,7 @@
       "id": "f1",
       "author": "מיכל (דירה 12)",
       "text": "השקיפות פה מדהימה! תודה על הניהול 🙏",
-      "timestamp": "2026-04-22T13:17:53.356Z"
-    },
-    {
-      "id": "f1776863968695",
-      "author": "2",
-      "text": "frtyuo",
-      "timestamp": "2026-04-22T13:19:28.695Z"
+      "timestamp": "2025-04-22T10:00:00.000Z"
     }
   ],
   "suggestions": [
@@ -39,12 +60,6 @@
       "down": 2
     }
   ],
-  "residents": [],
-  "committeeData": {
-    "chairman": "יוסי",
-    "phone": "0508491846",
-    "email": "baitshli@gmail.com",
-    "address": "גולדברג לאה 3 ,פתח תיקווה"
-  },
-  "monthlyDue": 70
+  "monthlyDue": 70,
+  "adminPassword": "bafy2020"
 }
