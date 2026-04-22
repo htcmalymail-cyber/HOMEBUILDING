@@ -80,7 +80,6 @@
         .loading-icon { animation: spin 1s linear infinite; margin-right: 8px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .upload-status { font-size: 0.75rem; color: #2c7a6e; margin-top: 5px; }
-        .status-badge { position: fixed; top: 20px; left: 20px; background: #1f6e43; color: white; padding: 8px 16px; border-radius: 40px; font-size: 0.8rem; z-index: 1000; }
     </style>
 </head>
 <body>
@@ -89,7 +88,7 @@
     <div class="header">
         <div><i class="fas fa-crown" style="font-size:2rem; color:#f4b942;"></i> <i class="fas fa-home" style="font-size:2rem; color:#3d8f7e;"></i> <i class="fas fa-cloud-upload-alt" style="font-size:2rem; color:#4285f4;"></i></div>
         <h1><i class="fas fa-building"></i> "הכי טוב בשכונה" – ניהול בית משותף + שמירת קבלות בענן</h1>
-        <p>🌿 קבלות נשמרות ב-ImgBB (ענן) | גיבוי אוטומטי בשרת | חישוב חובות מאפריל 2025</p>
+        <p>🌿 קבלות נשמרות ב-ImgBB (ענן) | גיבוי אוטומטי | חישוב חובות מאפריל 2025</p>
     </div>
 
     <div class="card" style="margin-bottom: 25px; padding: 1.5rem;">
@@ -204,14 +203,31 @@
 <div class="secret-admin-area" id="secretAdminTrigger"></div>
 
 <script>
-    // API Base URL
-    const API_BASE = window.location.origin;
+    // ---------- ImgBB API Key (הוכנס בהתאם לבקשה) ----------
+    const IMGBB_API_KEY = "f9bb791d0681c7cf81b6a7cd1456e4aa";
     
-    // State
-    let payments = [];
-    let expenses = [];
-    let forum = [];
-    let suggestions = [];
+    // ---------- נתונים התחלתיים ----------
+    let payments = [
+        { id: 'p1', payer: 'רונית כהן (דירה 4)', month: '2025-04', amount: 500 },
+        { id: 'p2', payer: 'דוד לוי (דירה 9)', month: '2025-04', amount: 70 },
+        { id: 'p3', payer: 'רונית כהן (דירה 4)', month: '2025-03', amount: 70 },
+        { id: 'p4', payer: 'דוד לוי (דירה 9)', month: '2025-03', amount: 70 }
+    ];
+    
+    // מבנה הוצאה: id, desc, amount, month, cloudUrl (קישור ענן), fileName
+    let expenses = [
+        { id: 'e1', desc: 'תיקון מעלית', amount: 300, month: '2025-04', cloudUrl: '', fileName: '' },
+        { id: 'e2', desc: 'חשמל חדר מדרגות', amount: 100, month: '2025-04', cloudUrl: '', fileName: '' }
+    ];
+    
+    let forum = [
+        { id: 'f1', author: 'מיכל (דירה 12)', text: 'השקיפות פה מדהימה! תודה על הניהול 🙏', timestamp: new Date().toISOString() }
+    ];
+    
+    let suggestions = [
+        { id: 's1', author: 'דירה 3', title: 'גינה קהילתית עם נדנדות', up: 9, down: 2 }
+    ];
+
     let monthlyDue = 70;
     let currentYear = 2025;
     let currentMonthFilter = 'all';
@@ -224,58 +240,67 @@
         { value: '07', name: 'יולי' }, { value: '08', name: 'אוגוסט' }, { value: '09', name: 'ספטמבר' },
         { value: '10', name: 'אוקטובר' }, { value: '11', name: 'נובמבר' }, { value: '12', name: 'דצמבר' }
     ];
-    
+
     const START_DATE = new Date(2025, 3);
     
-    // Load data from server
-    async function loadData() {
-        try {
-            const response = await fetch(`${API_BASE}/api/data`);
-            const data = await response.json();
-            payments = data.payments;
-            expenses = data.expenses;
-            forum = data.forum;
-            suggestions = data.suggestions;
-            monthlyDue = data.monthlyDue;
-            renderAll();
-        } catch (error) {
-            console.error('Error loading data:', error);
-            alert('שגיאה בטעינת נתונים מהשרת');
-        }
-    }
-    
-    // Save data to server
-    async function saveAllData() {
-        const data = { payments, expenses, forum, suggestions, monthlyDue };
-        try {
-            await fetch(`${API_BASE}/api/data`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-        } catch (error) {
-            console.error('Error saving data:', error);
-        }
-    }
-    
-    // Upload file to ImgBB via server
-    async function uploadFile(file) {
-        const formData = new FormData();
-        formData.append('receipt', file);
-        
-        const response = await fetch(`${API_BASE}/api/upload-receipt`, {
-            method: 'POST',
-            body: formData
+    // פונקציית העלאה ל-ImgBB (ענן) - גרסה משופרת עם טיפול בשגיאות
+    async function uploadToImgBB(file) {
+        return new Promise((resolve, reject) => {
+            if (!file) {
+                reject(new Error('לא נבחר קובץ'));
+                return;
+            }
+            
+            // הגבלת גודל קובץ ל-10MB
+            if (file.size > 10 * 1024 * 1024) {
+                reject(new Error('הקובץ גדול מדי (מקסימום 10MB)'));
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64String = e.target.result.split(',')[1];
+                if (!base64String) {
+                    reject(new Error('שגיאה בקריאת הקובץ'));
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('key', IMGBB_API_KEY);
+                formData.append('image', base64String);
+                formData.append('name', file.name || 'receipt');
+                formData.append('expiration', '0'); // ללא תפוגה
+                
+                try {
+                    const response = await fetch('https://api.imgbb.com/1/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    if (data.success && data.data && data.data.url) {
+                        resolve({ 
+                            url: data.data.url, 
+                            fileName: file.name,
+                            thumbUrl: data.data.thumb?.url || data.data.url
+                        });
+                    } else {
+                        throw new Error(data.error?.message || 'שגיאה לא ידועה בהעלאה');
+                    }
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            reader.onerror = () => reject(new Error('שגיאה בקריאת הקובץ'));
+            reader.readAsDataURL(file);
         });
-        
-        if (!response.ok) {
-            throw new Error('Upload failed');
-        }
-        
-        return await response.json();
     }
     
-    // Add expense with cloud upload
+    // הוספת הוצאה עם העלאה אוטומטית לענן
     async function addExpenseWithCloud() {
         if(!isAdmin) { alert("רק ועד בית יכול להוסיף הוצאות"); return; }
         
@@ -288,39 +313,41 @@
             return; 
         }
         
+        // כפתור משוב
         const addBtn = document.getElementById('addExpenseBtn');
         const statusDiv = document.getElementById('uploadStatusMsg');
         const originalText = addBtn.innerHTML;
         addBtn.innerHTML = '<i class="fas fa-spinner loading-icon"></i> מעלה לענן...';
         addBtn.disabled = true;
-        statusDiv.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> מעלה קובץ לשרת...';
+        statusDiv.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> מעלה קובץ לשרת ImgBB...';
         
         try {
             let cloudUrl = '';
             let uploadedFileName = '';
             
             if(selectedFile) {
-                const uploadResult = await uploadFile(selectedFile);
+                const uploadResult = await uploadToImgBB(selectedFile);
                 cloudUrl = uploadResult.url;
                 uploadedFileName = uploadResult.fileName;
                 statusDiv.innerHTML = '<i class="fas fa-check-circle"></i> הקבלה הועלתה בהצלחה לענן!';
                 setTimeout(() => { statusDiv.innerHTML = ''; }, 3000);
+            } else {
+                statusDiv.innerHTML = '<i class="fas fa-info-circle"></i> לא צורף קובץ, ההוצאה נשמרה ללא קבלה.';
+                setTimeout(() => { statusDiv.innerHTML = ''; }, 2000);
             }
             
-            const newExpense = {
-                desc, amount: amt, month, cloudUrl, fileName: uploadedFileName || (selectedFile ? selectedFile.name : '')
-            };
-            
-            const response = await fetch(`${API_BASE}/api/expenses`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newExpense)
+            expenses.push({ 
+                id: 'e'+Date.now(), 
+                desc, 
+                amount: amt, 
+                month, 
+                cloudUrl: cloudUrl,
+                fileName: uploadedFileName || (selectedFile ? selectedFile.name : '')
             });
+            saveAllData();
+            renderAll();
             
-            const savedExpense = await response.json();
-            expenses.push(savedExpense);
-            
-            // Clear fields
+            // נקה שדות
             document.getElementById('expenseDesc').value = '';
             document.getElementById('expenseAmount').value = '';
             selectedFile = null;
@@ -328,24 +355,24 @@
             const fileInput = document.querySelector('#expenseFile');
             if(fileInput) fileInput.value = '';
             
-            renderAll();
-            
         } catch(err) {
-            console.error('Error:', err);
+            console.error('Upload error:', err);
             statusDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> שגיאה: ${err.message}. ההוצאה נוספה ללא קבלה.`;
             setTimeout(() => { statusDiv.innerHTML = ''; }, 4000);
             
-            // Add expense without file
-            const newExpense = { desc, amount: amt, month, cloudUrl: '', fileName: '' };
-            const response = await fetch(`${API_BASE}/api/expenses`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newExpense)
+            // בכל זאת נוסיף הוצאה ללא קובץ
+            expenses.push({ 
+                id: 'e'+Date.now(), 
+                desc, 
+                amount: amt, 
+                month, 
+                cloudUrl: '',
+                fileName: ''
             });
-            const savedExpense = await response.json();
-            expenses.push(savedExpense);
+            saveAllData();
             renderAll();
             
+            // נקה שדות
             document.getElementById('expenseDesc').value = '';
             document.getElementById('expenseAmount').value = '';
             selectedFile = null;
@@ -357,6 +384,274 @@
         }
     }
     
-    // Add payment
-    async function addPayment() {
-        if(!isAdmin) { alert("רק ועד בית
+    // פונקציה לצפייה בקובץ ענן
+    function viewCloudFile(cloudUrl, fileName) {
+        if(cloudUrl && cloudUrl.trim() !== '' && cloudUrl !== '#' && cloudUrl !== 'undefined') {
+            window.open(cloudUrl, '_blank', 'noopener,noreferrer');
+        } else {
+            alert("לא קיימת קבלה שמורה בענן עבור הוצאה זו");
+        }
+    }
+    
+    // שמירה וטעינה
+    function saveAllData() {
+        const data = { payments, expenses, forum, suggestions, monthlyDue };
+        localStorage.setItem('buildingManagementAllMonths', JSON.stringify(data));
+    }
+    
+    function loadAllData() {
+        const saved = localStorage.getItem('buildingManagementAllMonths');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                if (data.payments) payments = data.payments;
+                if (data.expenses) expenses = data.expenses.map(e => ({ 
+                    ...e, 
+                    cloudUrl: e.cloudUrl || '', 
+                    fileName: e.fileName || '' 
+                }));
+                if (data.forum) forum = data.forum.map(f => ({ ...f, timestamp: f.timestamp || new Date().toISOString() }));
+                if (data.suggestions) suggestions = data.suggestions;
+                if (data.monthlyDue) monthlyDue = data.monthlyDue;
+            } catch(e) { console.error('Error loading data', e); }
+        }
+    }
+    
+    function initMonthSelector() {
+        const container = document.getElementById('monthSelector');
+        container.innerHTML = '';
+        const allBtn = document.createElement('button');
+        allBtn.className = `month-btn ${currentMonthFilter === 'all' ? 'active' : ''}`;
+        allBtn.setAttribute('data-month', 'all');
+        allBtn.textContent = 'כל התקופות';
+        allBtn.onclick = () => {
+            document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+            allBtn.classList.add('active');
+            currentMonthFilter = 'all';
+            renderAll();
+        };
+        container.appendChild(allBtn);
+        
+        allMonths.forEach(month => {
+            const monthValue = `${currentYear}-${month.value}`;
+            const btn = document.createElement('button');
+            btn.className = `month-btn ${currentMonthFilter === monthValue ? 'active' : ''}`;
+            btn.textContent = `${month.name} ${currentYear}`;
+            btn.onclick = () => {
+                document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMonthFilter = monthValue;
+                renderAll();
+            };
+            container.appendChild(btn);
+        });
+    }
+    
+    function initYearSelector() {
+        document.querySelectorAll('.year-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentYear = parseInt(btn.dataset.year);
+                currentMonthFilter = 'all';
+                initMonthSelector();
+                renderAll();
+            };
+        });
+        document.querySelectorAll('.year-btn').forEach(btn => {
+            if (parseInt(btn.dataset.year) === currentYear) btn.classList.add('active');
+        });
+    }
+    
+    function getMonthsSinceStart() {
+        const months = [];
+        let year = START_DATE.getFullYear();
+        let month = START_DATE.getMonth() + 1;
+        let endYear = currentYear;
+        let endMonth = 12;
+        if (currentMonthFilter !== 'all') {
+            const [filterYear, filterMonth] = currentMonthFilter.split('-');
+            endYear = parseInt(filterYear);
+            endMonth = parseInt(filterMonth);
+        }
+        while (year < endYear || (year === endYear && month <= endMonth)) {
+            months.push(`${year}-${month.toString().padStart(2, '0')}`);
+            month++;
+            if (month > 12) { month = 1; year++; }
+        }
+        return months;
+    }
+    
+    function isAfterStartDate(monthStr) {
+        if(!monthStr) return false;
+        const [year, month] = monthStr.split('-');
+        return new Date(parseInt(year), parseInt(month)-1) >= START_DATE;
+    }
+    
+    function calculateDebtForPayer(payerName) {
+        const allMonthsList = getMonthsSinceStart();
+        const totalRequired = allMonthsList.length * monthlyDue;
+        const userPayments = payments.filter(p => p.payer === payerName && isAfterStartDate(p.month));
+        const totalPaid = userPayments.reduce((s,p)=>s+p.amount,0);
+        return { totalPaid, totalRequired, debt: totalRequired - totalPaid };
+    }
+    
+    function getTotalPaymentsSinceStart() {
+        return payments.filter(p => isAfterStartDate(p.month)).reduce((s,p)=>s+p.amount,0);
+    }
+    
+    function getTotalExpensesSinceStart() {
+        return expenses.filter(e => isAfterStartDate(e.month)).reduce((s,e)=>s+e.amount,0);
+    }
+    
+    function filterByMonth(items, monthField) {
+        if (currentMonthFilter === 'all') return items;
+        return items.filter(i => i[monthField] === currentMonthFilter);
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]);
+    }
+    
+    function renderAll() {
+        // תקבולים
+        let filteredPay = filterByMonth(payments, 'month');
+        let allPayers = new Set();
+        payments.forEach(p => { if(isAfterStartDate(p.month)) allPayers.add(p.payer); });
+        
+        let paymentsRowsHtml = '';
+        let totalPaymentsSum = 0;
+        for(let payer of allPayers) {
+            let debtInfo = calculateDebtForPayer(payer);
+            let debtAmount = debtInfo.debt;
+            let debtText = debtAmount > 0 ? `חוב ${debtAmount.toFixed(2)} ₪` : (debtAmount < 0 ? `יתרה ${Math.abs(debtAmount).toFixed(2)} ₪` : 'מאוזן');
+            let debtClass = debtAmount > 0 ? "debt-negative" : (debtAmount < 0 ? "debt-positive" : "");
+            let payerFilteredPayments = filteredPay.filter(p => p.payer === payer);
+            payerFilteredPayments.forEach(p => {
+                totalPaymentsSum += p.amount;
+                paymentsRowsHtml += `<tr>
+                    <td>${escapeHtml(p.payer)} ${isAdmin ? `<i class="fas fa-edit edit-icon" onclick="editPayer('${p.id}')"></i>` : ''}</td>
+                    <td>${p.month}</td>
+                    <td class="amount-income">${p.amount.toFixed(2)} ₪</td>
+                    <td><span class="${debtClass}">${debtText}</span></td>
+                    <td>${isAdmin ? `<i class="fas fa-trash-alt delete-icon" onclick="deletePayment('${p.id}')"></i>` : ''}</td>
+                </tr>`;
+            });
+        }
+        if(paymentsRowsHtml === '') paymentsRowsHtml = '<tr><td colspan="5">אין תקבולים בתקופה זו</td></tr>';
+        document.getElementById('paymentsBody').innerHTML = paymentsRowsHtml;
+        document.getElementById('totalPaymentsFiltered').innerText = totalPaymentsSum.toFixed(2);
+        document.getElementById('totalPaymentsSinceApril').innerHTML = `${getTotalPaymentsSinceStart().toFixed(2)} ₪`;
+        
+        // הוצאות - הצגת קישור ענן
+        let filteredExp = filterByMonth(expenses, 'month');
+        let expensesHtml = filteredExp.map(e => {
+            const hasCloud = e.cloudUrl && e.cloudUrl.trim() !== '' && e.cloudUrl !== '#';
+            return `<tr>
+                <td>${escapeHtml(e.desc)} ${isAdmin ? `<i class="fas fa-edit edit-icon" onclick="editExpenseDesc('${e.id}')"></i>` : ''}</td>
+                <td>${e.month}</td>
+                <td class="amount-expense">${e.amount.toFixed(2)} ₪</td>
+                <td>${hasCloud ? `<i class="fas fa-cloud-upload-alt attachment-icon" onclick="viewCloudFile('${e.cloudUrl}','${escapeHtml(e.fileName)}')" style="color:#4285f4; cursor:pointer;"></i> <span class="cloud-badge">ענן</span> ${escapeHtml(e.fileName.substring(0,15))}` : '❌ ללא קבלה'}</td>
+                <td>${isAdmin ? `<i class="fas fa-trash-alt delete-icon" onclick="deleteExpense('${e.id}')"></i>` : ''}</td>
+            </tr>`;
+        }).join('');
+        document.getElementById('expensesBody').innerHTML = expensesHtml || '<tr><td colspan="5">אין הוצאות</td></tr>';
+        let totalExp = filteredExp.reduce((s,e)=>s+e.amount,0);
+        document.getElementById('totalExpensesFiltered').innerText = totalExp.toFixed(2);
+        let balance = getTotalPaymentsSinceStart() - getTotalExpensesSinceStart();
+        document.getElementById('balanceFromExpenses').innerText = balance.toFixed(2);
+        
+        // פורום
+        let forumHtml = forum.slice().reverse().map(f => `<div class="forum-message"><strong><i class="fas fa-user"></i> ${escapeHtml(f.author)}</strong> <small>${new Date(f.timestamp).toLocaleDateString('he-IL')}</small><div>${escapeHtml(f.text)}</div></div>`).join('');
+        document.getElementById('forumContainer').innerHTML = forumHtml || '<div>אין הודעות</div>';
+        
+        // הצעות
+        let suggHtml = suggestions.map(s => `<div class="forum-message"><div><strong>${escapeHtml(s.author)}</strong> מציע: ${escapeHtml(s.title)} ${isAdmin ? `<i class="fas fa-edit edit-icon" onclick="editSuggestion('${s.id}')"></i> <i class="fas fa-trash-alt delete-icon" onclick="deleteSuggestion('${s.id}')"></i>` : ''}</div><div><button class="vote-up" data-id="${s.id}"><i class="fas fa-thumbs-up"></i> ${s.up}</button> <button class="vote-down" data-id="${s.id}"><i class="fas fa-thumbs-down"></i> ${s.down}</button></div></div>`).join('');
+        document.getElementById('suggestionsContainer').innerHTML = suggHtml || '<div>אין הצעות</div>';
+        
+        document.querySelectorAll('.vote-up').forEach(btn => btn.onclick = () => { let s = suggestions.find(s=>s.id===btn.dataset.id); if(s){ s.up++; saveAllData(); renderAll(); } });
+        document.querySelectorAll('.vote-down').forEach(btn => btn.onclick = () => { let s = suggestions.find(s=>s.id===btn.dataset.id); if(s){ s.down++; saveAllData(); renderAll(); } });
+        document.getElementById('monthlyDueAmountDisplay').innerHTML = `${monthlyDue.toFixed(2)} ₪`;
+    }
+    
+    function updateUIPermissions() {
+        const canEdit = isAdmin;
+        const paymentsArea = document.getElementById('paymentsEditArea');
+        const expensesArea = document.getElementById('expensesEditArea');
+        const fileArea = document.getElementById('expenseFileArea');
+        const dueWrapper = document.getElementById('editDueBtnWrapper');
+        const summaryDiv = document.getElementById('totalPaymentsSummary');
+        
+        if(paymentsArea) paymentsArea.style.display = canEdit ? 'flex' : 'none';
+        if(expensesArea) expensesArea.style.display = canEdit ? 'flex' : 'none';
+        if(fileArea) fileArea.style.display = canEdit ? 'flex' : 'none';
+        if(dueWrapper) dueWrapper.style.display = canEdit ? 'block' : 'none';
+        if(summaryDiv) summaryDiv.style.display = canEdit ? 'block' : 'none';
+    }
+    
+    // פעולות מחיקה/עריכה
+    function deletePayment(id) { if(isAdmin) { payments = payments.filter(p => p.id !== id); saveAllData(); renderAll(); } }
+    function deleteExpense(id) { if(isAdmin) { expenses = expenses.filter(e => e.id !== id); saveAllData(); renderAll(); } }
+    function editPayer(id) { if(isAdmin) { let p = payments.find(p => p.id === id); if(p) { let newName = prompt("ערוך שם/דירה:", p.payer); if(newName && newName.trim()) { p.payer = newName.trim(); saveAllData(); renderAll(); } } } }
+    function editExpenseDesc(id) { if(isAdmin) { let e = expenses.find(e => e.id === id); if(e) { let newDesc = prompt("ערוך תיאור הוצאה:", e.desc); if(newDesc && newDesc.trim()) { e.desc = newDesc.trim(); saveAllData(); renderAll(); } } } }
+    function editMonthlyDue() { if(!isAdmin) return; let newVal = prompt(`סכום חודשי קבוע חדש (${monthlyDue} ₪):`, monthlyDue); if(newVal && !isNaN(parseFloat(newVal)) && parseFloat(newVal) > 0) { monthlyDue = parseFloat(newVal); saveAllData(); renderAll(); } }
+    function showTotalPaymentsPopup() { alert(`סה"כ תקבולים מאפריל 2025: ${getTotalPaymentsSinceStart().toFixed(2)} ₪`); }
+    function addForumMessage(author, text) { if(author && text) { forum.push({ id: 'f'+Date.now(), author, text, timestamp: new Date().toISOString() }); saveAllData(); renderAll(); } }
+    function addSuggestion(author, title) { if(author && title) { suggestions.push({ id: 's'+Date.now(), author, title, up: 0, down: 0 }); saveAllData(); renderAll(); } }
+    function deleteSuggestion(id) { if(isAdmin) { suggestions = suggestions.filter(s => s.id !== id); saveAllData(); renderAll(); } }
+    function editSuggestion(id) { if(isAdmin) { let s = suggestions.find(s => s.id === id); if(s) { let newTitle = prompt("ערוך הצעה:", s.title); if(newTitle && newTitle.trim()) { s.title = newTitle.trim(); saveAllData(); renderAll(); } } } }
+    
+    // אירועים
+    document.getElementById('addPaymentBtn').onclick = () => {
+        if(!isAdmin) return alert("רק ועד בית יכול להוסיף תקבולים");
+        let name = document.getElementById('payerName').value.trim();
+        let amt = parseFloat(document.getElementById('paymentAmount').value);
+        let month = document.getElementById('paymentMonth').value;
+        if(!name || isNaN(amt) || amt<=0) { alert("שם וסכום תקין"); return; }
+        payments.push({ id: 'p'+Date.now(), payer: name, month, amount: amt });
+        saveAllData(); renderAll();
+        document.getElementById('payerName').value = '';
+        document.getElementById('paymentAmount').value = '';
+    };
+    
+    document.getElementById('addExpenseBtn').onclick = addExpenseWithCloud;
+    document.querySelector('#expenseFile').addEventListener('change', (e) => {
+        if(e.target.files && e.target.files.length > 0) { 
+            selectedFile = e.target.files[0]; 
+            document.getElementById('fileNameDisplay').innerHTML = `<i class="fas fa-file-image"></i> ${selectedFile.name.substring(0, 30)}${selectedFile.name.length > 30 ? '...' : ''}`;
+        } else { 
+            selectedFile = null; 
+            document.getElementById('fileNameDisplay').innerText = 'לא נבחר קובץ'; 
+        }
+    });
+    document.getElementById('postMsgBtn').onclick = () => { let a = document.getElementById('forumName').value.trim(); let t = document.getElementById('forumMsg').value.trim(); if(a && t) addForumMessage(a,t); document.getElementById('forumName').value = ''; document.getElementById('forumMsg').value = ''; };
+    document.getElementById('addSuggBtn').onclick = () => { let a = document.getElementById('suggAuthor').value.trim(); let t = document.getElementById('suggTitle').value.trim(); if(a && t) addSuggestion(a,t); document.getElementById('suggAuthor').value = ''; document.getElementById('suggTitle').value = ''; };
+    
+    let clickCount = 0;
+    document.getElementById('secretAdminTrigger').addEventListener('click', () => {
+        clickCount++;
+        if(clickCount >= 3) {
+            let pwd = prompt("הזן קוד גישה לוועד בית:");
+            if(pwd === "bafy2020") { isAdmin = true; updateUIPermissions(); renderAll(); alert("ברוך הבא! כעת ניתן לנהל תקבולים, הוצאות ולהעלות קבלות לענן."); }
+            else alert("קוד שגוי!");
+            clickCount = 0;
+        }
+        setTimeout(() => { clickCount = 0; }, 1000);
+    });
+    
+    document.getElementById('editDueBtn')?.addEventListener('click', editMonthlyDue);
+    document.getElementById('showTotalPaymentsBtn')?.addEventListener('click', showTotalPaymentsPopup);
+    
+    window.deletePayment = deletePayment; window.deleteExpense = deleteExpense; window.editPayer = editPayer; window.editExpenseDesc = editExpenseDesc;
+    window.viewCloudFile = viewCloudFile; window.deleteSuggestion = deleteSuggestion; window.editSuggestion = editSuggestion;
+    
+    loadAllData();
+    initMonthSelector();
+    initYearSelector();
+    updateUIPermissions();
+    renderAll();
+    saveAllData();
+</script>
+</body>
+</html>
