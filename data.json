@@ -1,0 +1,50 @@
+{
+  "payments": [
+    {
+      "id": "p1776864944739",
+      "payer": "11",
+      "month": "2026-04",
+      "amount": 500
+    }
+  ],
+  "expenses": [
+    {
+      "id": "e1776887452340",
+      "desc": "פיצוץ מים ראשי",
+      "amount": 7000,
+      "month": "2026-04",
+      "fileName": "1776887452318-721239315.jpg"
+    }
+  ],
+  "forum": [
+    {
+      "id": "f1",
+      "author": "מיכל (דירה 12)",
+      "text": "השקיפות פה מדהימה! תודה על הניהול 🙏",
+      "timestamp": "2026-04-22T13:17:53.356Z"
+    },
+    {
+      "id": "f1776863968695",
+      "author": "2",
+      "text": "frtyuo",
+      "timestamp": "2026-04-22T13:19:28.695Z"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "s1",
+      "author": "דירה 3",
+      "title": "גינה קהילתית עם נדנדות",
+      "up": 9,
+      "down": 2
+    }
+  ],
+  "residents": [],
+  "committeeData": {
+    "chairman": "יוסי",
+    "phone": "0508491846",
+    "email": "baitshli@gmail.com",
+    "address": "גולדברג לאה 3 ,פתח תיקווה"
+  },
+  "monthlyDue": 70
+}
