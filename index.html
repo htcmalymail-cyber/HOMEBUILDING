@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>הכי טוב בשכונה - ניהול בית משותף | שמירת קבלות בענן + וואטסאפ</title>
+    <title>הכי טוב בשכונה - ניהול בית משותף | שמירת קבלות בענן + וואטסאפ לדיירים</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -83,9 +83,16 @@
         .loading-icon { animation: spin 1s linear infinite; margin-right: 8px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .upload-status { font-size: 0.75rem; color: #2c7a6e; margin-top: 5px; }
-        .phone-input-area { display: flex; gap: 10px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cce5dd; }
+        .phone-input-area { display: flex; gap: 10px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cce5dd; flex-wrap: wrap; }
         .phone-input-area input { flex: 2; }
         .whatsapp-settings { background: #e8f5e9; border-radius: 24px; padding: 12px; margin-bottom: 15px; }
+        .resident-phone { font-size: 0.7rem; color: #25D366; direction: ltr; display: inline-block; margin-right: 8px; }
+        .add-phone-btn { background: #25D366; padding: 4px 10px; font-size: 0.7rem; }
+        .resident-list { max-height: 200px; overflow-y: auto; margin-top: 10px; }
+        .resident-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #cce5dd; }
+        .resident-name { font-weight: bold; }
+        .resident-phone-display { direction: ltr; font-size: 0.8rem; color: #25D366; }
+        .small-btn { padding: 4px 8px; font-size: 0.7rem; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -94,7 +101,7 @@
     <div class="header">
         <div><i class="fas fa-crown" style="font-size:2rem; color:#f4b942;"></i> <i class="fas fa-home" style="font-size:2rem; color:#3d8f7e;"></i> <i class="fab fa-whatsapp" style="font-size:2rem; color:#25D366;"></i> <i class="fas fa-cloud-upload-alt" style="font-size:2rem; color:#4285f4;"></i></div>
         <h1><i class="fas fa-building"></i> "הכי טוב בשכונה" – ניהול בית משותף</h1>
-        <p>🌿 קבלות ב-ImgBB | שליחת קוויטנציה בוואטסאפ | חישוב חובות מאפריל 2025</p>
+        <p>🌿 קבלות ב-ImgBB | שליחת קוויטנציה בוואטסאפ לדיירים | חישוב חובות מאפריל 2025</p>
     </div>
 
     <div class="card" style="margin-bottom: 25px; padding: 1.5rem;">
@@ -127,16 +134,27 @@
             </div>
         </div>
         
-        <!-- WhatsApp settings for admin -->
+        <!-- WhatsApp settings for admin - ניהול דיירים ומספרי טלפון -->
         <div id="whatsappSettings" class="whatsapp-settings" style="display:none; margin-top:15px;">
             <div class="flex-between">
-                <strong><i class="fab fa-whatsapp"></i> הגדרות שליחת קוויטנציה בוואטסאפ</strong>
-                <button id="savePhoneBtn" class="btn" style="background:#25D366; padding:5px 12px;"><i class="fas fa-save"></i> שמור</button>
+                <strong><i class="fab fa-whatsapp"></i> ניהול דיירים ומספרי טלפון לשליחת קוויטנציה</strong>
             </div>
+            
+            <!-- הוספת דייר חדש -->
             <div class="phone-input-area">
-                <i class="fab fa-whatsapp" style="color:#25D366; font-size:1.3rem;"></i>
-                <input type="tel" id="adminPhone" placeholder="מספר טלפון של ועד בית (לשליחת קוויטנציה) - לדוגמה: 972501234567">
-                <small style="font-size:0.7rem;">הקוויטנציה תישלח לוואטסאפ של ועד הבית</small>
+                <input type="text" id="newResidentName" placeholder="שם הדירה/דייר (לדוגמה: דירה 4 - רונית כהן)" style="flex:2;">
+                <input type="tel" id="newResidentPhone" placeholder="מספר טלפון (לדוגמה: 972501234567)" style="flex:1;">
+                <button id="addResidentBtn" class="btn" style="background:#25D366;"><i class="fas fa-plus"></i> הוסף דייר</button>
+            </div>
+            
+            <!-- רשימת דיירים -->
+            <div style="margin-top: 12px;">
+                <strong><i class="fas fa-users"></i> רשימת דיירים:</strong>
+                <div id="residentsList" class="resident-list"></div>
+            </div>
+            
+            <div class="info-note" style="margin-top: 8px;">
+                <i class="fab fa-whatsapp"></i> בעת הוספת תקבול, הקוויטנציה תישלח אוטומטית לדייר לפי השם שהזנת
             </div>
         </div>
     </div>
@@ -146,7 +164,8 @@
         <div class="card">
             <div class="card-title"><i class="fas fa-hand-holding-usd"></i> תקבולי אחזקה</div>
             <div id="paymentsEditArea" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
-                <input type="text" id="payerName" placeholder="שם / דירה" style="flex:1;">
+                <input type="text" id="payerName" placeholder="שם / דירה" style="flex:1;" list="residentsDatalist">
+                <datalist id="residentsDatalist"></datalist>
                 <input type="number" id="paymentAmount" placeholder="סכום ₪" style="flex:1;">
                 <input type="month" id="paymentMonth" value="2025-04" style="flex:1;">
                 <button id="addPaymentBtn"><i class="fas fa-plus-circle"></i> הוסף תקבול</button>
@@ -243,12 +262,18 @@
         { id: 's1', author: 'דירה 3', title: 'גינה קהילתית עם נדנדות', up: 9, down: 2 }
     ];
 
+    // רשימת דיירים עם מספרי טלפון
+    let residents = [
+        { id: 'r1', name: 'רונית כהן (דירה 4)', phone: '972501234567' },
+        { id: 'r2', name: 'דוד לוי (דירה 9)', phone: '972502345678' },
+        { id: 'r3', name: 'מיכל (דירה 12)', phone: '972503456789' }
+    ];
+
     let monthlyDue = 70;
     let currentYear = 2025;
     let currentMonthFilter = 'all';
     let selectedFile = null;
     let isAdmin = false;
-    let adminPhone = ""; // מספר טלפון לשליחת קוויטנציה
     
     const allMonths = [
         { value: '01', name: 'ינואר' }, { value: '02', name: 'פברואר' }, { value: '03', name: 'מרץ' },
@@ -259,14 +284,29 @@
 
     const START_DATE = new Date(2025, 3);
     
-    // פונקציה לשליחת הודעה לוואטסאפ
-    function sendWhatsAppReceipt(payerName, amount, month) {
-        if (!adminPhone) {
-            alert("יש להגדיר מספר טלפון של ועד בית בהגדרות לפני שליחת קוויטנציה");
+    // פונקציה לקבלת מספר טלפון של דייר לפי שם
+    function getResidentPhoneByName(name) {
+        const resident = residents.find(r => r.name === name);
+        return resident ? resident.phone : null;
+    }
+    
+    // פונקציה לניקוי מספר טלפון
+    function cleanPhoneNumber(phone) {
+        let clean = phone.replace(/\D/g, '');
+        if (clean.startsWith('0')) {
+            clean = '972' + clean.substring(1);
+        }
+        return clean;
+    }
+    
+    // פונקציה לשליחת הודעה לוואטסאפ לדייר
+    function sendWhatsAppToResident(residentName, amount, month) {
+        const phone = getResidentPhoneByName(residentName);
+        if (!phone) {
+            console.log(`לא נמצא מספר טלפון לדייר: ${residentName}`);
             return false;
         }
         
-        // עיצוב ההודעה
         const date = new Date();
         const formattedDate = `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
         
@@ -276,7 +316,7 @@
 ✅ *התקבל תשלום* ✅
 ━═━═━═━═━═━═━
 
-👤 *דירה/שם:* ${payerName}
+👤 *דירה/שם:* ${residentName}
 💰 *סכום:* ${amount.toFixed(2)} ₪
 📅 *חודש:* ${month}
 🕒 *תאריך קבלה:* ${formattedDate}
@@ -286,11 +326,9 @@
 🏠 בית משותף "יער הכחול"
 ━═━═━═━═━═━═━`;
         
-        // קידוד ההודעה לשליחה בוואטסאפ
         const encodedMessage = encodeURIComponent(message);
-        const whatsappUrl = `https://wa.me/${adminPhone}?text=${encodedMessage}`;
+        const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
         
-        // פתיחת וואטסאפ בחלון חדש
         window.open(whatsappUrl, '_blank');
         return true;
     }
@@ -431,7 +469,7 @@
         }
     }
     
-    // הוספת תקבול עם אפשרות שליחה בוואטסאפ
+    // הוספת תקבול עם שליחה אוטומטית לדייר
     function addPaymentWithWhatsApp() {
         if(!isAdmin) return alert("רק ועד בית יכול להוסיף תקבולים");
         
@@ -449,10 +487,13 @@
         saveAllData();
         renderAll();
         
-        // שליחת קוויטנציה בוואטסאפ
-        const sendWhatsApp = confirm(`התקבל תשלום מ-${name} בסכום ${amt}₪ עבור ${month}. לשלוח קוויטנציה בוואטסאפ?`);
+        // שליחת קוויטנציה בוואטסאפ לדייר
+        const sendWhatsApp = confirm(`התקבל תשלום מ-${name} בסכום ${amt}₪ עבור ${month}. לשלוח קוויטנציה בוואטסאפ לדייר?`);
         if (sendWhatsApp) {
-            sendWhatsAppReceipt(name, amt, month);
+            const sent = sendWhatsAppToResident(name, amt, month);
+            if (!sent) {
+                alert(`לא נמצא מספר טלפון עבור ${name}. יש להוסיף את מספר הטלפון של הדייר בהגדרות.`);
+            }
         }
         
         // ניקוי שדות
@@ -464,9 +505,106 @@
     function sendReceiptForPayment(paymentId) {
         const payment = payments.find(p => p.id === paymentId);
         if (payment) {
-            sendWhatsAppReceipt(payment.payer, payment.amount, payment.month);
+            const sent = sendWhatsAppToResident(payment.payer, payment.amount, payment.month);
+            if (!sent) {
+                alert(`לא נמצא מספר טלפון עבור ${payment.payer}. יש להוסיף את מספר הטלפון של הדייר בהגדרות.`);
+            }
         } else {
             alert("התקבול לא נמצא");
+        }
+    }
+    
+    // הוספת דייר חדש
+    function addResident() {
+        let name = document.getElementById('newResidentName').value.trim();
+        let phone = document.getElementById('newResidentPhone').value.trim();
+        
+        if (!name || !phone) {
+            alert("יש להזין שם ומספר טלפון");
+            return;
+        }
+        
+        const cleanPhone = cleanPhoneNumber(phone);
+        if (cleanPhone.length < 10) {
+            alert("מספר טלפון לא תקין");
+            return;
+        }
+        
+        // בדיקה אם הדייר כבר קיים
+        const existing = residents.find(r => r.name === name);
+        if (existing) {
+            existing.phone = cleanPhone;
+            alert(`עודכן מספר טלפון עבור ${name}`);
+        } else {
+            residents.push({ id: 'r'+Date.now(), name: name, phone: cleanPhone });
+            alert(`הדייר ${name} נוסף בהצלחה`);
+        }
+        
+        document.getElementById('newResidentName').value = '';
+        document.getElementById('newResidentPhone').value = '';
+        saveAllData();
+        renderAll();
+        updateResidentsList();
+        updateDatalist();
+    }
+    
+    // מחיקת דייר
+    function deleteResident(residentId) {
+        if (confirm("האם למחוק דייר זה?")) {
+            residents = residents.filter(r => r.id !== residentId);
+            saveAllData();
+            renderAll();
+            updateResidentsList();
+            updateDatalist();
+        }
+    }
+    
+    // עדכון רשימת הדיירים בתצוגה
+    function updateResidentsList() {
+        const container = document.getElementById('residentsList');
+        if (!container) return;
+        
+        if (residents.length === 0) {
+            container.innerHTML = '<div style="color: gray;">אין דיירים רשומים</div>';
+            return;
+        }
+        
+        container.innerHTML = residents.map(r => `
+            <div class="resident-item">
+                <span class="resident-name">${escapeHtml(r.name)}</span>
+                <span class="resident-phone-display">📱 ${r.phone}</span>
+                <div>
+                    <button class="small-btn" onclick="editResidentPhone('${r.id}')" style="background:#f0a55a;"><i class="fas fa-edit"></i></button>
+                    <button class="small-btn" onclick="deleteResident('${r.id}')" style="background:#c9693e;"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // עריכת מספר טלפון של דייר
+    function editResidentPhone(residentId) {
+        const resident = residents.find(r => r.id === residentId);
+        if (resident) {
+            const newPhone = prompt(`ערוך מספר טלפון עבור ${resident.name}:`, resident.phone);
+            if (newPhone && newPhone.trim()) {
+                const cleanPhone = cleanPhoneNumber(newPhone.trim());
+                if (cleanPhone.length >= 10) {
+                    resident.phone = cleanPhone;
+                    saveAllData();
+                    updateResidentsList();
+                    alert("מספר הטלפון עודכן");
+                } else {
+                    alert("מספר טלפון לא תקין");
+                }
+            }
+        }
+    }
+    
+    // עדכון רשימת ההשלמה האוטומטית
+    function updateDatalist() {
+        const datalist = document.getElementById('residentsDatalist');
+        if (datalist) {
+            datalist.innerHTML = residents.map(r => `<option value="${escapeHtml(r.name)}">`).join('');
         }
     }
     
@@ -479,7 +617,7 @@
     }
     
     function saveAllData() {
-        const data = { payments, expenses, forum, suggestions, monthlyDue, adminPhone };
+        const data = { payments, expenses, forum, suggestions, monthlyDue, residents };
         localStorage.setItem('buildingManagementAllMonths', JSON.stringify(data));
     }
     
@@ -493,10 +631,7 @@
                 if (data.forum) forum = data.forum.map(f => ({ ...f, timestamp: f.timestamp || new Date().toISOString() }));
                 if (data.suggestions) suggestions = data.suggestions;
                 if (data.monthlyDue) monthlyDue = data.monthlyDue;
-                if (data.adminPhone) adminPhone = data.adminPhone;
-                if (adminPhone && document.getElementById('adminPhone')) {
-                    document.getElementById('adminPhone').value = adminPhone;
-                }
+                if (data.residents) residents = data.residents;
             } catch(e) { console.error('Error loading data', e); }
         }
     }
@@ -613,8 +748,11 @@
             let payerFilteredPayments = filteredPay.filter(p => p.payer === payer);
             payerFilteredPayments.forEach(p => {
                 totalPaymentsSum += p.amount;
+                const hasPhone = getResidentPhoneByName(p.payer) ? true : false;
                 paymentsRowsHtml += `<tr>
-                    <td>${escapeHtml(p.payer)} ${isAdmin ? `<i class="fas fa-edit edit-icon" onclick="editPayer('${p.id}')"></i>` : ''}${isAdmin ? `<i class="fab fa-whatsapp whatsapp-icon" onclick="sendReceiptForPayment('${p.id}')" title="שלח קוויטנציה בוואטסאפ"></i>` : ''}</td>
+                    <td>${escapeHtml(p.payer)} ${isAdmin ? `<i class="fas fa-edit edit-icon" onclick="editPayer('${p.id}')"></i>` : ''}
+                    ${isAdmin ? `<i class="fab fa-whatsapp whatsapp-icon" onclick="sendReceiptForPayment('${p.id}')" title="שלח קוויטנציה בוואטסאפ" style="${hasPhone ? '' : 'opacity:0.5;'}"></i>` : ''}
+                    ${!hasPhone && isAdmin ? `<span style="font-size:0.6rem; color:gray;">(ללא טלפון)</span>` : ''}</td>
                     <td>${p.month}</td>
                     <td class="amount-income">${p.amount.toFixed(2)} ₪</td>
                     <td><span class="${debtClass}">${debtText}</span></td>
@@ -656,6 +794,10 @@
         document.querySelectorAll('.vote-up').forEach(btn => btn.onclick = () => { let s = suggestions.find(s=>s.id===btn.dataset.id); if(s){ s.up++; saveAllData(); renderAll(); } });
         document.querySelectorAll('.vote-down').forEach(btn => btn.onclick = () => { let s = suggestions.find(s=>s.id===btn.dataset.id); if(s){ s.down++; saveAllData(); renderAll(); } });
         document.getElementById('monthlyDueAmountDisplay').innerHTML = `${monthlyDue.toFixed(2)} ₪`;
+        
+        // עדכון רשימת דיירים ותצוגה
+        updateResidentsList();
+        updateDatalist();
     }
     
     function updateUIPermissions() {
@@ -678,29 +820,11 @@
     function addSuggestion(author, title) { if(author && title) { suggestions.push({ id: 's'+Date.now(), author, title, up: 0, down: 0 }); saveAllData(); renderAll(); } }
     function deleteSuggestion(id) { if(isAdmin) { suggestions = suggestions.filter(s => s.id !== id); saveAllData(); renderAll(); } }
     function editSuggestion(id) { if(isAdmin) { let s = suggestions.find(s => s.id === id); if(s) { let newTitle = prompt("ערוך הצעה:", s.title); if(newTitle && newTitle.trim()) { s.title = newTitle.trim(); saveAllData(); renderAll(); } } } }
-    function saveAdminPhone() { 
-        let phone = document.getElementById('adminPhone').value.trim();
-        if (phone) {
-            if (!phone.startsWith('972') && !phone.startsWith('05')) {
-                alert("יש להזין מספר בפורמט בינלאומי: 972501234567 או ישראלי: 0501234567");
-                return;
-            }
-            let cleanPhone = phone.replace(/\D/g, '');
-            if (cleanPhone.startsWith('0')) {
-                cleanPhone = '972' + cleanPhone.substring(1);
-            }
-            adminPhone = cleanPhone;
-            saveAllData();
-            alert(`מספר הטלפון נשמר: ${adminPhone}`);
-        } else {
-            alert("יש להזין מספר טלפון");
-        }
-    }
     
     // אירועים
     document.getElementById('addPaymentBtn').onclick = addPaymentWithWhatsApp;
     document.getElementById('addExpenseBtn').onclick = addExpenseWithCloud;
-    document.getElementById('savePhoneBtn').onclick = saveAdminPhone;
+    document.getElementById('addResidentBtn').onclick = addResident;
     
     document.querySelector('#expenseFile').addEventListener('change', (e) => {
         if(e.target.files && e.target.files.length > 0) { 
@@ -724,7 +848,7 @@
                 isAdmin = true; 
                 updateUIPermissions(); 
                 renderAll(); 
-                alert("ברוך הבא! כעת ניתן לנהל תקבולים, הוצאות, להעלות קבלות ולשלוח קוויטנציות בוואטסאפ."); 
+                alert("ברוך הבא! כעת ניתן לנהל תקבולים, הוצאות, להעלות קבלות, להוסיף דיירים עם מספרי טלפון ולשלוח קוויטנציות בוואטסאפ."); 
             }
             else alert("קוד שגוי!");
             clickCount = 0;
@@ -743,6 +867,8 @@
     window.deleteSuggestion = deleteSuggestion; 
     window.editSuggestion = editSuggestion;
     window.sendReceiptForPayment = sendReceiptForPayment;
+    window.deleteResident = deleteResident;
+    window.editResidentPhone = editResidentPhone;
     
     loadAllData();
     initMonthSelector();
