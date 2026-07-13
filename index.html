@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🚕 Taxi AI – Умное такси</title>
+  <title>🚕 Taxi AI – Вход</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -59,7 +59,7 @@
       border: 1px solid rgba(255,255,255,0.15);
       text-align: center;
     }
-    .header { margin-bottom: 35px; }
+    .header { margin-bottom: 25px; }
     .header h1 {
       font-size: 3.8rem;
       font-weight: 700;
@@ -78,11 +78,97 @@
       margin-top: 10px;
       font-weight: 300;
     }
+
+    /* ===== АНИМИРОВАННАЯ МАШИНКА ===== */
+    .taxi-container {
+      margin: 20px 0 25px;
+      cursor: pointer;
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+    .taxi-container:hover { transform: scale(1.1); }
+    .taxi-emoji {
+      font-size: 5rem;
+      display: block;
+      animation: taxiDrive 3s ease-in-out infinite;
+      filter: drop-shadow(0 8px 20px rgba(255,200,0,0.3));
+      user-select: none;
+    }
+    @keyframes taxiDrive {
+      0% { transform: translateX(-20px) rotate(-2deg); }
+      50% { transform: translateX(20px) rotate(2deg); }
+      100% { transform: translateX(-20px) rotate(-2deg); }
+    }
+    .taxi-label {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.8rem;
+      margin-top: 5px;
+      letter-spacing: 2px;
+    }
+
+    /* ===== СЕКРЕТНЫЙ КОД ===== */
+    .secret-area {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.6s ease, opacity 0.5s ease, margin 0.4s ease;
+      opacity: 0;
+      margin: 0 auto;
+    }
+    .secret-area.open {
+      max-height: 200px;
+      opacity: 1;
+      margin: 15px auto 20px;
+    }
+    .secret-area input {
+      padding: 12px 20px;
+      border-radius: 30px;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      font-size: 1rem;
+      width: 250px;
+      text-align: center;
+      letter-spacing: 3px;
+      transition: 0.3s;
+    }
+    .secret-area input:focus {
+      outline: none;
+      border-color: #f9d976;
+      background: rgba(255,255,255,0.12);
+    }
+    .secret-area input::placeholder {
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 1px;
+    }
+    .secret-area .secret-btn {
+      padding: 12px 30px;
+      border-radius: 30px;
+      border: none;
+      background: linear-gradient(135deg, #f9d976, #f39b7b);
+      color: #1b2a3a;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.3s;
+      margin-left: 10px;
+    }
+    .secret-area .secret-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 25px rgba(243,155,123,0.4);
+    }
+    .secret-area .secret-error {
+      color: #ff6b6b;
+      font-size: 0.85rem;
+      margin-top: 8px;
+      display: none;
+    }
+
+    /* ===== КАРТОЧКИ ===== */
     .login-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 25px;
-      margin: 30px 0 20px;
+      margin: 20px 0 20px;
     }
     .login-card {
       background: rgba(255,255,255,0.06);
@@ -90,8 +176,17 @@
       border-radius: 24px;
       padding: 30px 25px 25px;
       border: 1px solid rgba(255,255,255,0.08);
-      transition: all 0.3s ease;
+      transition: all 0.4s ease;
       text-align: left;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+    }
+    .login-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
     }
     .login-card:hover {
       transform: translateY(-6px);
@@ -136,7 +231,7 @@
       font-weight: 600;
       font-size: 1rem;
       cursor: pointer;
-      transition: 0.2s;
+      transition: 0.3s;
       color: #1b2a3a;
     }
     .btn-client { background: linear-gradient(135deg, #f9d976, #f39b7b); }
@@ -181,13 +276,13 @@
       flex-wrap: wrap;
       justify-content: center;
       gap: 20px;
-      color: rgba(255,255,255,0.5);
-      font-size: 0.9rem;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.85rem;
     }
     .footer-links a {
-      color: rgba(255,255,255,0.7);
+      color: rgba(255,255,255,0.6);
       text-decoration: none;
-      border-bottom: 1px dotted rgba(255,255,255,0.2);
+      border-bottom: 1px dotted rgba(255,255,255,0.15);
       transition: 0.2s;
     }
     .footer-links a:hover { color:#fff; border-bottom-color:#fff; }
@@ -199,6 +294,10 @@
     @media (max-width:480px) {
       .header h1 { font-size:2rem; }
     }
+
+    /* Анимация появления карточек */
+    .card-delay-1 { transition-delay: 0.1s; }
+    .card-delay-2 { transition-delay: 0.2s; }
   </style>
 </head>
 <body>
@@ -217,42 +316,57 @@
     <p>Умное такси с искусственным интеллектом</p>
   </div>
 
+  <!-- Уведомление о сессии -->
   <div id="auth-notice" class="auth-notice">
     <span>👋 Вы уже вошли как <span class="email" id="current-user-email"></span></span>
     <button class="logout-btn" onclick="signOutAndStay()">🚪 Выйти</button>
   </div>
 
-  <div class="login-grid">
-    <!-- КЛИЕНТ – упрощённый вход -->
-    <div class="login-card">
+  <!-- ===== АНИМИРОВАННАЯ МАШИНКА ===== -->
+  <div class="taxi-container" onclick="toggleSecret()" title="Нажмите для доступа к персоналу">
+    <span class="taxi-emoji">🚕</span>
+    <div class="taxi-label">🔑 Нажмите для доступа персонала</div>
+  </div>
+
+  <!-- ===== СЕКРЕТНАЯ ОБЛАСТЬ (код) ===== -->
+  <div class="secret-area" id="secretArea">
+    <input type="password" id="secretCode" placeholder="Введите код доступа" maxlength="20">
+    <button class="secret-btn" onclick="checkSecretCode()">🔓 Разблокировать</button>
+    <div class="secret-error" id="secretError">❌ Неверный код. Попробуйте снова.</div>
+  </div>
+
+  <!-- ===== КАРТОЧКИ ВХОДА ===== -->
+  <div class="login-grid" id="loginGrid">
+    <!-- КАРТОЧКА КЛИЕНТА (всегда видна) -->
+    <div class="login-card visible">
       <span class="icon">🧑‍💼</span>
       <h3>Клиент</h3>
       <div class="sub">Введите имя и номер телефона</div>
       <input type="text" id="client-name" placeholder="Ваше имя" value="Иван Петров">
       <input type="tel" id="client-phone" placeholder="Номер телефона" value="+7 999 123-45-67">
-      <button class="btn btn-client" onclick="clientLogin()">🚖 Войти как клиент</button>
+      <button class="btn btn-client" onclick="clientLogin()">🚖 Войти</button>
       <div id="client-error" class="error-msg"></div>
     </div>
 
-    <!-- ВОДИТЕЛЬ – email + пароль -->
-    <div class="login-card">
+    <!-- КАРТОЧКА ВОДИТЕЛЯ (появляется после кода) -->
+    <div class="login-card card-delay-1" id="driverCard">
       <span class="icon">🚗</span>
       <h3>Водитель</h3>
       <div class="sub">Введите email и пароль</div>
       <input type="email" id="driver-email" placeholder="Email" value="driver@taxi.com">
       <input type="password" id="driver-password" placeholder="Пароль" value="123456">
-      <button class="btn btn-driver" onclick="driverLogin()">🚗 Войти как водитель</button>
+      <button class="btn btn-driver" onclick="driverLogin()">🚗 Войти</button>
       <div id="driver-error" class="error-msg"></div>
     </div>
 
-    <!-- ДИСПЕТЧЕР – email + пароль -->
-    <div class="login-card">
+    <!-- КАРТОЧКА ДИСПЕТЧЕРА (появляется после кода) -->
+    <div class="login-card card-delay-2" id="dispatcherCard">
       <span class="icon">📋</span>
       <h3>Диспетчер</h3>
       <div class="sub">Введите email и пароль</div>
       <input type="email" id="dispatcher-email" placeholder="Email" value="dispatcher@taxi.com">
       <input type="password" id="dispatcher-password" placeholder="Пароль" value="123456">
-      <button class="btn btn-dispatcher" onclick="dispatcherLogin()">📋 Войти как диспетчер</button>
+      <button class="btn btn-dispatcher" onclick="dispatcherLogin()">📋 Войти</button>
       <div id="dispatcher-error" class="error-msg"></div>
     </div>
   </div>
@@ -280,8 +394,9 @@
   const auth = firebase.auth();
 
   let currentUser = null;
+  let secretOpen = false;
 
-  // === ПРОВЕРКА АВТОРИЗАЦИИ ===
+  // ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
   auth.onAuthStateChanged(function(user) {
     if (user) {
       currentUser = user;
@@ -305,7 +420,51 @@
     });
   }
 
-  // === КЛИЕНТ ===
+  // ===== СЕКРЕТНЫЙ КОД =====
+  function toggleSecret() {
+    const area = document.getElementById('secretArea');
+    if (secretOpen) {
+      area.classList.remove('open');
+      secretOpen = false;
+    } else {
+      area.classList.add('open');
+      secretOpen = true;
+      document.getElementById('secretCode').focus();
+    }
+    document.getElementById('secretError').style.display = 'none';
+  }
+
+  function checkSecretCode() {
+    const code = document.getElementById('secretCode').value.trim();
+    const errorEl = document.getElementById('secretError');
+
+    if (code === 'admin123' || code === '123') {
+      errorEl.style.display = 'none';
+      // Показываем карточки водителя и диспетчера
+      document.getElementById('driverCard').classList.add('visible');
+      document.getElementById('dispatcherCard').classList.add('visible');
+      // Закрываем секретную область
+      document.getElementById('secretArea').classList.remove('open');
+      secretOpen = false;
+      document.getElementById('secretCode').value = '';
+      alert('✅ Доступ к панели персонала открыт!');
+    } else {
+      errorEl.style.display = 'block';
+      document.getElementById('secretCode').value = '';
+      document.getElementById('secretCode').focus();
+    }
+  }
+
+  // Нажатие Enter в поле кода
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('secretCode').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        checkSecretCode();
+      }
+    });
+  });
+
+  // ===== КЛИЕНТ =====
   function clientLogin() {
     const name = document.getElementById('client-name').value.trim();
     const phone = document.getElementById('client-phone').value.trim();
@@ -322,7 +481,7 @@
     window.location.href = 'client.html';
   }
 
-  // === ВОДИТЕЛЬ – вход по email + пароль ===
+  // ===== ВОДИТЕЛЬ =====
   function driverLogin() {
     const email = document.getElementById('driver-email').value.trim();
     const password = document.getElementById('driver-password').value.trim();
@@ -334,7 +493,6 @@
       return;
     }
 
-    // Проверяем, есть ли водитель в коллекции drivers
     db.collection('drivers')
       .where('email', '==', email)
       .where('role', '==', 'driver')
@@ -345,12 +503,10 @@
           errorEl.style.display = 'block';
           return;
         }
-
         const doc = snapshot.docs[0];
         const driverData = doc.data();
         const uid = doc.id;
 
-        // Вход через Firebase Auth
         auth.signInWithEmailAndPassword(email, password)
           .then(() => {
             localStorage.setItem('driverSession', JSON.stringify({
@@ -379,7 +535,7 @@
       });
   }
 
-  // === ДИСПЕТЧЕР – вход по email + пароль ===
+  // ===== ДИСПЕТЧЕР =====
   function dispatcherLogin() {
     const email = document.getElementById('dispatcher-email').value.trim();
     const password = document.getElementById('dispatcher-password').value.trim();
@@ -401,7 +557,6 @@
           errorEl.style.display = 'block';
           return;
         }
-
         const doc = snapshot.docs[0];
         const dispatcherData = doc.data();
         const uid = doc.id;
