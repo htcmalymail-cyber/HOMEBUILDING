@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>🚕 Taxi – Водитель</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f0f2f5; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .card { background: white; padding: 20px; margin: 15px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .hidden { display: none; }
+    button { padding: 8px 16px; margin: 5px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; }
+    button:hover { background: #218838; }
+    button.danger { background: #dc3545; }
+    button.danger:hover { background: #c82333; }
+    input { padding: 8px; margin: 5px; width: 100%; max-width: 300px; }
+    #map { height: 400px; width: 100%; border-radius: 8px; }
+    .flex-row { display: flex; gap: 20px; flex-wrap: wrap; }
+    .flex-col { flex: 1; min-width: 300px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+    .badge-assigned { background: #17a2b8; color: white; }
+    .badge-completed { background: #28a745; color: white; }
+    .nav { margin-bottom: 20px; }
+    .nav a { margin-right: 15px; text-decoration: none; color: #007bff; font-weight: bold; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="nav">
+    <a href="client.html">Клиент</a>
+    <a href="driver.html">Водитель</a>
+  </div>
+  <h1>🚕 Taxi – Водитель</h1>
+
+  <!-- Авторизация -->
+  <div id="auth-section" class="card">
+    <h3>Вход / Регистрация (водитель)</h3>
+    <input type="email" id="email" placeholder="Email" value="driver@taxi.com">
+    <input type="password" id="password" placeholder="Пароль" value="123456">
+    <button onclick="signUp()">Зарегистрироваться как водитель</button>
+    <button onclick="signIn()">Войти</button>
+    <button onclick="signOut()">Выйти</button>
+    <p id="user-status">Не авторизован</p>
+  </div>
+
+  <!-- Интерфейс водителя -->
+  <div id="driver-section" class="hidden">
+    <div class="card">
+      <div class="flex-row">
+        <div class="flex-col">
+          <h4>Мои заказы</h4>
+          <div id="driver-orders-list"></div>
+          <br>
+          <button onclick="toggleAvailability()">🔄 Доступен/Недоступен</button>
+          <button class="danger" onclick="completeOrder()">✅ Завершить последний заказ</button>
+          <p id="driver-status"></p>
+          <p id="driver-location-info"></p>
+        </div>
+        <div class="flex-col">
+          <h4>Карта (клиент на заказе)</h4>
+          <div id="map"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+    authDomain: "taxi-ai-app-69628.firebaseapp.com",
+    projectId: "taxi-ai-app-69628",
+    storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+    messagingSenderId: "952357992434",
+    appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+    measurementId: "G-Z9NJFSSXH6"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  let currentUser = null;
+  let currentUserData = null;
+  let map = null;
+  let clientMarker = null;
+  let watchId = null;
+
+  // === АУТЕНТИФИКАЦИЯ ===
+  auth.onAuthStateChanged(async function(user) {
+    if (user) {
+      currentUser = user;
+      document.getElementById('user-status').innerHTML = '✅ Вошёл: ' + user.email;
+      document.getElementById('auth-section').style.display = 'none';
+      document.getElementById('driver-section').classList.remove('hidden');
+      await loadUserData();
+      initMap();
+      listenDriverOrders();
+      updateDriverStatus();
+      startGpsTracking();
+    } else {
+      currentUser = null;
+      document.getElementById('user-status').innerHTML = '❌ Не авторизован';
+      document.getElementById('auth-section').style.display = 'block';
+      document.getElementById('driver-section').classList.add('hidden');
+      if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    }
+  });
+
+  function loadUserData() {
+    return db.collection('users').doc(currentUser.uid).get().then(doc => {
+      if (doc.exists) {
+        currentUserData = doc.data();
+        if (currentUserData.role !== 'driver') {
+          alert('Вы не водитель. Перейдите на страницу клиента.');
+          window.location.href = 'client.html';
+        }
+        // Если у водителя нет координат, установим по умолчанию Москву
+        if (!currentUserData.lat) {
+          db.collection('users').doc(currentUser.uid).update({ lat: 55.7558, lng: 37.6173 });
+        }
+      } else {
+        // Если документа нет, создаём как водителя
+        return db.collection('users').doc(currentUser.uid).set({
+          email: currentUser.email,
+          name: 'Водитель',
+          role: 'driver',
+          phone: '',
+          available: true,
+          lat: 55.7558,
+          lng: 37.6173,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+    });
+  }
+
+  function signUp() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(cred => {
+        return db.collection('users').doc(cred.user.uid).set({
+          email: email,
+          name: 'Водитель',
+          role: 'driver',
+          phone: '',
+          available: true,
+          lat: 55.7558,
+          lng: 37.6173,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      })
+      .then(() => alert('Регистрация водителя успешна! Войдите.'))
+      .catch(e => alert('Ошибка: ' + e.message));
+  }
+
+  function signIn() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    auth.signInWithEmailAndPassword(email, password)
+      .catch(e => alert('Ошибка входа: ' + e.message));
+  }
+
+  function signOut() { auth.signOut(); }
+
+  // === КАРТА ===
+  function initMap() {
+    if (map) return;
+    map = L.map('map').setView([55.7558, 37.6173], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+  }
+
+  // Слушаем заказы, назначенные на этого водителя (status assigned или started)
+  function listenDriverOrders() {
+    if (!currentUser) return;
+    db.collection('orders')
+      .where('driverId', '==', currentUser.uid)
+      .where('status', 'in', ['assigned', 'started'])
+      .onSnapshot(snapshot => {
+        // Обновляем список заказов
+        let html = '';
+        let hasActive = false;
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          hasActive = true;
+          html += '<div class="order-item"><b>Заказ:</b> ' + data.from + ' → ' + data.to +
+            ' | Статус: <span class="badge badge-'+data.status+'">'+data.status+'</span>' +
+            (data.aiNote ? ' | ' + data.aiNote : '') +
+            '</div>';
+          // Показываем клиента на карте
+          if (data.fromLat && data.fromLng) {
+            if (clientMarker) map.removeLayer(clientMarker);
+            clientMarker = L.marker([data.fromLat, data.fromLng])
+              .bindPopup('Клиент: ' + data.clientEmail + '<br>Адрес: ' + data.from)
+              .addTo(map);
+            map.setView([data.fromLat, data.fromLng], 14);
+          }
+        });
+        document.getElementById('driver-orders-list').innerHTML = html || 'Нет активных заказов';
+        if (!hasActive) {
+          // Если нет активных заказов, убираем маркер клиента
+          if (clientMarker) { map.removeLayer(clientMarker); clientMarker = null; }
+        }
+      }, error => console.error('Ошибка прослушки заказов водителя:', error));
+  }
+
+  // === GPS-ТРЕКИНГ ===
+  function startGpsTracking() {
+    if (!navigator.geolocation) {
+      alert('Ваш браузер не поддерживает GPS. Обновляйте координаты вручную через кнопку.');
+      return;
+    }
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    watchId = navigator.geolocation.watchPosition(
+      position => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        db.collection('users').doc(currentUser.uid).update({ lat, lng })
+          .then(() => {
+            currentUserData.lat = lat;
+            currentUserData.lng = lng;
+            document.getElementById('driver-location-info').innerHTML = 
+              '📍 Мои координаты: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
+          })
+          .catch(e => console.error('Ошибка обновления GPS:', e));
+      },
+      error => {
+        console.error('GPS ошибка:', error);
+        alert('Ошибка GPS: ' + error.message + '. Введите координаты вручную через кнопку.');
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+    );
+  }
+
+  // === УПРАВЛЕНИЕ СТАТУСОМ И ЗАКАЗАМИ ===
+  function toggleAvailability() {
+    if (!currentUserData) return;
+    const newVal = !currentUserData.available;
+    db.collection('users').doc(currentUser.uid).update({ available: newVal })
+      .then(() => {
+        currentUserData.available = newVal;
+        updateDriverStatus();
+        alert('Статус изменён: ' + (newVal ? 'Доступен' : 'Недоступен'));
+      })
+      .catch(e => alert('Ошибка: ' + e.message));
+  }
+
+  function updateDriverStatus() {
+    if (currentUserData) {
+      const statusText = currentUserData.available ? '🟢 Доступен' : '🔴 Недоступен';
+      document.getElementById('driver-status').innerHTML = 'Текущий статус: ' + statusText;
+    }
+  }
+
+  function completeOrder() {
+    if (!currentUser) { alert('Войдите!'); return; }
+    db.collection('orders')
+      .where('driverId', '==', currentUser.uid)
+      .where('status', 'in', ['assigned', 'started'])
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .get()
+      .then(snapshot => {
+        if (snapshot.empty) { alert('Нет активных заказов для завершения'); return; }
+        const doc = snapshot.docs[0];
+        const orderId = doc.id;
+        return db.collection('orders').doc(orderId).update({
+          status: 'completed',
+          aiNote: 'Завершён водителем'
+        })
+        .then(() => db.collection('users').doc(currentUser.uid).update({ available: true }))
+        .then(() => {
+          currentUserData.available = true;
+          updateDriverStatus();
+          alert('Заказ завершён! Вы снова доступны.');
+        });
+      })
+      .catch(e => alert('Ошибка: ' + e.message));
+  }
+</script>
+</body>
+</html>
