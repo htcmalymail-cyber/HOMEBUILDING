@@ -157,316 +157,28 @@
       display: none;
     }
 
-    .footer-links {
-      margin-top: 30px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-      color: rgba(255,255,255,0.5);
-      font-size: 0.9rem;
-    }
-    .footer-links a {
-      color: rgba(255,255,255,0.7);
-      text-decoration: none;
-      border-bottom: 1px dotted rgba(255,255,255,0.2);
-      transition: 0.2s;
-    }
-    .footer-links a:hover { color:#fff; border-bottom-color:#fff; }
-
-    @media (max-width:768px) {
-      .container { padding:30px 20px; }
-      .header h1 { font-size:2.6rem; }
-      .login-grid { grid-template-columns:1fr; }
-    }
-    @media (max-width:480px) {
-      .header h1 { font-size:2rem; }
-    }
-  </style>
-</head>
-<body>
-
-<div class="bg-bubbles">
-  <div class="bubble"></div>
-  <div class="bubble"></div>
-  <div class="bubble"></div>
-  <div class="bubble"></div>
-  <div class="bubble"></div>
-</div>
-
-<div class="container">
-  <div class="header">
-    <h1>🚕 <span>Taxi AI</span></h1>
-    <p>Умное такси с искусственным интеллектом</p>
-  </div>
-
-  <div class="login-grid">
-    <!-- КЛИЕНТ – только номер телефона и имя -->
-    <div class="login-card">
-      <span class="icon">🧑‍💼</span>
-      <h3>Клиент</h3>
-      <div class="sub">Введите номер телефона и имя</div>
-      <input type="text" id="client-name" placeholder="Ваше имя" value="Иван Петров">
-      <input type="tel" id="client-phone" placeholder="Номер телефона" value="+7 999 123-45-67">
-      <button class="btn btn-client" onclick="clientLogin()">🚖 Войти как клиент</button>
-      <div id="client-error" class="error-msg"></div>
-    </div>
-
-    <!-- ВОДИТЕЛЬ – номер телефона + пароль -->
-    <div class="login-card">
-      <span class="icon">🚗</span>
-      <h3>Водитель</h3>
-      <div class="sub">Введите номер телефона и пароль</div>
-      <input type="tel" id="driver-phone" placeholder="Номер телефона" value="+7 999 888-77-66">
-      <input type="password" id="driver-password" placeholder="Пароль" value="123456">
-      <button class="btn btn-driver" onclick="driverLogin()">🚗 Войти как водитель</button>
-      <div id="driver-error" class="error-msg"></div>
-    </div>
-
-    <!-- ДИСПЕТЧЕР – номер телефона + пароль -->
-    <div class="login-card">
-      <span class="icon">📋</span>
-      <h3>Диспетчер</h3>
-      <div class="sub">Введите номер телефона и пароль</div>
-      <input type="tel" id="dispatcher-phone" placeholder="Номер телефона" value="+7 999 111-22-33">
-      <input type="password" id="dispatcher-password" placeholder="Пароль" value="123456">
-      <button class="btn btn-dispatcher" onclick="dispatcherLogin()">📋 Войти как диспетчер</button>
-      <div id="dispatcher-error" class="error-msg"></div>
-    </div>
-  </div>
-
-  <div class="footer-links">
-    <span>Нет аккаунта?</span>
-    <a href="driver.html">Зарегистрироваться водителем</a>
-    <span>·</span>
-    <a href="dispatcher.html">Зарегистрироваться диспетчером</a>
-  </div>
-</div>
-
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
-    authDomain: "taxi-ai-app-69628.firebaseapp.com",
-    projectId: "taxi-ai-app-69628",
-    storageBucket: "taxi-ai-app-69628.firebasestorage.app",
-    messagingSenderId: "952357992434",
-    appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
-    measurementId: "G-Z9NJFSSXH6"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const auth = firebase.auth();
-
-  // === КЛИЕНТ – вход по телефону и имени (без пароля) ===
-  function clientLogin() {
-    const name = document.getElementById('client-name').value.trim();
-    const phone = document.getElementById('client-phone').value.trim();
-    const errorEl = document.getElementById('client-error');
-
-    if (!name || !phone) {
-      errorEl.textContent = '⚠️ Заполните имя и номер телефона';
-      errorEl.style.display = 'block';
-      return;
-    }
-    errorEl.style.display = 'none';
-
-    // Сохраняем в localStorage
-    localStorage.setItem('clientSession', JSON.stringify({
-      name: name,
-      phone: phone,
-      role: 'client',
-      timestamp: Date.now()
-    }));
-
-    window.location.href = 'client.html';
-  }
-
-  // === ВОДИТЕЛЬ – вход по телефону + пароль ===
-  function driverLogin() {
-    const phone = document.getElementById('driver-phone').value.trim();
-    const password = document.getElementById('driver-password').value.trim();
-    const errorEl = document.getElementById('driver-error');
-
-    if (!phone || !password) {
-      errorEl.textContent = '⚠️ Заполните все поля';
-      errorEl.style.display = 'block';
-      return;
-    }
-
-    db.collection('drivers')
-      .where('phone', '==', phone)
-      .where('role', '==', 'driver')
-      .get()
-      .then(snapshot => {
-        if (snapshot.empty) {
-          errorEl.textContent = '❌ Водитель с таким номером не найден';
-          errorEl.style.display = 'block';
-          return;
-        }
-
-        const doc = snapshot.docs[0];
-        const driverData = doc.data();
-        const email = driverData.email;
-
-        auth.signInWithEmailAndPassword(email, password)
-          .then(() => {
-            localStorage.setItem('driverSession', JSON.stringify({
-              uid: doc.id,
-              phone: phone,
-              role: 'driver',
-              timestamp: Date.now()
-            }));
-            window.location.href = 'driver.html';
-          })
-          .catch(error => {
-            if (error.code === 'auth/wrong-password') {
-              errorEl.textContent = '❌ Неверный пароль';
-            } else if (error.code === 'auth/user-not-found') {
-              errorEl.textContent = '❌ Пользователь не найден';
-            } else {
-              errorEl.textContent = '❌ Ошибка: ' + error.message;
-            }
-            errorEl.style.display = 'block';
-          });
-      })
-      .catch(error => {
-        errorEl.textContent = '❌ Ошибка: ' + error.message;
-        errorEl.style.display = 'block';
-      });
-  }
-
-  // === ДИСПЕТЧЕР – вход по телефону + пароль ===
-  function dispatcherLogin() {
-    const phone = document.getElementById('dispatcher-phone').value.trim();
-    const password = document.getElementById('dispatcher-password').value.trim();
-    const errorEl = document.getElementById('dispatcher-error');
-
-    if (!phone || !password) {
-      errorEl.textContent = '⚠️ Заполните все поля';
-      errorEl.style.display = 'block';
-      return;
-    }
-
-    db.collection('dispatchers')
-      .where('phone', '==', phone)
-      .where('role', '==', 'dispatcher')
-      .get()
-      .then(snapshot => {
-        if (snapshot.empty) {
-          errorEl.textContent = '❌ Диспетчер с таким номером не найден';
-          errorEl.style.display = 'block';
-          return;
-        }
-
-        const doc = snapshot.docs[0];
-        const dispatcherData = doc.data();
-        const email = dispatcherData.email;
-
-        auth.signInWithEmailAndPassword(email, password)
-          .then(() => {
-            localStorage.setItem('dispatcherSession', JSON.stringify({
-              uid: doc.id,
-              phone: phone,
-              role: 'dispatcher',
-              timestamp: Date.now()
-            }));
-            window.location.href = 'dispatcher.html';
-          })
-          .catch(error => {
-            if (error.code === 'auth/wrong-password') {
-              errorEl.textContent = '❌ Неверный пароль';
-            } else if (error.code === 'auth/user-not-found') {
-              errorEl.textContent = '❌ Пользователь не найден';
-            } else {
-              errorEl.textContent = '❌ Ошибка: ' + error.message;
-            }
-            errorEl.style.display = 'block';
-          });
-      })
-      .catch(error => {
-        errorEl.textContent = '❌ Ошибка: ' + error.message;
-        errorEl.style.display = 'block';
-      });
-  }
-
-  // Если уже авторизован – перенаправляем
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      db.collection('users').doc(user.uid).get().then(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          if (data.role === 'driver') window.location.href = 'driver.html';
-          else if (data.role === 'dispatcher') window.location.href = 'dispatcher.html';
-        }
-      }).catch(() => {});
-    }
-  });
-</script>
-</body>
-</html>      border-radius: 24px;
-      padding: 30px 25px 25px;
-      border: 1px solid rgba(255,255,255,0.08);
-      transition: all 0.3s ease;
-      text-align: left;
-    }
-    .login-card:hover {
-      transform: translateY(-6px);
-      background: rgba(255,255,255,0.12);
-      border-color: rgba(255,255,255,0.25);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-    }
-    .login-card .icon { font-size: 2.8rem; display:block; margin-bottom:10px; }
-    .login-card h3 {
+    /* Уведомление о том, что пользователь уже авторизован */
+    .auth-notice {
+      background: rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 15px 20px;
+      margin-bottom: 25px;
       color: #fff;
-      font-size: 1.4rem;
-      margin-bottom: 5px;
-    }
-    .login-card .sub {
-      color: rgba(255,255,255,0.6);
-      font-size: 0.85rem;
-      margin-bottom: 15px;
-    }
-    .login-card input {
-      width: 100%;
-      padding: 10px 14px;
-      margin: 6px 0;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.08);
-      color: #fff;
-      font-size: 14px;
-      transition: 0.2s;
-    }
-    .login-card input::placeholder { color: rgba(255,255,255,0.4); }
-    .login-card input:focus {
-      outline: none;
-      border-color: #f9d976;
-      background: rgba(255,255,255,0.15);
-    }
-    .login-card .btn {
-      width: 100%;
-      padding: 12px;
-      margin-top: 12px;
-      border: none;
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: 0.2s;
-      color: #1b2a3a;
-    }
-    .btn-client { background: linear-gradient(135deg, #f9d976, #f39b7b); }
-    .btn-client:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(243,155,123,0.4); }
-    .btn-driver { background: linear-gradient(135deg, #6dd5fa, #2980b9); color:#fff; }
-    .btn-driver:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(41,128,185,0.4); }
-    .btn-dispatcher { background: linear-gradient(135deg, #a18cd1, #fbc2eb); color:#1b2a3a; }
-    .btn-dispatcher:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(161,140,209,0.4); }
-    .login-card .error-msg {
-      color: #ff6b6b;
-      font-size: 0.8rem;
-      margin-top: 8px;
       display: none;
+      border: 1px solid rgba(255,255,255,0.1);
     }
+    .auth-notice .email { font-weight:600; color:#f9d976; }
+    .auth-notice .logout-btn {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      padding: 6px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+      margin-left: 15px;
+      transition: 0.2s;
+    }
+    .auth-notice .logout-btn:hover { background: rgba(255,255,255,0.25); }
 
     .footer-links {
       margin-top: 30px;
@@ -509,6 +221,12 @@
   <div class="header">
     <h1>🚕 <span>Taxi AI</span></h1>
     <p>Умное такси с искусственным интеллектом</p>
+  </div>
+
+  <!-- Уведомление о текущем пользователе -->
+  <div id="auth-notice" class="auth-notice">
+    <span>👋 Вы уже вошли как <span class="email" id="current-user-email"></span></span>
+    <button class="logout-btn" onclick="signOutAndStay()">🚪 Выйти и выбрать другую роль</button>
   </div>
 
   <div class="login-grid">
@@ -568,6 +286,33 @@
   const db = firebase.firestore();
   const auth = firebase.auth();
 
+  let currentUser = null;
+
+  // === ПРОВЕРКА АВТОРИЗАЦИИ (без автоматического перенаправления) ===
+  auth.onAuthStateChanged(function(user) {
+    if (user) {
+      currentUser = user;
+      // Показываем уведомление, но НЕ ПЕРЕНАПРАВЛЯЕМ автоматически
+      document.getElementById('auth-notice').style.display = 'block';
+      document.getElementById('current-user-email').textContent = user.email;
+    } else {
+      currentUser = null;
+      document.getElementById('auth-notice').style.display = 'none';
+    }
+  });
+
+  // === ВЫХОД (без перенаправления) ===
+  function signOutAndStay() {
+    auth.signOut().then(() => {
+      // Очищаем все сессии
+      localStorage.removeItem('clientSession');
+      localStorage.removeItem('driverSession');
+      localStorage.removeItem('dispatcherSession');
+      document.getElementById('auth-notice').style.display = 'none';
+      alert('Вы вышли. Теперь можете войти в другой роли.');
+    });
+  }
+
   // === КЛИЕНТ – вход по телефону и имени (без пароля) ===
   function clientLogin() {
     const name = document.getElementById('client-name').value.trim();
@@ -581,15 +326,21 @@
     }
     errorEl.style.display = 'none';
 
-    // Сохраняем данные клиента в localStorage для сессии
-    localStorage.setItem('clientSession', JSON.stringify({
+    // Если пользователь уже авторизован в Firebase, используем его UID
+    // Если нет — создаём временную сессию
+    const sessionData = {
       name: name,
       phone: phone,
       role: 'client',
       timestamp: Date.now()
-    }));
+    };
 
-    // Переходим на страницу клиента
+    if (currentUser) {
+      sessionData.uid = currentUser.uid;
+      sessionData.email = currentUser.email;
+    }
+
+    localStorage.setItem('clientSession', JSON.stringify(sessionData));
     window.location.href = 'client.html';
   }
 
@@ -605,7 +356,6 @@
       return;
     }
 
-    // Ищем водителя по номеру телефона в коллекции drivers
     db.collection('drivers')
       .where('phone', '==', phone)
       .where('role', '==', 'driver')
@@ -619,15 +369,12 @@
 
         const doc = snapshot.docs[0];
         const driverData = doc.data();
-        const uid = doc.id;
-
-        // Входим в Firebase Auth по email (который сохранён при регистрации)
         const email = driverData.email;
+
         auth.signInWithEmailAndPassword(email, password)
           .then(() => {
-            // Успешный вход
             localStorage.setItem('driverSession', JSON.stringify({
-              uid: uid,
+              uid: doc.id,
               phone: phone,
               role: 'driver',
               timestamp: Date.now()
@@ -663,7 +410,6 @@
       return;
     }
 
-    // Ищем диспетчера по номеру телефона в коллекции dispatchers
     db.collection('dispatchers')
       .where('phone', '==', phone)
       .where('role', '==', 'dispatcher')
@@ -677,14 +423,12 @@
 
         const doc = snapshot.docs[0];
         const dispatcherData = doc.data();
-        const uid = doc.id;
-
-        // Входим в Firebase Auth по email
         const email = dispatcherData.email;
+
         auth.signInWithEmailAndPassword(email, password)
           .then(() => {
             localStorage.setItem('dispatcherSession', JSON.stringify({
-              uid: uid,
+              uid: doc.id,
               phone: phone,
               role: 'dispatcher',
               timestamp: Date.now()
@@ -707,20 +451,6 @@
         errorEl.style.display = 'block';
       });
   }
-
-  // Проверяем, если пользователь уже авторизован, перенаправляем
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      // Проверяем роль
-      db.collection('users').doc(user.uid).get().then(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          if (data.role === 'driver') window.location.href = 'driver.html';
-          else if (data.role === 'dispatcher') window.location.href = 'dispatcher.html';
-        }
-      }).catch(() => {});
-    }
-  });
 </script>
 </body>
 </html>
