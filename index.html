@@ -150,6 +150,9 @@
       font-size: 0.8rem;
       margin-top: 8px;
       display: none;
+      background: rgba(255,0,0,0.1);
+      padding: 8px;
+      border-radius: 6px;
     }
     .auth-notice {
       background: rgba(255,255,255,0.1);
@@ -196,12 +199,6 @@
     @media (max-width:480px) {
       .header h1 { font-size:2rem; }
     }
-    .success-msg {
-      color: #28a745;
-      font-size: 0.8rem;
-      margin-top: 8px;
-      display: none;
-    }
   </style>
 </head>
 <body>
@@ -226,7 +223,7 @@
   </div>
 
   <div class="login-grid">
-    <!-- КЛИЕНТ – только номер телефона и имя -->
+    <!-- КЛИЕНТ -->
     <div class="login-card">
       <span class="icon">🧑‍💼</span>
       <h3>Клиент</h3>
@@ -237,7 +234,7 @@
       <div id="client-error" class="error-msg"></div>
     </div>
 
-    <!-- ВОДИТЕЛЬ – номер телефона + ID паспорта -->
+    <!-- ВОДИТЕЛЬ -->
     <div class="login-card">
       <span class="icon">🚗</span>
       <h3>Водитель</h3>
@@ -248,7 +245,7 @@
       <div id="driver-error" class="error-msg"></div>
     </div>
 
-    <!-- ДИСПЕТЧЕР – номер телефона + ID паспорта -->
+    <!-- ДИСПЕТЧЕР -->
     <div class="login-card">
       <span class="icon">📋</span>
       <h3>Диспетчер</h3>
@@ -284,15 +281,16 @@
 
   let currentUser = null;
 
-  // === ПРОВЕРКА АВТОРИЗАЦИИ ===
   auth.onAuthStateChanged(function(user) {
     if (user) {
       currentUser = user;
       document.getElementById('auth-notice').style.display = 'block';
       document.getElementById('current-user-email').textContent = user.email;
+      console.log('✅ Пользователь авторизован:', user.email);
     } else {
       currentUser = null;
       document.getElementById('auth-notice').style.display = 'none';
+      console.log('❌ Пользователь не авторизован');
     }
   });
 
@@ -306,7 +304,7 @@
     });
   }
 
-  // === КЛИЕНТ – вход по телефону и имени ===
+  // === КЛИЕНТ ===
   function clientLogin() {
     const name = document.getElementById('client-name').value.trim();
     const phone = document.getElementById('client-phone').value.trim();
@@ -323,11 +321,13 @@
     window.location.href = 'client.html';
   }
 
-  // === ВОДИТЕЛЬ – вход по телефону + ID паспорта ===
+  // === ВОДИТЕЛЬ - с полной отладкой ===
   function driverLogin() {
     const phone = document.getElementById('driver-phone').value.trim();
     const passportId = document.getElementById('driver-passport').value.trim();
     const errorEl = document.getElementById('driver-error');
+
+    console.log('🔍 Поиск водителя:', { phone, passportId });
 
     if (!phone || !passportId) {
       errorEl.textContent = '⚠️ Заполните все поля';
@@ -335,15 +335,28 @@
       return;
     }
 
-    // Ищем водителя по телефону И ID паспорта
+    // Сначала проверим, есть ли вообще такие водители в коллекции
     db.collection('drivers')
-      .where('phone', '==', phone)
-      .where('passportId', '==', passportId)
       .where('role', '==', 'driver')
       .get()
+      .then(allDrivers => {
+        console.log('📋 Все водители в базе:');
+        allDrivers.forEach(doc => {
+          console.log('  -', doc.data().phone, '|', doc.data().passportId);
+        });
+        
+        // Теперь ищем конкретного
+        return db.collection('drivers')
+          .where('phone', '==', phone)
+          .where('passportId', '==', passportId)
+          .where('role', '==', 'driver')
+          .get();
+      })
       .then(snapshot => {
+        console.log('🔍 Результат поиска:', snapshot.size, 'найдено');
+        
         if (snapshot.empty) {
-          errorEl.textContent = '❌ Водитель с таким телефоном и ID паспорта не найден';
+          errorEl.textContent = '❌ Водитель с таким телефоном и ID паспорта не найден. Проверьте данные в Firebase.';
           errorEl.style.display = 'block';
           return;
         }
@@ -351,24 +364,28 @@
         const doc = snapshot.docs[0];
         const driverData = doc.data();
         const uid = doc.id;
+        console.log('✅ Водитель найден:', driverData);
 
-        // Если пользователь уже авторизован, просто переходим
+        // Сохраняем сессию
+        localStorage.setItem('driverSession', JSON.stringify({
+          uid: uid,
+          phone: phone,
+          passportId: passportId,
+          role: 'driver',
+          timestamp: Date.now(),
+          data: driverData
+        }));
+
+        // Проверяем авторизацию
         if (currentUser) {
-          localStorage.setItem('driverSession', JSON.stringify({
-            uid: uid,
-            phone: phone,
-            passportId: passportId,
-            role: 'driver',
-            timestamp: Date.now()
-          }));
+          console.log('✅ Уже авторизован, переходим на driver.html');
           window.location.href = 'driver.html';
           return;
         }
 
-        // Если не авторизован, пробуем войти по email (если есть)
+        // Если есть email, пробуем войти
         if (driverData.email) {
-          // Запрашиваем пароль у пользователя
-          const password = prompt('Введите пароль для входа (если он у вас есть):');
+          const password = prompt('Введите пароль для входа:');
           if (!password) {
             errorEl.textContent = '❌ Пароль не введён';
             errorEl.style.display = 'block';
@@ -376,18 +393,13 @@
           }
           auth.signInWithEmailAndPassword(driverData.email, password)
             .then(() => {
-              localStorage.setItem('driverSession', JSON.stringify({
-                uid: uid,
-                phone: phone,
-                passportId: passportId,
-                role: 'driver',
-                timestamp: Date.now()
-              }));
+              console.log('✅ Вход выполнен');
               window.location.href = 'driver.html';
             })
             .catch(error => {
+              console.error('❌ Ошибка входа:', error);
               if (error.code === 'auth/wrong-password') {
-                errorEl.textContent = '❌ Неверный пароль. Попробуйте сбросить пароль в Firebase Console.';
+                errorEl.textContent = '❌ Неверный пароль. Сбросьте пароль через Firebase Console.';
               } else if (error.code === 'auth/user-not-found') {
                 errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь через driver.html';
               } else {
@@ -396,28 +408,25 @@
               errorEl.style.display = 'block';
             });
         } else {
-          // Если email нет, просто сохраняем сессию (для теста)
-          localStorage.setItem('driverSession', JSON.stringify({
-            uid: uid,
-            phone: phone,
-            passportId: passportId,
-            role: 'driver',
-            timestamp: Date.now()
-          }));
+          // Если email нет, просто переходим
+          console.log('⚠️ Нет email, переходим без авторизации');
           window.location.href = 'driver.html';
         }
       })
       .catch(error => {
+        console.error('❌ Ошибка запроса:', error);
         errorEl.textContent = '❌ Ошибка: ' + error.message;
         errorEl.style.display = 'block';
       });
   }
 
-  // === ДИСПЕТЧЕР – вход по телефону + ID паспорта ===
+  // === ДИСПЕТЧЕР - с полной отладкой ===
   function dispatcherLogin() {
     const phone = document.getElementById('dispatcher-phone').value.trim();
     const passportId = document.getElementById('dispatcher-passport').value.trim();
     const errorEl = document.getElementById('dispatcher-error');
+
+    console.log('🔍 Поиск диспетчера:', { phone, passportId });
 
     if (!phone || !passportId) {
       errorEl.textContent = '⚠️ Заполните все поля';
@@ -426,13 +435,24 @@
     }
 
     db.collection('dispatchers')
-      .where('phone', '==', phone)
-      .where('passportId', '==', passportId)
       .where('role', '==', 'dispatcher')
       .get()
+      .then(all => {
+        console.log('📋 Все диспетчеры в базе:');
+        all.forEach(doc => {
+          console.log('  -', doc.data().phone, '|', doc.data().passportId);
+        });
+        return db.collection('dispatchers')
+          .where('phone', '==', phone)
+          .where('passportId', '==', passportId)
+          .where('role', '==', 'dispatcher')
+          .get();
+      })
       .then(snapshot => {
+        console.log('🔍 Результат поиска:', snapshot.size, 'найдено');
+        
         if (snapshot.empty) {
-          errorEl.textContent = '❌ Диспетчер с таким телефоном и ID паспорта не найден';
+          errorEl.textContent = '❌ Диспетчер с таким телефоном и ID паспорта не найден. Проверьте данные в Firebase.';
           errorEl.style.display = 'block';
           return;
         }
@@ -440,15 +460,19 @@
         const doc = snapshot.docs[0];
         const dispatcherData = doc.data();
         const uid = doc.id;
+        console.log('✅ Диспетчер найден:', dispatcherData);
+
+        localStorage.setItem('dispatcherSession', JSON.stringify({
+          uid: uid,
+          phone: phone,
+          passportId: passportId,
+          role: 'dispatcher',
+          timestamp: Date.now(),
+          data: dispatcherData
+        }));
 
         if (currentUser) {
-          localStorage.setItem('dispatcherSession', JSON.stringify({
-            uid: uid,
-            phone: phone,
-            passportId: passportId,
-            role: 'dispatcher',
-            timestamp: Date.now()
-          }));
+          console.log('✅ Уже авторизован, переходим на dispatcher.html');
           window.location.href = 'dispatcher.html';
           return;
         }
@@ -462,18 +486,13 @@
           }
           auth.signInWithEmailAndPassword(dispatcherData.email, password)
             .then(() => {
-              localStorage.setItem('dispatcherSession', JSON.stringify({
-                uid: uid,
-                phone: phone,
-                passportId: passportId,
-                role: 'dispatcher',
-                timestamp: Date.now()
-              }));
+              console.log('✅ Вход выполнен');
               window.location.href = 'dispatcher.html';
             })
             .catch(error => {
+              console.error('❌ Ошибка входа:', error);
               if (error.code === 'auth/wrong-password') {
-                errorEl.textContent = '❌ Неверный пароль. Попробуйте сбросить пароль в Firebase Console.';
+                errorEl.textContent = '❌ Неверный пароль. Сбросьте пароль через Firebase Console.';
               } else if (error.code === 'auth/user-not-found') {
                 errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь через dispatcher.html';
               } else {
@@ -482,17 +501,12 @@
               errorEl.style.display = 'block';
             });
         } else {
-          localStorage.setItem('dispatcherSession', JSON.stringify({
-            uid: uid,
-            phone: phone,
-            passportId: passportId,
-            role: 'dispatcher',
-            timestamp: Date.now()
-          }));
+          console.log('⚠️ Нет email, переходим без авторизации');
           window.location.href = 'dispatcher.html';
         }
       })
       .catch(error => {
+        console.error('❌ Ошибка запроса:', error);
         errorEl.textContent = '❌ Ошибка: ' + error.message;
         errorEl.style.display = 'block';
       });
