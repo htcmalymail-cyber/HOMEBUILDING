@@ -21,6 +21,8 @@
     button.success:hover { background:#218838; }
     button.danger { background:#dc3545; color:white; }
     button.danger:hover { background:#c82333; }
+    button.warning { background:#ffc107; color:#212529; }
+    button.warning:hover { background:#e0a800; }
     input, textarea { padding:10px; margin:8px 0; width:100%; border:1px solid #ccc; border-radius:8px; font-size:14px; }
     input:focus, textarea:focus { outline:2px solid #007bff; border-color:transparent; }
     #map { height:450px; width:100%; border-radius:10px; }
@@ -46,7 +48,12 @@
     .badge-cancelled { background:#dc3545; color:white; }
     .badge-waiting { background:#fd7e14; color:white; }
     .coords-hint { font-size:12px; color:#666; margin-top:5px; }
-    .click-hint { background:#fff3cd; padding:8px 12px; border-radius:6px; font-size:13px; color:#856404; margin-bottom:10px; }
+    .click-hint { background:#e8f4f8; padding:8px 12px; border-radius:6px; font-size:13px; color:#0056b3; margin-bottom:10px; }
+    .gps-btn { background:#28a745; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; }
+    .gps-btn:hover { background:#218838; }
+    .location-status { font-size:13px; color:#666; margin-left:10px; }
+    .location-found { color:#28a745; }
+    .location-error { color:#dc3545; }
   </style>
 </head>
 <body>
@@ -62,7 +69,10 @@
   <!-- Форма заказа -->
   <div class="card">
     <h3>📍 Создать заказ</h3>
-    <div class="click-hint">💡 Кликните на карту, чтобы установить точку отправления</div>
+    <div class="click-hint">
+      <button class="gps-btn" onclick="getMyLocation()">📍 Определить моё местоположение</button>
+      <span id="location-status" class="location-status">Нажмите кнопку, чтобы определить ваше положение</span>
+    </div>
     <div class="flex-row">
       <div class="flex-col">
         <input id="from-address" placeholder="Откуда (адрес)" value="Красная площадь, Москва">
@@ -76,6 +86,7 @@
       </div>
       <div class="flex-col">
         <div id="map"></div>
+        <div style="margin-top:8px;font-size:12px;color:#666;">💡 Кликните на карту, чтобы изменить точку отправления</div>
       </div>
     </div>
   </div>
@@ -110,12 +121,13 @@
   let currentUser = null;
   let currentUserData = null;
   let map = null;
-  let clientMarker = null; // маркер клиента на карте
-  let driverMarker = null; // маркер водителя на карте
-  let routeLayer = null;   // линия маршрута
+  let clientMarker = null;
+  let driverMarker = null;
+  let routeLayer = null;
   let currentOrderId = null;
   let orderUnsubscribe = null;
   let driverUnsubscribe = null;
+  let userLocation = null; // храним координаты пользователя
 
   // ===== АУТЕНТИФИКАЦИЯ =====
   auth.onAuthStateChanged(async function(user) {
@@ -125,8 +137,9 @@
       await loadUserData();
       initMap();
       listenClientOrder();
+      // Автоматически определяем местоположение при загрузке
+      setTimeout(getMyLocation, 500);
     } else {
-      // Если не авторизован, пробуем загрузить сессию
       const session = localStorage.getItem('clientSession');
       if (session) {
         try {
@@ -135,6 +148,7 @@
           await loadUserData();
           initMap();
           listenClientOrder();
+          setTimeout(getMyLocation, 500);
         } catch(e) {
           window.location.href = 'index.html';
         }
@@ -170,6 +184,70 @@
     });
   }
 
+  // ===== ОПРЕДЕЛЕНИЕ МЕСТОПОЛОЖЕНИЯ ЧЕРЕЗ GPS =====
+  function getMyLocation() {
+    const statusEl = document.getElementById('location-status');
+    statusEl.textContent = '⏳ Определение местоположения...';
+    statusEl.className = 'location-status';
+
+    if (!navigator.geolocation) {
+      statusEl.textContent = '❌ Ваш браузер не поддерживает GPS';
+      statusEl.className = 'location-status location-error';
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        userLocation = { lat, lng };
+        
+        // Обновляем поля
+        document.getElementById('from-lat').value = lat.toFixed(6);
+        document.getElementById('from-lng').value = lng.toFixed(6);
+        document.getElementById('from-address').value = '📍 Моё местоположение';
+        
+        // Обновляем карту
+        if (clientMarker) map.removeLayer(clientMarker);
+        clientMarker = L.marker([lat, lng], {
+          icon: L.divIcon({ 
+            className: 'client-marker', 
+            html: '📍', 
+            iconSize: [30, 30] 
+          })
+        }).addTo(map)
+          .bindPopup('📍 Вы здесь');
+        map.setView([lat, lng], 16);
+
+        statusEl.textContent = '✅ Местоположение определено! (широта: ' + lat.toFixed(6) + ', долгота: ' + lng.toFixed(6) + ')';
+        statusEl.className = 'location-status location-found';
+      },
+      function(error) {
+        console.error('GPS ошибка:', error);
+        let msg = '❌ Ошибка GPS: ';
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            msg += 'Разрешите доступ к геолокации в настройках браузера';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            msg += 'Не удалось определить местоположение';
+            break;
+          case error.TIMEOUT:
+            msg += 'Превышено время ожидания';
+            break;
+          default:
+            msg += error.message;
+        }
+        statusEl.textContent = msg;
+        statusEl.className = 'location-status location-error';
+        
+        // Предлагаем ввести адрес вручную или кликнуть на карту
+        alert('⚠️ ' + msg + '\n\nВы можете ввести адрес вручную или кликнуть на карту, чтобы указать точку отправления.');
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
+  }
+
   // ===== КАРТА =====
   function initMap() {
     if (map) return;
@@ -186,25 +264,17 @@
       document.getElementById('from-lng').value = lng;
       document.getElementById('from-address').value = '📍 Точка на карте';
 
-      // Обновляем маркер клиента
       if (clientMarker) map.removeLayer(clientMarker);
       clientMarker = L.marker([lat, lng], {
         icon: L.divIcon({ className: 'client-marker', html: '📍', iconSize: [30, 30] })
-      }).addTo(map).bindPopup('📍 Ваше местоположение');
+      }).addTo(map).bindPopup('📍 Вы здесь');
 
-      alert('✅ Точка отправления установлена: ' + lat + ', ' + lng);
+      document.getElementById('location-status').textContent = '📍 Точка установлена вручную: ' + lat + ', ' + lng;
+      document.getElementById('location-status').className = 'location-status location-found';
     });
-
-    // Добавляем маркер клиента изначально
-    const lat = parseFloat(document.getElementById('from-lat').value);
-    const lng = parseFloat(document.getElementById('from-lng').value);
-    if (!isNaN(lat) && !isNaN(lng)) {
-      clientMarker = L.marker([lat, lng]).addTo(map)
-        .bindPopup('📍 Ваше местоположение');
-    }
   }
 
-  // ===== ОБНОВЛЕНИЕ МАРКЕРА КЛИЕНТА =====
+  // ===== ОБНОВЛЕНИЕ МАРКЕРОВ =====
   function updateClientMarker(lat, lng) {
     if (clientMarker) map.removeLayer(clientMarker);
     clientMarker = L.marker([lat, lng])
@@ -213,7 +283,6 @@
     map.setView([lat, lng], 14);
   }
 
-  // ===== ОБНОВЛЕНИЕ МАРКЕРА ВОДИТЕЛЯ =====
   function updateDriverMarker(lat, lng, driverName) {
     if (driverMarker) map.removeLayer(driverMarker);
     driverMarker = L.marker([lat, lng], {
@@ -237,7 +306,6 @@
     if (!from || !to) { alert('⚠️ Заполните адреса'); return; }
     if (isNaN(lat) || isNaN(lng)) { alert('⚠️ Установите точку на карте или введите координаты'); return; }
 
-    // Получаем имя клиента из сессии или данных пользователя
     let clientName = 'Клиент';
     const session = localStorage.getItem('clientSession');
     if (session) {
@@ -264,7 +332,6 @@
         currentOrderId = docRef.id;
         document.getElementById('order-status-message').innerHTML = '✅ Заказ создан! Ищем водителя...';
         document.getElementById('order-status-card').classList.remove('hidden');
-        // Автоматически назначаем ближайшего водителя
         return assignNearestDriver(docRef.id, lat, lng);
       })
       .then(() => {
@@ -337,7 +404,7 @@
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 
-  // ===== СЛУШАЕМ ЗАКАЗ КЛИЕНТА (реальное время) =====
+  // ===== СЛУШАЕМ ЗАКАЗ КЛИЕНТА =====
   function listenClientOrder() {
     if (orderUnsubscribe) orderUnsubscribe();
 
@@ -391,7 +458,6 @@
 
     document.getElementById('order-details').innerHTML = html;
 
-    // Показываем/скрываем кнопку отмены
     const cancelBtn = document.getElementById('cancel-btn');
     if (['created', 'assigned', 'waiting'].includes(data.status)) {
       cancelBtn.style.display = 'inline-block';
@@ -399,7 +465,6 @@
       cancelBtn.style.display = 'none';
     }
 
-    // Информация о водителе
     const driverInfo = document.getElementById('driver-info');
     if (data.driverId && data.status !== 'cancelled' && data.status !== 'completed') {
       driverInfo.classList.remove('hidden');
@@ -407,7 +472,6 @@
       document.getElementById('driver-phone-display').textContent = data.driverPhone || '—';
       document.getElementById('driver-car-display').textContent = data.driverCar || '—';
 
-      // Слушаем местоположение водителя в реальном времени
       if (driverUnsubscribe) driverUnsubscribe();
       driverUnsubscribe = db.collection('drivers').doc(data.driverId)
         .onSnapshot(doc => {
@@ -415,7 +479,6 @@
             const driverData = doc.data();
             if (driverData.lat && driverData.lng) {
               updateDriverMarker(driverData.lat, driverData.lng, driverData.fullName || driverData.email);
-              // Показываем маршрут между клиентом и водителем
               showRoute(data.fromLat, data.fromLng, driverData.lat, driverData.lng);
             }
           }
@@ -426,13 +489,11 @@
       if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
     }
 
-    // Обновляем маркер клиента
     if (data.fromLat && data.fromLng) {
       updateClientMarker(data.fromLat, data.fromLng);
     }
   }
 
-  // ===== ПОКАЗАТЬ МАРШРУТ МЕЖДУ КЛИЕНТОМ И ВОДИТЕЛЕМ =====
   function showRoute(lat1, lng1, lat2, lng2) {
     if (routeLayer) map.removeLayer(routeLayer);
     routeLayer = L.polyline([[lat1, lng1], [lat2, lng2]], {
@@ -443,7 +504,6 @@
     }).addTo(map);
   }
 
-  // ===== ОТМЕНА ЗАКАЗА =====
   function cancelOrder() {
     if (!currentOrderId) { alert('Нет активного заказа'); return; }
     if (!confirm('⚠️ Вы уверены, что хотите отменить заказ?')) return;
@@ -457,9 +517,6 @@
     })
     .catch(e => alert('❌ Ошибка: ' + e.message));
   }
-
-  // ===== ИНИЦИАЛИЗАЦИЯ =====
-  console.log('🚕 Taxi Client загружен');
 </script>
 </body>
 </html>
