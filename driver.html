@@ -19,6 +19,8 @@
     button.danger:hover { background:#c82333; }
     button.warning { background:#ffc107; color:#212529; }
     button.warning:hover { background:#e0a800; }
+    button.primary { background:#007bff; }
+    button.primary:hover { background:#0056b3; }
     input { padding:8px; margin:5px; width:100%; max-width:300px; border:1px solid #ccc; border-radius:6px; }
     #map { height:400px; width:100%; border-radius:8px; }
     .flex-row { display:flex; gap:20px; flex-wrap:wrap; }
@@ -29,6 +31,7 @@
     .badge-completed { background:#6c757d; color:white; }
     .nav { margin-bottom:20px; }
     .nav a { margin-right:15px; text-decoration:none; color:#007bff; font-weight:bold; }
+    .alert { background:#fff3cd; border:1px solid #ffeeba; padding:12px; border-radius:8px; margin:10px 0; color:#856404; }
   </style>
 </head>
 <body>
@@ -55,20 +58,30 @@
   <!-- Интерфейс водителя -->
   <div id="driver-section" class="hidden">
     <div class="card">
-      <div class="flex-row">
-        <div class="flex-col">
-          <h4>Мои заказы</h4>
-          <div id="driver-orders-list"></div>
-          <br>
-          <button onclick="toggleAvailability()">🔄 Доступен/Недоступен</button>
-          <button class="danger" onclick="completeOrder()">✅ Завершить последний заказ</button>
-          <p id="driver-status"></p>
-          <p id="driver-location-info"></p>
-          <button onclick="manualLocation()">📍 Ввести координаты вручную</button>
-        </div>
-        <div class="flex-col">
-          <h4>Карта (клиент на заказе)</h4>
-          <div id="map"></div>
+      <!-- Если пользователь авторизован, но не водитель -->
+      <div id="not-driver-alert" class="alert hidden">
+        <strong>Вы вошли как клиент.</strong> Хотите стать водителем? Нажмите кнопку ниже, чтобы обновить свой аккаунт.
+        <br><br>
+        <input type="text" id="upgrade-phone" placeholder="Ваш номер телефона" value="+7 999 888-77-66">
+        <button class="primary" onclick="upgradeToDriver()">📈 Стать водителем</button>
+      </div>
+      <!-- Основной интерфейс водителя -->
+      <div id="driver-content" class="hidden">
+        <div class="flex-row">
+          <div class="flex-col">
+            <h4>Мои заказы</h4>
+            <div id="driver-orders-list"></div>
+            <br>
+            <button onclick="toggleAvailability()">🔄 Доступен/Недоступен</button>
+            <button class="danger" onclick="completeOrder()">✅ Завершить последний заказ</button>
+            <p id="driver-status"></p>
+            <p id="driver-location-info"></p>
+            <button onclick="manualLocation()">📍 Ввести координаты вручную</button>
+          </div>
+          <div class="flex-col">
+            <h4>Карта (клиент на заказе)</h4>
+            <div id="map"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -94,7 +107,7 @@
   let map = null;
   let clientMarker = null;
   let watchId = null;
-  let activeOrderId = null; // для принятия заказа
+  let activeOrderId = null;
 
   // === АУТЕНТИФИКАЦИЯ ===
   auth.onAuthStateChanged(async function(user) {
@@ -103,16 +116,35 @@
       document.getElementById('user-status').innerHTML = '✅ Вошёл: ' + user.email;
       document.getElementById('auth-section').style.display = 'none';
       document.getElementById('driver-section').classList.remove('hidden');
-      await loadUserData();
-      initMap();
-      listenDriverOrders();
-      updateDriverStatus();
-      startGpsTracking();
+      
+      // Загружаем данные пользователя
+      try {
+        await loadUserData();
+        // После загрузки проверяем роль
+        if (currentUserData && currentUserData.role === 'driver') {
+          // Показываем интерфейс водителя
+          document.getElementById('not-driver-alert').classList.add('hidden');
+          document.getElementById('driver-content').classList.remove('hidden');
+          initMap();
+          listenDriverOrders();
+          updateDriverStatus();
+          startGpsTracking();
+        } else {
+          // Пользователь авторизован, но не водитель
+          document.getElementById('not-driver-alert').classList.remove('hidden');
+          document.getElementById('driver-content').classList.add('hidden');
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки:', error);
+      }
     } else {
       currentUser = null;
+      currentUserData = null;
       document.getElementById('user-status').innerHTML = '❌ Не авторизован';
       document.getElementById('auth-section').style.display = 'block';
       document.getElementById('driver-section').classList.add('hidden');
+      document.getElementById('not-driver-alert').classList.add('hidden');
+      document.getElementById('driver-content').classList.add('hidden');
       if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     }
   });
@@ -121,39 +153,60 @@
     return db.collection('users').doc(currentUser.uid).get().then(doc => {
       if (doc.exists) {
         currentUserData = doc.data();
-        if (currentUserData.role !== 'driver') {
-          alert('Вы не водитель. Перейдите на страницу клиента.');
-          window.location.href = 'client.html';
-        }
-        // Если нет номера телефона, попросим ввести
-        if (!currentUserData.phone) {
-          const phone = prompt('Введите ваш номер телефона (обязательно):', '+7 999 888-77-66');
-          if (phone) {
-            return db.collection('users').doc(currentUser.uid).update({ phone: phone })
-              .then(() => { currentUserData.phone = phone; });
+        // Если роль не driver, оставляем как есть (покажем предложение стать водителем)
+        // Если роль driver, но нет телефона – запросим
+        if (currentUserData.role === 'driver') {
+          if (!currentUserData.phone) {
+            const phone = prompt('Введите ваш номер телефона (обязательно):', '+7 999 888-77-66');
+            if (phone) {
+              return db.collection('users').doc(currentUser.uid).update({ phone: phone })
+                .then(() => { currentUserData.phone = phone; });
+            }
+          }
+          // Если координаты не заданы
+          if (!currentUserData.lat || currentUserData.lat === 0) {
+            return db.collection('users').doc(currentUser.uid).update({ lat: 55.7558, lng: 37.6173 });
           }
         }
-        // Если координаты не заданы, установим Москву
-        if (!currentUserData.lat || currentUserData.lat === 0) {
-          return db.collection('users').doc(currentUser.uid).update({ lat: 55.7558, lng: 37.6173 });
-        }
       } else {
-        // Создаём как водителя (но лучше через регистрацию)
-        const phone = prompt('Введите ваш номер телефона:', '+7 999 888-77-66');
+        // Если документа нет – создадим как клиента (но это не должно случиться, т.к. регистрация создаёт)
         return db.collection('users').doc(currentUser.uid).set({
           email: currentUser.email,
-          name: 'Водитель',
-          role: 'driver',
-          phone: phone || '',
-          available: true,
-          lat: 55.7558,
-          lng: 37.6173,
+          name: 'Пользователь',
+          role: 'client',
+          phone: '',
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+          currentUserData = { role: 'client' };
         });
       }
     });
   }
 
+  // === ПОВЫШЕНИЕ ДО ВОДИТЕЛЯ ===
+  function upgradeToDriver() {
+    if (!currentUser) { alert('Сначала войдите'); return; }
+    const phone = document.getElementById('upgrade-phone').value.trim();
+    if (!phone) { alert('Введите номер телефона'); return; }
+    db.collection('users').doc(currentUser.uid).update({
+      role: 'driver',
+      phone: phone,
+      available: true,
+      lat: 55.7558,
+      lng: 37.6173
+    })
+    .then(() => {
+      alert('Поздравляем! Вы теперь водитель. Обновите страницу или перезайдите.');
+      // Обновляем данные и перезагружаем интерфейс
+      return loadUserData();
+    })
+    .then(() => {
+      location.reload(); // простой способ обновить состояние
+    })
+    .catch(e => alert('Ошибка обновления: ' + e.message));
+  }
+
+  // === РЕГИСТРАЦИЯ НОВОГО ВОДИТЕЛЯ ===
   function signUp() {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
@@ -194,7 +247,7 @@
     }).addTo(map);
   }
 
-  // Слушаем заказы, назначенные на этого водителя (статусы assigned, accepted)
+  // Слушаем заказы, назначенные на этого водителя (статусы assigned, accepted, started)
   function listenDriverOrders() {
     if (!currentUser) return;
     db.collection('orders')
@@ -212,15 +265,14 @@
             ' | Статус: <span class="badge badge-'+data.status+'">'+data.status+'</span>' +
             (data.aiNote ? ' | ' + data.aiNote : '') +
             '</div>';
-          // Показываем клиента на карте, если есть координаты и статус не completed
+          // Показываем клиента на карте
           if (data.fromLat && data.fromLng && data.status !== 'completed') {
             if (clientMarker) map.removeLayer(clientMarker);
             clientMarker = L.marker([data.fromLat, data.fromLng])
-              .bindPopup('Клиент: ' + data.clientEmail + '<br>Адрес: ' + data.from + '<br>Телефон: ?')
+              .bindPopup('Клиент: ' + data.clientEmail + '<br>Адрес: ' + data.from)
               .addTo(map);
             map.setView([data.fromLat, data.fromLng], 14);
           }
-          // Если статус assigned – показываем кнопку "Принять заказ"
           if (data.status === 'assigned') {
             html += '<button class="warning" onclick="acceptOrder(\''+orderId+'\')">✅ Принять заказ</button>';
           }
@@ -233,7 +285,7 @@
       }, error => console.error('Ошибка прослушки заказов водителя:', error));
   }
 
-  // Принятие заказа водителем
+  // Принятие заказа
   function acceptOrder(orderId) {
     if (!orderId) return;
     if (!confirm('Вы уверены, что принимаете этот заказ?')) return;
@@ -243,7 +295,6 @@
     })
     .then(() => {
       alert('Заказ принят! Поездка началась.');
-      // Можно обновить статус водителя на недоступный (уже так и есть)
     })
     .catch(e => alert('Ошибка: ' + e.message));
   }
@@ -276,7 +327,6 @@
     );
   }
 
-  // Ручной ввод координат
   function manualLocation() {
     const lat = prompt('Введите широту (например, 55.7539):', '55.7539');
     const lng = prompt('Введите долготу (например, 37.6208):', '37.6208');
@@ -299,7 +349,7 @@
     }
   }
 
-  // === УПРАВЛЕНИЕ СТАТУСОМ И ЗАКАЗАМИ ===
+  // === УПРАВЛЕНИЕ СТАТУСОМ ===
   function toggleAvailability() {
     if (!currentUserData) return;
     const newVal = !currentUserData.available;
@@ -313,7 +363,7 @@
   }
 
   function updateDriverStatus() {
-    if (currentUserData) {
+    if (currentUserData && currentUserData.role === 'driver') {
       const statusText = currentUserData.available ? '🟢 Доступен' : '🔴 Недоступен';
       document.getElementById('driver-status').innerHTML = 'Текущий статус: ' + statusText;
     }
