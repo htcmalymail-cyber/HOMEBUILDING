@@ -79,7 +79,6 @@
       font-weight: 300;
     }
 
-    /* ===== АНИМИРОВАННАЯ МАШИНКА ===== */
     .taxi-container {
       margin: 20px 0 25px;
       cursor: pointer;
@@ -106,7 +105,6 @@
       letter-spacing: 2px;
     }
 
-    /* ===== СЕКРЕТНЫЙ КОД ===== */
     .secret-area {
       max-height: 0;
       overflow: hidden;
@@ -163,7 +161,6 @@
       display: none;
     }
 
-    /* ===== КАРТОЧКИ ===== */
     .login-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -294,8 +291,6 @@
     @media (max-width:480px) {
       .header h1 { font-size:2rem; }
     }
-
-    /* Анимация появления карточек */
     .card-delay-1 { transition-delay: 0.1s; }
     .card-delay-2 { transition-delay: 0.2s; }
   </style>
@@ -316,28 +311,23 @@
     <p>Умное такси с искусственным интеллектом</p>
   </div>
 
-  <!-- Уведомление о сессии -->
   <div id="auth-notice" class="auth-notice">
     <span>👋 Вы уже вошли как <span class="email" id="current-user-email"></span></span>
     <button class="logout-btn" onclick="signOutAndStay()">🚪 Выйти</button>
   </div>
 
-  <!-- ===== АНИМИРОВАННАЯ МАШИНКА ===== -->
   <div class="taxi-container" onclick="toggleSecret()" title="Нажмите для доступа к персоналу">
     <span class="taxi-emoji">🚕</span>
     <div class="taxi-label">🔑 Нажмите для доступа персонала</div>
   </div>
 
-  <!-- ===== СЕКРЕТНАЯ ОБЛАСТЬ (код) ===== -->
   <div class="secret-area" id="secretArea">
     <input type="password" id="secretCode" placeholder="Введите код доступа" maxlength="20">
     <button class="secret-btn" onclick="checkSecretCode()">🔓 Разблокировать</button>
     <div class="secret-error" id="secretError">❌ Неверный код. Попробуйте снова.</div>
   </div>
 
-  <!-- ===== КАРТОЧКИ ВХОДА ===== -->
   <div class="login-grid" id="loginGrid">
-    <!-- КАРТОЧКА КЛИЕНТА (всегда видна) -->
     <div class="login-card visible">
       <span class="icon">🧑‍💼</span>
       <h3>Клиент</h3>
@@ -348,7 +338,6 @@
       <div id="client-error" class="error-msg"></div>
     </div>
 
-    <!-- КАРТОЧКА ВОДИТЕЛЯ (появляется после кода) -->
     <div class="login-card card-delay-1" id="driverCard">
       <span class="icon">🚗</span>
       <h3>Водитель</h3>
@@ -359,7 +348,6 @@
       <div id="driver-error" class="error-msg"></div>
     </div>
 
-    <!-- КАРТОЧКА ДИСПЕТЧЕРА (появляется после кода) -->
     <div class="login-card card-delay-2" id="dispatcherCard">
       <span class="icon">📋</span>
       <h3>Диспетчер</h3>
@@ -396,7 +384,6 @@
   let currentUser = null;
   let secretOpen = false;
 
-  // ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
   auth.onAuthStateChanged(function(user) {
     if (user) {
       currentUser = user;
@@ -420,7 +407,6 @@
     });
   }
 
-  // ===== СЕКРЕТНЫЙ КОД =====
   function toggleSecret() {
     const area = document.getElementById('secretArea');
     if (secretOpen) {
@@ -440,10 +426,8 @@
 
     if (code === 'admin123' || code === '123') {
       errorEl.style.display = 'none';
-      // Показываем карточки водителя и диспетчера
       document.getElementById('driverCard').classList.add('visible');
       document.getElementById('dispatcherCard').classList.add('visible');
-      // Закрываем секретную область
       document.getElementById('secretArea').classList.remove('open');
       secretOpen = false;
       document.getElementById('secretCode').value = '';
@@ -455,13 +439,8 @@
     }
   }
 
-  // Нажатие Enter в поле кода
-  document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('secretCode').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        checkSecretCode();
-      }
-    });
+  document.getElementById('secretCode').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') checkSecretCode();
   });
 
   // ===== КЛИЕНТ =====
@@ -481,7 +460,7 @@
     window.location.href = 'client.html';
   }
 
-  // ===== ВОДИТЕЛЬ =====
+  // ===== ВОДИТЕЛЬ — ПРЯМОЙ ВХОД ЧЕРЕЗ AUTHENTICATION =====
   function driverLogin() {
     const email = document.getElementById('driver-email').value.trim();
     const password = document.getElementById('driver-password').value.trim();
@@ -493,49 +472,32 @@
       return;
     }
 
-    db.collection('drivers')
-      .where('email', '==', email)
-      .where('role', '==', 'driver')
-      .get()
-      .then(snapshot => {
-        if (snapshot.empty) {
-          errorEl.textContent = '❌ Водитель с таким email не найден. Зарегистрируйтесь.';
-          errorEl.style.display = 'block';
-          return;
-        }
-        const doc = snapshot.docs[0];
-        const driverData = doc.data();
-        const uid = doc.id;
-
-        auth.signInWithEmailAndPassword(email, password)
-          .then(() => {
-            localStorage.setItem('driverSession', JSON.stringify({
-              uid: uid,
-              email: email,
-              role: 'driver',
-              timestamp: Date.now(),
-              data: driverData
-            }));
-            window.location.href = 'driver.html';
-          })
-          .catch(error => {
-            if (error.code === 'auth/wrong-password') {
-              errorEl.textContent = '❌ Неверный пароль. Попробуйте сбросить пароль.';
-            } else if (error.code === 'auth/user-not-found') {
-              errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь.';
-            } else {
-              errorEl.textContent = '❌ Ошибка: ' + error.message;
-            }
-            errorEl.style.display = 'block';
-          });
+    // ВХОД НАПРЯМУЮ ЧЕРЕЗ FIREBASE AUTHENTICATION
+    auth.signInWithEmailAndPassword(email, password)
+      .then(() => {
+        localStorage.setItem('driverSession', JSON.stringify({
+          email: email,
+          role: 'driver',
+          timestamp: Date.now()
+        }));
+        window.location.href = 'driver.html';
       })
       .catch(error => {
-        errorEl.textContent = '❌ Ошибка: ' + error.message;
+        console.error('Ошибка входа:', error);
+        if (error.code === 'auth/wrong-password') {
+          errorEl.textContent = '❌ Неверный пароль. Попробуйте сбросить пароль.';
+        } else if (error.code === 'auth/user-not-found') {
+          errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь через driver.html';
+        } else if (error.code === 'auth/invalid-email') {
+          errorEl.textContent = '❌ Неверный формат email';
+        } else {
+          errorEl.textContent = '❌ Ошибка: ' + error.message;
+        }
         errorEl.style.display = 'block';
       });
   }
 
-  // ===== ДИСПЕТЧЕР =====
+  // ===== ДИСПЕТЧЕР — ПРЯМОЙ ВХОД ЧЕРЕЗ AUTHENTICATION =====
   function dispatcherLogin() {
     const email = document.getElementById('dispatcher-email').value.trim();
     const password = document.getElementById('dispatcher-password').value.trim();
@@ -547,44 +509,26 @@
       return;
     }
 
-    db.collection('dispatchers')
-      .where('email', '==', email)
-      .where('role', '==', 'dispatcher')
-      .get()
-      .then(snapshot => {
-        if (snapshot.empty) {
-          errorEl.textContent = '❌ Диспетчер с таким email не найден. Зарегистрируйтесь.';
-          errorEl.style.display = 'block';
-          return;
-        }
-        const doc = snapshot.docs[0];
-        const dispatcherData = doc.data();
-        const uid = doc.id;
-
-        auth.signInWithEmailAndPassword(email, password)
-          .then(() => {
-            localStorage.setItem('dispatcherSession', JSON.stringify({
-              uid: uid,
-              email: email,
-              role: 'dispatcher',
-              timestamp: Date.now(),
-              data: dispatcherData
-            }));
-            window.location.href = 'dispatcher.html';
-          })
-          .catch(error => {
-            if (error.code === 'auth/wrong-password') {
-              errorEl.textContent = '❌ Неверный пароль. Попробуйте сбросить пароль.';
-            } else if (error.code === 'auth/user-not-found') {
-              errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь.';
-            } else {
-              errorEl.textContent = '❌ Ошибка: ' + error.message;
-            }
-            errorEl.style.display = 'block';
-          });
+    auth.signInWithEmailAndPassword(email, password)
+      .then(() => {
+        localStorage.setItem('dispatcherSession', JSON.stringify({
+          email: email,
+          role: 'dispatcher',
+          timestamp: Date.now()
+        }));
+        window.location.href = 'dispatcher.html';
       })
       .catch(error => {
-        errorEl.textContent = '❌ Ошибка: ' + error.message;
+        console.error('Ошибка входа:', error);
+        if (error.code === 'auth/wrong-password') {
+          errorEl.textContent = '❌ Неверный пароль. Попробуйте сбросить пароль.';
+        } else if (error.code === 'auth/user-not-found') {
+          errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь через dispatcher.html';
+        } else if (error.code === 'auth/invalid-email') {
+          errorEl.textContent = '❌ Неверный формат email';
+        } else {
+          errorEl.textContent = '❌ Ошибка: ' + error.message;
+        }
         errorEl.style.display = 'block';
       });
   }
