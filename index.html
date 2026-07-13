@@ -223,35 +223,35 @@
   </div>
 
   <div class="login-grid">
-    <!-- КЛИЕНТ -->
+    <!-- КЛИЕНТ – упрощённый вход -->
     <div class="login-card">
       <span class="icon">🧑‍💼</span>
       <h3>Клиент</h3>
-      <div class="sub">Введите номер телефона и имя</div>
+      <div class="sub">Введите имя и номер телефона</div>
       <input type="text" id="client-name" placeholder="Ваше имя" value="Иван Петров">
       <input type="tel" id="client-phone" placeholder="Номер телефона" value="+7 999 123-45-67">
       <button class="btn btn-client" onclick="clientLogin()">🚖 Войти как клиент</button>
       <div id="client-error" class="error-msg"></div>
     </div>
 
-    <!-- ВОДИТЕЛЬ -->
+    <!-- ВОДИТЕЛЬ – email + пароль -->
     <div class="login-card">
       <span class="icon">🚗</span>
       <h3>Водитель</h3>
-      <div class="sub">Введите номер телефона и ID паспорта</div>
-      <input type="tel" id="driver-phone" placeholder="Номер телефона" value="+7 999 888-77-66">
-      <input type="text" id="driver-passport" placeholder="ID паспорта" value="4510 123456">
+      <div class="sub">Введите email и пароль</div>
+      <input type="email" id="driver-email" placeholder="Email" value="driver@taxi.com">
+      <input type="password" id="driver-password" placeholder="Пароль" value="123456">
       <button class="btn btn-driver" onclick="driverLogin()">🚗 Войти как водитель</button>
       <div id="driver-error" class="error-msg"></div>
     </div>
 
-    <!-- ДИСПЕТЧЕР -->
+    <!-- ДИСПЕТЧЕР – email + пароль -->
     <div class="login-card">
       <span class="icon">📋</span>
       <h3>Диспетчер</h3>
-      <div class="sub">Введите номер телефона и ID паспорта</div>
-      <input type="tel" id="dispatcher-phone" placeholder="Номер телефона" value="+7 999 111-22-33">
-      <input type="text" id="dispatcher-passport" placeholder="ID паспорта" value="4610 789012">
+      <div class="sub">Введите email и пароль</div>
+      <input type="email" id="dispatcher-email" placeholder="Email" value="dispatcher@taxi.com">
+      <input type="password" id="dispatcher-password" placeholder="Пароль" value="123456">
       <button class="btn btn-dispatcher" onclick="dispatcherLogin()">📋 Войти как диспетчер</button>
       <div id="dispatcher-error" class="error-msg"></div>
     </div>
@@ -281,16 +281,17 @@
 
   let currentUser = null;
 
+  // === ПРОВЕРКА АВТОРИЗАЦИИ ===
   auth.onAuthStateChanged(function(user) {
     if (user) {
       currentUser = user;
       document.getElementById('auth-notice').style.display = 'block';
       document.getElementById('current-user-email').textContent = user.email;
-      console.log('✅ Пользователь авторизован:', user.email);
+      console.log('✅ Авторизован:', user.email);
     } else {
       currentUser = null;
       document.getElementById('auth-notice').style.display = 'none';
-      console.log('❌ Пользователь не авторизован');
+      console.log('❌ Не авторизован');
     }
   });
 
@@ -321,42 +322,26 @@
     window.location.href = 'client.html';
   }
 
-  // === ВОДИТЕЛЬ - с полной отладкой ===
+  // === ВОДИТЕЛЬ – вход по email + пароль ===
   function driverLogin() {
-    const phone = document.getElementById('driver-phone').value.trim();
-    const passportId = document.getElementById('driver-passport').value.trim();
+    const email = document.getElementById('driver-email').value.trim();
+    const password = document.getElementById('driver-password').value.trim();
     const errorEl = document.getElementById('driver-error');
 
-    console.log('🔍 Поиск водителя:', { phone, passportId });
-
-    if (!phone || !passportId) {
-      errorEl.textContent = '⚠️ Заполните все поля';
+    if (!email || !password) {
+      errorEl.textContent = '⚠️ Заполните email и пароль';
       errorEl.style.display = 'block';
       return;
     }
 
-    // Сначала проверим, есть ли вообще такие водители в коллекции
+    // Проверяем, есть ли водитель в коллекции drivers
     db.collection('drivers')
+      .where('email', '==', email)
       .where('role', '==', 'driver')
       .get()
-      .then(allDrivers => {
-        console.log('📋 Все водители в базе:');
-        allDrivers.forEach(doc => {
-          console.log('  -', doc.data().phone, '|', doc.data().passportId);
-        });
-        
-        // Теперь ищем конкретного
-        return db.collection('drivers')
-          .where('phone', '==', phone)
-          .where('passportId', '==', passportId)
-          .where('role', '==', 'driver')
-          .get();
-      })
       .then(snapshot => {
-        console.log('🔍 Результат поиска:', snapshot.size, 'найдено');
-        
         if (snapshot.empty) {
-          errorEl.textContent = '❌ Водитель с таким телефоном и ID паспорта не найден. Проверьте данные в Firebase.';
+          errorEl.textContent = '❌ Водитель с таким email не найден. Зарегистрируйтесь.';
           errorEl.style.display = 'block';
           return;
         }
@@ -364,95 +349,55 @@
         const doc = snapshot.docs[0];
         const driverData = doc.data();
         const uid = doc.id;
-        console.log('✅ Водитель найден:', driverData);
 
-        // Сохраняем сессию
-        localStorage.setItem('driverSession', JSON.stringify({
-          uid: uid,
-          phone: phone,
-          passportId: passportId,
-          role: 'driver',
-          timestamp: Date.now(),
-          data: driverData
-        }));
-
-        // Проверяем авторизацию
-        if (currentUser) {
-          console.log('✅ Уже авторизован, переходим на driver.html');
-          window.location.href = 'driver.html';
-          return;
-        }
-
-        // Если есть email, пробуем войти
-        if (driverData.email) {
-          const password = prompt('Введите пароль для входа:');
-          if (!password) {
-            errorEl.textContent = '❌ Пароль не введён';
+        // Вход через Firebase Auth
+        auth.signInWithEmailAndPassword(email, password)
+          .then(() => {
+            localStorage.setItem('driverSession', JSON.stringify({
+              uid: uid,
+              email: email,
+              role: 'driver',
+              timestamp: Date.now(),
+              data: driverData
+            }));
+            window.location.href = 'driver.html';
+          })
+          .catch(error => {
+            if (error.code === 'auth/wrong-password') {
+              errorEl.textContent = '❌ Неверный пароль. Попробуйте сбросить пароль.';
+            } else if (error.code === 'auth/user-not-found') {
+              errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь.';
+            } else {
+              errorEl.textContent = '❌ Ошибка: ' + error.message;
+            }
             errorEl.style.display = 'block';
-            return;
-          }
-          auth.signInWithEmailAndPassword(driverData.email, password)
-            .then(() => {
-              console.log('✅ Вход выполнен');
-              window.location.href = 'driver.html';
-            })
-            .catch(error => {
-              console.error('❌ Ошибка входа:', error);
-              if (error.code === 'auth/wrong-password') {
-                errorEl.textContent = '❌ Неверный пароль. Сбросьте пароль через Firebase Console.';
-              } else if (error.code === 'auth/user-not-found') {
-                errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь через driver.html';
-              } else {
-                errorEl.textContent = '❌ Ошибка: ' + error.message;
-              }
-              errorEl.style.display = 'block';
-            });
-        } else {
-          // Если email нет, просто переходим
-          console.log('⚠️ Нет email, переходим без авторизации');
-          window.location.href = 'driver.html';
-        }
+          });
       })
       .catch(error => {
-        console.error('❌ Ошибка запроса:', error);
         errorEl.textContent = '❌ Ошибка: ' + error.message;
         errorEl.style.display = 'block';
       });
   }
 
-  // === ДИСПЕТЧЕР - с полной отладкой ===
+  // === ДИСПЕТЧЕР – вход по email + пароль ===
   function dispatcherLogin() {
-    const phone = document.getElementById('dispatcher-phone').value.trim();
-    const passportId = document.getElementById('dispatcher-passport').value.trim();
+    const email = document.getElementById('dispatcher-email').value.trim();
+    const password = document.getElementById('dispatcher-password').value.trim();
     const errorEl = document.getElementById('dispatcher-error');
 
-    console.log('🔍 Поиск диспетчера:', { phone, passportId });
-
-    if (!phone || !passportId) {
-      errorEl.textContent = '⚠️ Заполните все поля';
+    if (!email || !password) {
+      errorEl.textContent = '⚠️ Заполните email и пароль';
       errorEl.style.display = 'block';
       return;
     }
 
     db.collection('dispatchers')
+      .where('email', '==', email)
       .where('role', '==', 'dispatcher')
       .get()
-      .then(all => {
-        console.log('📋 Все диспетчеры в базе:');
-        all.forEach(doc => {
-          console.log('  -', doc.data().phone, '|', doc.data().passportId);
-        });
-        return db.collection('dispatchers')
-          .where('phone', '==', phone)
-          .where('passportId', '==', passportId)
-          .where('role', '==', 'dispatcher')
-          .get();
-      })
       .then(snapshot => {
-        console.log('🔍 Результат поиска:', snapshot.size, 'найдено');
-        
         if (snapshot.empty) {
-          errorEl.textContent = '❌ Диспетчер с таким телефоном и ID паспорта не найден. Проверьте данные в Firebase.';
+          errorEl.textContent = '❌ Диспетчер с таким email не найден. Зарегистрируйтесь.';
           errorEl.style.display = 'block';
           return;
         }
@@ -460,53 +405,467 @@
         const doc = snapshot.docs[0];
         const dispatcherData = doc.data();
         const uid = doc.id;
-        console.log('✅ Диспетчер найден:', dispatcherData);
 
-        localStorage.setItem('dispatcherSession', JSON.stringify({
-          uid: uid,
-          phone: phone,
-          passportId: passportId,
-          role: 'dispatcher',
-          timestamp: Date.now(),
-          data: dispatcherData
-        }));
+        auth.signInWithEmailAndPassword(email, password)
+          .then(() => {
+            localStorage.setItem('dispatcherSession', JSON.stringify({
+              uid: uid,
+              email: email,
+              role: 'dispatcher',
+              timestamp: Date.now(),
+              data: dispatcherData
+            }));
+            window.location.href = 'dispatcher.html';
+          })
+          .catch(error => {
+            if (error.code === 'auth/wrong-password') {
+              errorEl.textContent = '❌ Неверный пароль. Попробуйте сбросить пароль.';
+            } else if (error.code === 'auth/user-not-found') {
+              errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь.';
+            } else {
+              errorEl.textContent = '❌ Ошибка: ' + error.message;
+            }
+            errorEl.style.display = 'block';
+          });
+      })
+      .catch(error => {
+        errorEl.textContent = '❌ Ошибка: ' + error.message;
+        errorEl.style.display = 'block';
+      });
+  }
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚕 Taxi AI – Умное такси</title>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(145deg, #0b2b3f 0%, #1b4a6b 100%);
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .bg-bubbles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .bubble {
+      position: absolute;
+      bottom: -80px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+      animation: floatUp linear infinite;
+    }
+    .bubble:nth-child(1) { width:80px; height:80px; left:10%; animation-duration:18s; }
+    .bubble:nth-child(2) { width:120px; height:120px; left:30%; animation-duration:22s; animation-delay:2s; }
+    .bubble:nth-child(3) { width:60px; height:60px; left:55%; animation-duration:16s; animation-delay:4s; }
+    .bubble:nth-child(4) { width:100px; height:100px; left:75%; animation-duration:20s; animation-delay:1s; }
+    .bubble:nth-child(5) { width:140px; height:140px; left:90%; animation-duration:24s; animation-delay:3s; }
+    @keyframes floatUp {
+      0% { transform:translateY(0) scale(1); opacity:0.6; }
+      100% { transform:translateY(-120vh) scale(1.2); opacity:0; }
+    }
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border-radius: 40px;
+      padding: 40px 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
+      text-align: center;
+    }
+    .header { margin-bottom: 35px; }
+    .header h1 {
+      font-size: 3.8rem;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .header h1 span {
+      background: linear-gradient(135deg, #f9d976, #f39b7b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p {
+      font-size: 1.2rem;
+      color: rgba(255,255,255,0.85);
+      margin-top: 10px;
+      font-weight: 300;
+    }
+    .login-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      margin: 30px 0 20px;
+    }
+    .login-card {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(4px);
+      border-radius: 24px;
+      padding: 30px 25px 25px;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: all 0.3s ease;
+      text-align: left;
+    }
+    .login-card:hover {
+      transform: translateY(-6px);
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.25);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+    .login-card .icon { font-size: 2.8rem; display:block; margin-bottom:10px; }
+    .login-card h3 {
+      color: #fff;
+      font-size: 1.4rem;
+      margin-bottom: 5px;
+    }
+    .login-card .sub {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.85rem;
+      margin-bottom: 15px;
+    }
+    .login-card input {
+      width: 100%;
+      padding: 10px 14px;
+      margin: 6px 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+    .login-card input::placeholder { color: rgba(255,255,255,0.4); }
+    .login-card input:focus {
+      outline: none;
+      border-color: #f9d976;
+      background: rgba(255,255,255,0.15);
+    }
+    .login-card .btn {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.2s;
+      color: #1b2a3a;
+    }
+    .btn-client { background: linear-gradient(135deg, #f9d976, #f39b7b); }
+    .btn-client:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(243,155,123,0.4); }
+    .btn-driver { background: linear-gradient(135deg, #6dd5fa, #2980b9); color:#fff; }
+    .btn-driver:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(41,128,185,0.4); }
+    .btn-dispatcher { background: linear-gradient(135deg, #a18cd1, #fbc2eb); color:#1b2a3a; }
+    .btn-dispatcher:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(161,140,209,0.4); }
+    .login-card .error-msg {
+      color: #ff6b6b;
+      font-size: 0.8rem;
+      margin-top: 8px;
+      display: none;
+      background: rgba(255,0,0,0.1);
+      padding: 8px;
+      border-radius: 6px;
+    }
+    .auth-notice {
+      background: rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 15px 20px;
+      margin-bottom: 25px;
+      color: #fff;
+      display: none;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .auth-notice .email { font-weight:600; color:#f9d976; }
+    .auth-notice .logout-btn {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      padding: 6px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+      margin-left: 15px;
+      transition: 0.2s;
+    }
+    .auth-notice .logout-btn:hover { background: rgba(255,255,255,0.25); }
+    .footer-links {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.9rem;
+    }
+    .footer-links a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      border-bottom: 1px dotted rgba(255,255,255,0.2);
+      transition: 0.2s;
+    }
+    .footer-links a:hover { color:#fff; border-bottom-color:#fff; }
+    @media (max-width:768px) {
+      .container { padding:30px 20px; }
+      .header h1 { font-size:2.6rem; }
+      .login-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width:480px) {
+      .header h1 { font-size:2rem; }
+    }
+  </style>
+</head>
+<body>
 
-        if (currentUser) {
-          console.log('✅ Уже авторизован, переходим на dispatcher.html');
-          window.location.href = 'dispatcher.html';
+<div class="bg-bubbles">
+  <div class="bubble"></div>
+  <div class="bubble"></div>
+  <div class="bubble"></div>
+  <div class="bubble"></div>
+  <div class="bubble"></div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <h1>🚕 <span>Taxi AI</span></h1>
+    <p>Умное такси с искусственным интеллектом</p>
+  </div>
+
+  <div id="auth-notice" class="auth-notice">
+    <span>👋 Вы уже вошли как <span class="email" id="current-user-email"></span></span>
+    <button class="logout-btn" onclick="signOutAndStay()">🚪 Выйти</button>
+  </div>
+
+  <div class="login-grid">
+    <!-- КЛИЕНТ – упрощённый вход -->
+    <div class="login-card">
+      <span class="icon">🧑‍💼</span>
+      <h3>Клиент</h3>
+      <div class="sub">Введите имя и номер телефона</div>
+      <input type="text" id="client-name" placeholder="Ваше имя" value="Иван Петров">
+      <input type="tel" id="client-phone" placeholder="Номер телефона" value="+7 999 123-45-67">
+      <button class="btn btn-client" onclick="clientLogin()">🚖 Войти как клиент</button>
+      <div id="client-error" class="error-msg"></div>
+    </div>
+
+    <!-- ВОДИТЕЛЬ – email + пароль -->
+    <div class="login-card">
+      <span class="icon">🚗</span>
+      <h3>Водитель</h3>
+      <div class="sub">Введите email и пароль</div>
+      <input type="email" id="driver-email" placeholder="Email" value="driver@taxi.com">
+      <input type="password" id="driver-password" placeholder="Пароль" value="123456">
+      <button class="btn btn-driver" onclick="driverLogin()">🚗 Войти как водитель</button>
+      <div id="driver-error" class="error-msg"></div>
+    </div>
+
+    <!-- ДИСПЕТЧЕР – email + пароль -->
+    <div class="login-card">
+      <span class="icon">📋</span>
+      <h3>Диспетчер</h3>
+      <div class="sub">Введите email и пароль</div>
+      <input type="email" id="dispatcher-email" placeholder="Email" value="dispatcher@taxi.com">
+      <input type="password" id="dispatcher-password" placeholder="Пароль" value="123456">
+      <button class="btn btn-dispatcher" onclick="dispatcherLogin()">📋 Войти как диспетчер</button>
+      <div id="dispatcher-error" class="error-msg"></div>
+    </div>
+  </div>
+
+  <div class="footer-links">
+    <span>Нет аккаунта?</span>
+    <a href="driver.html">Зарегистрироваться водителем</a>
+    <span>·</span>
+    <a href="dispatcher.html">Зарегистрироваться диспетчером</a>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+    authDomain: "taxi-ai-app-69628.firebaseapp.com",
+    projectId: "taxi-ai-app-69628",
+    storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+    messagingSenderId: "952357992434",
+    appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+    measurementId: "G-Z9NJFSSXH6"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  let currentUser = null;
+
+  // === ПРОВЕРКА АВТОРИЗАЦИИ ===
+  auth.onAuthStateChanged(function(user) {
+    if (user) {
+      currentUser = user;
+      document.getElementById('auth-notice').style.display = 'block';
+      document.getElementById('current-user-email').textContent = user.email;
+      console.log('✅ Авторизован:', user.email);
+    } else {
+      currentUser = null;
+      document.getElementById('auth-notice').style.display = 'none';
+      console.log('❌ Не авторизован');
+    }
+  });
+
+  function signOutAndStay() {
+    auth.signOut().then(() => {
+      localStorage.removeItem('clientSession');
+      localStorage.removeItem('driverSession');
+      localStorage.removeItem('dispatcherSession');
+      document.getElementById('auth-notice').style.display = 'none';
+      alert('Вы вышли.');
+    });
+  }
+
+  // === КЛИЕНТ ===
+  function clientLogin() {
+    const name = document.getElementById('client-name').value.trim();
+    const phone = document.getElementById('client-phone').value.trim();
+    const errorEl = document.getElementById('client-error');
+    if (!name || !phone) {
+      errorEl.textContent = '⚠️ Заполните имя и номер телефона';
+      errorEl.style.display = 'block';
+      return;
+    }
+    errorEl.style.display = 'none';
+    const sessionData = { name, phone, role: 'client', timestamp: Date.now() };
+    if (currentUser) { sessionData.uid = currentUser.uid; sessionData.email = currentUser.email; }
+    localStorage.setItem('clientSession', JSON.stringify(sessionData));
+    window.location.href = 'client.html';
+  }
+
+  // === ВОДИТЕЛЬ – вход по email + пароль ===
+  function driverLogin() {
+    const email = document.getElementById('driver-email').value.trim();
+    const password = document.getElementById('driver-password').value.trim();
+    const errorEl = document.getElementById('driver-error');
+
+    if (!email || !password) {
+      errorEl.textContent = '⚠️ Заполните email и пароль';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    // Проверяем, есть ли водитель в коллекции drivers
+    db.collection('drivers')
+      .where('email', '==', email)
+      .where('role', '==', 'driver')
+      .get()
+      .then(snapshot => {
+        if (snapshot.empty) {
+          errorEl.textContent = '❌ Водитель с таким email не найден. Зарегистрируйтесь.';
+          errorEl.style.display = 'block';
           return;
         }
 
-        if (dispatcherData.email) {
-          const password = prompt('Введите пароль для входа:');
-          if (!password) {
-            errorEl.textContent = '❌ Пароль не введён';
+        const doc = snapshot.docs[0];
+        const driverData = doc.data();
+        const uid = doc.id;
+
+        // Вход через Firebase Auth
+        auth.signInWithEmailAndPassword(email, password)
+          .then(() => {
+            localStorage.setItem('driverSession', JSON.stringify({
+              uid: uid,
+              email: email,
+              role: 'driver',
+              timestamp: Date.now(),
+              data: driverData
+            }));
+            window.location.href = 'driver.html';
+          })
+          .catch(error => {
+            if (error.code === 'auth/wrong-password') {
+              errorEl.textContent = '❌ Неверный пароль. Попробуйте сбросить пароль.';
+            } else if (error.code === 'auth/user-not-found') {
+              errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь.';
+            } else {
+              errorEl.textContent = '❌ Ошибка: ' + error.message;
+            }
             errorEl.style.display = 'block';
-            return;
-          }
-          auth.signInWithEmailAndPassword(dispatcherData.email, password)
-            .then(() => {
-              console.log('✅ Вход выполнен');
-              window.location.href = 'dispatcher.html';
-            })
-            .catch(error => {
-              console.error('❌ Ошибка входа:', error);
-              if (error.code === 'auth/wrong-password') {
-                errorEl.textContent = '❌ Неверный пароль. Сбросьте пароль через Firebase Console.';
-              } else if (error.code === 'auth/user-not-found') {
-                errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь через dispatcher.html';
-              } else {
-                errorEl.textContent = '❌ Ошибка: ' + error.message;
-              }
-              errorEl.style.display = 'block';
-            });
-        } else {
-          console.log('⚠️ Нет email, переходим без авторизации');
-          window.location.href = 'dispatcher.html';
-        }
+          });
       })
       .catch(error => {
-        console.error('❌ Ошибка запроса:', error);
+        errorEl.textContent = '❌ Ошибка: ' + error.message;
+        errorEl.style.display = 'block';
+      });
+  }
+
+  // === ДИСПЕТЧЕР – вход по email + пароль ===
+  function dispatcherLogin() {
+    const email = document.getElementById('dispatcher-email').value.trim();
+    const password = document.getElementById('dispatcher-password').value.trim();
+    const errorEl = document.getElementById('dispatcher-error');
+
+    if (!email || !password) {
+      errorEl.textContent = '⚠️ Заполните email и пароль';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    db.collection('dispatchers')
+      .where('email', '==', email)
+      .where('role', '==', 'dispatcher')
+      .get()
+      .then(snapshot => {
+        if (snapshot.empty) {
+          errorEl.textContent = '❌ Диспетчер с таким email не найден. Зарегистрируйтесь.';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        const doc = snapshot.docs[0];
+        const dispatcherData = doc.data();
+        const uid = doc.id;
+
+        auth.signInWithEmailAndPassword(email, password)
+          .then(() => {
+            localStorage.setItem('dispatcherSession', JSON.stringify({
+              uid: uid,
+              email: email,
+              role: 'dispatcher',
+              timestamp: Date.now(),
+              data: dispatcherData
+            }));
+            window.location.href = 'dispatcher.html';
+          })
+          .catch(error => {
+            if (error.code === 'auth/wrong-password') {
+              errorEl.textContent = '❌ Неверный пароль. Попробуйте сбросить пароль.';
+            } else if (error.code === 'auth/user-not-found') {
+              errorEl.textContent = '❌ Пользователь не найден. Зарегистрируйтесь.';
+            } else {
+              errorEl.textContent = '❌ Ошибка: ' + error.message;
+            }
+            errorEl.style.display = 'block';
+          });
+      })
+      .catch(error => {
         errorEl.textContent = '❌ Ошибка: ' + error.message;
         errorEl.style.display = 'block';
       });
