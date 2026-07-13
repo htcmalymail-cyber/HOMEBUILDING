@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Taxi AI Platform – MVP</title>
+  <!-- Подключаем Firebase (совместимая версия) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .card { border: 1px solid #ccc; padding: 20px; margin: 15px 0; border-radius: 10px; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    input { padding: 8px; margin: 5px; width: 90%; }
+    .hidden { display: none; }
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+
+<h1>🚕 Taxi AI Platform <span style="font-size:14px;">v0.1 MVP</span></h1>
+
+<!-- Блок авторизации -->
+<div id="auth-section" class="card">
+  <h3>Вход / Регистрация</h3>
+  <input type="email" id="email" placeholder="Email" value="driver@taxi.com">
+  <input type="password" id="password" placeholder="Пароль" value="123456">
+  <br>
+  <button onclick="signUp()">Зарегистрироваться</button>
+  <button onclick="signIn()">Войти</button>
+  <button onclick="signOut()">Выйти</button>
+  <p id="user-status">Не авторизован</p>
+  <p id="user-role"></p>
+</div>
+
+<!-- Панель клиента -->
+<div id="client-section" class="card hidden">
+  <h3>📱 Клиент — создать заказ</h3>
+  <input id="from" placeholder="Откуда" value="Улица Ленина, 10">
+  <input id="to" placeholder="Куда" value="Вокзал">
+  <button onclick="createOrder()">🚖 Заказать такси</button>
+  <p id="order-status"></p>
+</div>
+
+<!-- Панель диспетчера -->
+<div id="dispatcher-section" class="card hidden">
+  <h3>📋 Диспетчер — все заказы</h3>
+  <button onclick="loadOrders()">Обновить список</button>
+  <div id="order-list"></div>
+</div>
+
+<!-- Панель водителя -->
+<div id="driver-section" class="card hidden">
+  <h3>🚗 Водитель — мои заказы</h3>
+  <button onclick="loadDriverOrders()">Обновить</button>
+  <div id="driver-orders"></div>
+  <br>
+  <button onclick="toggleAvailability()">Переключить статус (доступен/недоступен)</button>
+  <p id="driver-status"></p>
+</div>
+
+<script>
+  // ================= ВАШ КОНФИГ FIREBASE (из файла) =================
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+    authDomain: "taxi-ai-app-69628.firebaseapp.com",
+    projectId: "taxi-ai-app-69628",
+    storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+    messagingSenderId: "952357992434",
+    appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+    measurementId: "G-Z9NJFSSXH6"
+  };
+  // ================================================================
+
+  // Инициализация
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  // Глобальные переменные для текущего пользователя
+  let currentUser = null;
+  let currentUserData = null;
+
+  // ========== ОТСЛЕЖИВАНИЕ СОСТОЯНИЯ ВХОДА ==========
+  auth.onAuthStateChanged(function(user) {
+    if (user) {
+      currentUser = user;
+      document.getElementById('user-status').innerHTML = '✅ Вошёл: ' + user.email;
+
+      // Загружаем данные пользователя из Firestore
+      db.collection('users').doc(user.uid).get()
+        .then(function(doc) {
+          if (doc.exists) {
+            currentUserData = doc.data();
+            var role = currentUserData.role || 'client';
+            document.getElementById('user-role').innerHTML = 'Роль: ' + role;
+
+            // Скрыть все панели
+            document.getElementById('client-section').classList.add('hidden');
+            document.getElementById('dispatcher-section').classList.add('hidden');
+            document.getElementById('driver-section').classList.add('hidden');
+
+            // Показать нужную
+            if (role === 'client') {
+              document.getElementById('client-section').classList.remove('hidden');
+            } else if (role === 'dispatcher') {
+              document.getElementById('dispatcher-section').classList.remove('hidden');
+              loadOrders(); // сразу загружаем заказы
+            } else if (role === 'driver') {
+              document.getElementById('driver-section').classList.remove('hidden');
+              loadDriverOrders();
+              updateDriverStatus();
+            } else {
+              document.getElementById('client-section').classList.remove('hidden'); // по умолчанию клиент
+            }
+          } else {
+            // Если пользователь есть в Auth, но нет документа в users – создаём
+            document.getElementById('user-role').innerHTML = '⚠️ Документ не найден, создаём...';
+            return db.collection('users').doc(user.uid).set({
+              email: user.email,
+              name: 'Новый пользователь',
+              role: 'client',
+              phone: '',
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        })
+        .then(function() {
+          // Если создали новый документ, можно перезагрузить страницу или обновить данные
+          // Здесь просто выведем сообщение
+        })
+        .catch(function(error) {
+          console.error('Ошибка загрузки данных пользователя:', error);
+          document.getElementById('user-role').innerHTML = '❌ Ошибка загрузки роли';
+        });
+    } else {
+      currentUser = null;
+      currentUserData = null;
+      document.getElementById('user-status').innerHTML = '❌ Не авторизован';
+      document.getElementById('user-role').innerHTML = '';
+      document.getElementById('client-section').classList.add('hidden');
+      document.getElementById('dispatcher-section').classList.add('hidden');
+      document.getElementById('driver-section').classList.add('hidden');
+    }
+  });
+
+  // ========== АУТЕНТИФИКАЦИЯ ==========
+  function signUp() {
+    var email = document.getElementById('email').value;
+    var password = document.getElementById('password').value;
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(function(cred) {
+        alert('Регистрация успешна! Теперь войдите.');
+        // Создаём документ пользователя в Firestore
+        return db.collection('users').doc(cred.user.uid).set({
+          email: email,
+          name: 'Новый пользователь',
+          role: 'client',
+          phone: '',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      })
+      .then(function() {
+        alert('Документ создан. Войдите с этими данными.');
+      })
+      .catch(function(error) {
+        alert('Ошибка регистрации: ' + error.message);
+      });
+  }
+
+  function signIn() {
+    var email = document.getElementById('email').value;
+    var password = document.getElementById('password').value;
+    auth.signInWithEmailAndPassword(email, password)
+      .then(function() {
+        alert('Вход выполнен');
+      })
+      .catch(function(error) {
+        alert('Ошибка входа: ' + error.message);
+      });
+  }
+
+  function signOut() {
+    auth.signOut();
+  }
+
+  // ========== КЛИЕНТ: СОЗДАНИЕ ЗАКАЗА ==========
+  function createOrder() {
+    if (!currentUser) {
+      alert('Сначала войдите!');
+      return;
+    }
+    var from = document.getElementById('from').value;
+    var to = document.getElementById('to').value;
+    db.collection('orders').add({
+      clientId: currentUser.uid,
+      clientEmail: currentUser.email,
+      from: from,
+      to: to,
+      status: 'created',
+      price: Math.round(Math.random() * 300 + 100),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      aiNote: 'Ожидает назначения'
+    })
+    .then(function() {
+      document.getElementById('order-status').innerHTML = '✅ Заказ создан! ИИ-диспетчер обрабатывает...';
+      // Логируем в ai_logs
+      return db.collection('ai_logs').add({
+        orderId: 'demo',
+        decision: 'Новый заказ от клиента ' + currentUser.email,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    })
+    .then(function() {
+      // Если открыта панель диспетчера, обновляем список
+      if (!document.getElementById('dispatcher-section').classList.contains('hidden')) {
+        loadOrders();
+      }
+    })
+    .catch(function(error) {
+      alert('Ошибка создания заказа: ' + error.message);
+    });
+  }
+
+  // ========== ДИСПЕТЧЕР: ВСЕ ЗАКАЗЫ ==========
+  function loadOrders() {
+    db.collection('orders')
+      .orderBy('createdAt', 'desc')
+      .limit(30)
+      .get()
+      .then(function(snapshot) {
+        var html = '';
+        snapshot.forEach(function(doc) {
+          var d = doc.data();
+          html += '<div style="border-bottom:1px solid #ddd; padding:8px;">' +
+            '<b>' + (d.from || '?') + '</b> → <b>' + (d.to || '?') + '</b> | ' +
+            'Статус: ' + d.status + ' | ' +
+            'Цена: ' + d.price + '₽ | ' +
+            'Клиент: ' + (d.clientEmail || 'anon') +
+            (d.aiNote ? ' 🧠 ' + d.aiNote : '') +
+            (d.driverId ? ' 🚗 водитель: ' + d.driverId : '') +
+            '</div>';
+        });
+        document.getElementById('order-list').innerHTML = html || 'Нет заказов';
+      })
+      .catch(function(error) {
+        alert('Ошибка загрузки заказов: ' + error.message);
+      });
+  }
+
+  // ========== ВОДИТЕЛЬ: МОИ ЗАКАЗЫ ==========
+  function loadDriverOrders() {
+    if (!currentUser) return;
+    db.collection('orders')
+      .where('driverId', '==', currentUser.uid)
+      .orderBy('createdAt', 'desc')
+      .get()
+      .then(function(snapshot) {
+        var html = '';
+        snapshot.forEach(function(doc) {
+          var d = doc.data();
+          html += '<div style="border-bottom:1px solid #ddd; padding:8px;">' +
+            '<b>' + d.from + '</b> → <b>' + d.to + '</b> | ' +
+            'Статус: ' + d.status + ' | ' +
+            'Цена: ' + d.price + '₽' +
+            '</div>';
+        });
+        document.getElementById('driver-orders').innerHTML = html || 'Нет назначенных заказов';
+      })
+      .catch(function(error) {
+        alert('Ошибка загрузки заказов водителя: ' + error.message);
+      });
+  }
+
+  // ========== ВОДИТЕЛЬ: ПЕРЕКЛЮЧЕНИЕ ДОСТУПНОСТИ ==========
+  function toggleAvailability() {
+    if (!currentUser || !currentUserData) {
+      alert('Сначала войдите или дождитесь загрузки данных');
+      return;
+    }
+    var newVal = !currentUserData.available;
+    db.collection('users').doc(currentUser.uid).update({
+      available: newVal
+    })
+    .then(function() {
+      currentUserData.available = newVal;
+      updateDriverStatus();
+      alert('Статус обновлён: ' + (newVal ? 'Доступен' : 'Недоступен'));
+    })
+    .catch(function(error) {
+      alert('Ошибка обновления статуса: ' + error.message);
+    });
+  }
+
+  function updateDriverStatus() {
+    if (currentUserData && currentUserData.role === 'driver') {
+      var statusText = currentUserData.available ? '🟢 Доступен' : '🔴 Недоступен';
+      document.getElementById('driver-status').innerHTML = 'Текущий статус: ' + statusText;
+    }
+  }
+
+  // Если страница загружена и пользователь уже авторизован – onAuthStateChanged сам всё сделает
+  console.log('Taxi AI Platform загружена');
+</script>
+</body>
+</html>
