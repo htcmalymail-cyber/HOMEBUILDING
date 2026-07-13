@@ -9,28 +9,44 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <style>
+    * { box-sizing: border-box; }
     body { font-family: 'Segoe UI', sans-serif; margin:0; padding:20px; background:#f0f2f5; }
     .container { max-width:1200px; margin:0 auto; }
     .card { background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:15px 0; }
     .hidden { display:none; }
-    button { padding:8px 18px; margin:5px; border:none; border-radius:6px; background:#007bff; color:#fff; font-weight:600; cursor:pointer; }
-    button:hover { background:#0056b3; }
-    button.danger { background:#dc3545; }
-    button.danger:hover { background:#c82333; }
-    button.success { background:#28a745; }
+    button { padding:10px 24px; margin:5px; border:none; border-radius:8px; font-weight:600; cursor:pointer; font-size:15px; }
+    button.primary { background:#007bff; color:white; }
+    button.primary:hover { background:#0056b3; }
+    button.success { background:#28a745; color:white; }
     button.success:hover { background:#218838; }
-    input { padding:8px; margin:5px; width:100%; max-width:300px; border:1px solid #ccc; border-radius:6px; }
-    #map { height:400px; width:100%; border-radius:8px; }
+    button.danger { background:#dc3545; color:white; }
+    button.danger:hover { background:#c82333; }
+    input, textarea { padding:10px; margin:8px 0; width:100%; border:1px solid #ccc; border-radius:8px; font-size:14px; }
+    input:focus, textarea:focus { outline:2px solid #007bff; border-color:transparent; }
+    #map { height:450px; width:100%; border-radius:10px; }
     .flex-row { display:flex; gap:20px; flex-wrap:wrap; }
     .flex-col { flex:1; min-width:300px; }
-    .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-    .badge-created { background:#ffc107; }
+    .nav { margin-bottom:20px; display:flex; gap:15px; flex-wrap:wrap; align-items:center; }
+    .nav a { text-decoration:none; color:#007bff; font-weight:bold; }
+    .nav .logout-btn { background:#dc3545; color:white; padding:6px 16px; border-radius:6px; border:none; cursor:pointer; }
+    .nav .logout-btn:hover { background:#c82333; }
+    .order-status-card { background:#e8f4f8; padding:15px; border-radius:10px; margin-top:15px; }
+    .order-status-card .status { font-size:18px; font-weight:bold; }
+    .status-created { color:#ffc107; }
+    .status-assigned { color:#17a2b8; }
+    .status-accepted { color:#28a745; }
+    .status-completed { color:#6c757d; }
+    .status-cancelled { color:#dc3545; }
+    .driver-info { background:#d4edda; padding:10px; border-radius:8px; margin-top:10px; }
+    .badge { display:inline-block; padding:3px 12px; border-radius:20px; font-size:13px; font-weight:600; }
+    .badge-created { background:#ffc107; color:#212529; }
     .badge-assigned { background:#17a2b8; color:white; }
     .badge-accepted { background:#28a745; color:white; }
     .badge-completed { background:#6c757d; color:white; }
-    .badge-waiting { background:#dc3545; color:white; }
-    .nav { margin-bottom:20px; }
-    .nav a { margin-right:15px; text-decoration:none; color:#007bff; font-weight:bold; }
+    .badge-cancelled { background:#dc3545; color:white; }
+    .badge-waiting { background:#fd7e14; color:white; }
+    .coords-hint { font-size:12px; color:#666; margin-top:5px; }
+    .click-hint { background:#fff3cd; padding:8px 12px; border-radius:6px; font-size:13px; color:#856404; margin-bottom:10px; }
   </style>
 </head>
 <body>
@@ -38,44 +54,42 @@
   <div class="nav">
     <a href="index.html">🏠 Главная</a>
     <a href="client.html">Клиент</a>
-    <a href="driver.html">Водитель</a>
+    <button class="logout-btn" onclick="signOut()">🚪 Выйти</button>
+    <span id="user-email" style="margin-left:auto;color:#666;font-size:14px;"></span>
   </div>
   <h1>🚕 Taxi – Клиент</h1>
 
-  <!-- Авторизация -->
-  <div id="auth-section" class="card">
-    <h3>Вход / Регистрация</h3>
-    <input type="email" id="email" placeholder="Email" value="client@taxi.com">
-    <input type="password" id="password" placeholder="Пароль" value="123456">
-    <button onclick="signUp()">Зарегистрироваться</button>
-    <button onclick="signIn()">Войти</button>
-    <button onclick="signOut()">Выйти</button>
-    <p id="user-status">Не авторизован</p>
-  </div>
-
-  <!-- Интерфейс клиента -->
-  <div id="client-section" class="hidden">
-    <div class="card">
-      <div class="flex-row">
-        <div class="flex-col">
-          <h4>Создать заказ</h4>
-          <input id="from" placeholder="Откуда (адрес)" value="Красная площадь, Москва">
-          <input id="to" placeholder="Куда (адрес)" value="Вокзал">
-          <div style="display:flex; gap:5px;">
-            <input id="from-lat" placeholder="Широта" value="55.7539" style="width:45%;">
-            <input id="from-lng" placeholder="Долгота" value="37.6208" style="width:45%;">
-          </div>
-          <button onclick="createOrder()">🚖 Заказать такси</button>
-          <p id="order-status"></p>
-          <div id="client-order-info"></div>
-          <button class="danger hidden" id="cancel-order-btn" onclick="cancelOrder()">❌ Отменить заказ</button>
+  <!-- Форма заказа -->
+  <div class="card">
+    <h3>📍 Создать заказ</h3>
+    <div class="click-hint">💡 Кликните на карту, чтобы установить точку отправления</div>
+    <div class="flex-row">
+      <div class="flex-col">
+        <input id="from-address" placeholder="Откуда (адрес)" value="Красная площадь, Москва">
+        <input id="to-address" placeholder="Куда (адрес)" value="Вокзал">
+        <div style="display:flex; gap:10px;">
+          <input id="from-lat" placeholder="Широта" value="55.7539" style="width:50%;">
+          <input id="from-lng" placeholder="Долгота" value="37.6208" style="width:50%;">
         </div>
-        <div class="flex-col">
-          <h4>Свободные машины рядом</h4>
-          <div id="map"></div>
-        </div>
+        <button class="primary" onclick="createOrder()" style="width:100%;">🚖 Заказать такси</button>
+        <div id="order-status-message" style="margin-top:10px;font-weight:600;"></div>
+      </div>
+      <div class="flex-col">
+        <div id="map"></div>
       </div>
     </div>
+  </div>
+
+  <!-- Статус заказа -->
+  <div id="order-status-card" class="card hidden">
+    <h3>📋 Ваш заказ</h3>
+    <div id="order-details"></div>
+    <div id="driver-info" class="driver-info hidden">
+      <strong>🚗 Водитель:</strong> <span id="driver-name-display"></span><br>
+      <strong>📞 Телефон:</strong> <span id="driver-phone-display"></span><br>
+      <strong>🚘 Авто:</strong> <span id="driver-car-display"></span>
+    </div>
+    <button class="danger" id="cancel-btn" onclick="cancelOrder()" style="margin-top:10px;">❌ Отменить заказ</button>
   </div>
 </div>
 
@@ -96,129 +110,145 @@
   let currentUser = null;
   let currentUserData = null;
   let map = null;
-  let markers = {};
-  let currentOrderId = null; // для отмены
+  let clientMarker = null; // маркер клиента на карте
+  let driverMarker = null; // маркер водителя на карте
+  let routeLayer = null;   // линия маршрута
+  let currentOrderId = null;
+  let orderUnsubscribe = null;
+  let driverUnsubscribe = null;
 
-  // === АУТЕНТИФИКАЦИЯ ===
+  // ===== АУТЕНТИФИКАЦИЯ =====
   auth.onAuthStateChanged(async function(user) {
     if (user) {
       currentUser = user;
-      document.getElementById('user-status').innerHTML = '✅ Вошёл: ' + user.email;
-      document.getElementById('auth-section').style.display = 'none';
-      document.getElementById('client-section').classList.remove('hidden');
+      document.getElementById('user-email').textContent = '👤 ' + user.email;
       await loadUserData();
       initMap();
-      listenFreeDrivers();
       listenClientOrder();
     } else {
-      currentUser = null;
-      document.getElementById('user-status').innerHTML = '❌ Не авторизован';
-      document.getElementById('auth-section').style.display = 'block';
-      document.getElementById('client-section').classList.add('hidden');
+      // Если не авторизован, пробуем загрузить сессию
+      const session = localStorage.getItem('clientSession');
+      if (session) {
+        try {
+          const data = JSON.parse(session);
+          document.getElementById('user-email').textContent = '👤 ' + (data.name || 'Клиент');
+          await loadUserData();
+          initMap();
+          listenClientOrder();
+        } catch(e) {
+          window.location.href = 'index.html';
+        }
+      } else {
+        window.location.href = 'index.html';
+      }
     }
   });
 
   function loadUserData() {
-    return db.collection('users').doc(currentUser.uid).get().then(doc => {
-      if (doc.exists) {
-        currentUserData = doc.data();
-        if (currentUserData.role !== 'client') {
-          alert('Вы не клиент. Перейдите на страницу ' + currentUserData.role);
-          window.location.href = currentUserData.role + '.html';
+    if (!currentUser) return Promise.resolve();
+    return db.collection('users').doc(currentUser.uid).get()
+      .then(doc => {
+        if (doc.exists) {
+          currentUserData = doc.data();
+        } else {
+          return db.collection('users').doc(currentUser.uid).set({
+            email: currentUser.email,
+            name: 'Клиент',
+            role: 'client',
+            phone: '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          }).then(() => { currentUserData = { role: 'client' }; });
         }
-      } else {
-        return db.collection('users').doc(currentUser.uid).set({
-          email: currentUser.email,
-          name: 'Клиент',
-          role: 'client',
-          phone: '',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      }
+      })
+      .catch(e => console.error('Ошибка загрузки данных:', e));
+  }
+
+  function signOut() {
+    auth.signOut().then(() => {
+      localStorage.removeItem('clientSession');
+      window.location.href = 'index.html';
     });
   }
 
-  function signUp() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    auth.createUserWithEmailAndPassword(email, password)
-      .then(cred => {
-        return db.collection('users').doc(cred.user.uid).set({
-          email: email,
-          name: 'Клиент',
-          role: 'client',
-          phone: '',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      })
-      .then(() => alert('Регистрация успешна! Войдите.'))
-      .catch(e => alert('Ошибка: ' + e.message));
-  }
-
-  function signIn() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    auth.signInWithEmailAndPassword(email, password)
-      .catch(e => alert('Ошибка входа: ' + e.message));
-  }
-
-  function signOut() { auth.signOut(); }
-
-  // === КАРТА ===
+  // ===== КАРТА =====
   function initMap() {
     if (map) return;
-    map = L.map('map').setView([55.7558, 37.6173], 12);
+    map = L.map('map').setView([55.7558, 37.6173], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
     }).addTo(map);
+
+    // Клик по карте — установка точки отправления
     map.on('click', function(e) {
       const lat = e.latlng.lat.toFixed(6);
       const lng = e.latlng.lng.toFixed(6);
       document.getElementById('from-lat').value = lat;
       document.getElementById('from-lng').value = lng;
-      document.getElementById('from').value = 'Точка на карте';
-      alert('Координаты отправления установлены: ' + lat + ', ' + lng);
+      document.getElementById('from-address').value = '📍 Точка на карте';
+
+      // Обновляем маркер клиента
+      if (clientMarker) map.removeLayer(clientMarker);
+      clientMarker = L.marker([lat, lng], {
+        icon: L.divIcon({ className: 'client-marker', html: '📍', iconSize: [30, 30] })
+      }).addTo(map).bindPopup('📍 Ваше местоположение');
+
+      alert('✅ Точка отправления установлена: ' + lat + ', ' + lng);
     });
-  }
 
-  // Слушаем свободных водителей и обновляем маркеры
-  function listenFreeDrivers() {
-    db.collection('users')
-      .where('role', '==', 'driver')
-      .where('available', '==', true)
-      .onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-          const id = change.doc.id;
-          const data = change.doc.data();
-          if (change.type === 'added' || change.type === 'modified') {
-            if (data.lat && data.lng && data.lat !== 0 && data.lng !== 0) {
-              if (markers[id]) map.removeLayer(markers[id]);
-              markers[id] = L.marker([data.lat, data.lng])
-                .bindPopup('Водитель: ' + (data.name || data.email) + '<br>Телефон: ' + (data.phone || 'не указан'))
-                .addTo(map);
-            }
-          } else if (change.type === 'removed') {
-            if (markers[id]) {
-              map.removeLayer(markers[id]);
-              delete markers[id];
-            }
-          }
-        });
-      }, error => console.error('Ошибка прослушки водителей:', error));
-  }
-
-  // === СОЗДАНИЕ ЗАКАЗА ===
-  function createOrder() {
-    if (!currentUser) { alert('Войдите!'); return; }
-    const from = document.getElementById('from').value;
-    const to = document.getElementById('to').value;
+    // Добавляем маркер клиента изначально
     const lat = parseFloat(document.getElementById('from-lat').value);
     const lng = parseFloat(document.getElementById('from-lng').value);
-    if (isNaN(lat) || isNaN(lng)) { alert('Введите координаты или кликните на карту'); return; }
+    if (!isNaN(lat) && !isNaN(lng)) {
+      clientMarker = L.marker([lat, lng]).addTo(map)
+        .bindPopup('📍 Ваше местоположение');
+    }
+  }
 
-    db.collection('orders').add({
-      clientId: currentUser.uid,
-      clientEmail: currentUser.email,
+  // ===== ОБНОВЛЕНИЕ МАРКЕРА КЛИЕНТА =====
+  function updateClientMarker(lat, lng) {
+    if (clientMarker) map.removeLayer(clientMarker);
+    clientMarker = L.marker([lat, lng])
+      .addTo(map)
+      .bindPopup('📍 Вы здесь');
+    map.setView([lat, lng], 14);
+  }
+
+  // ===== ОБНОВЛЕНИЕ МАРКЕРА ВОДИТЕЛЯ =====
+  function updateDriverMarker(lat, lng, driverName) {
+    if (driverMarker) map.removeLayer(driverMarker);
+    driverMarker = L.marker([lat, lng], {
+      icon: L.divIcon({ className: 'driver-marker', html: '🚗', iconSize: [30, 30] })
+    }).addTo(map)
+      .bindPopup('🚗 Водитель: ' + (driverName || 'Водитель') + '<br>📍 ' + lat + ', ' + lng);
+  }
+
+  // ===== СОЗДАНИЕ ЗАКАЗА =====
+  function createOrder() {
+    if (!currentUser && !localStorage.getItem('clientSession')) {
+      alert('⚠️ Сначала войдите или укажите имя и телефон на главной странице');
+      return;
+    }
+
+    const from = document.getElementById('from-address').value.trim();
+    const to = document.getElementById('to-address').value.trim();
+    const lat = parseFloat(document.getElementById('from-lat').value);
+    const lng = parseFloat(document.getElementById('from-lng').value);
+
+    if (!from || !to) { alert('⚠️ Заполните адреса'); return; }
+    if (isNaN(lat) || isNaN(lng)) { alert('⚠️ Установите точку на карте или введите координаты'); return; }
+
+    // Получаем имя клиента из сессии или данных пользователя
+    let clientName = 'Клиент';
+    const session = localStorage.getItem('clientSession');
+    if (session) {
+      try { clientName = JSON.parse(session).name || 'Клиент'; } catch(e) {}
+    }
+    if (currentUserData && currentUserData.name) clientName = currentUserData.name;
+
+    const orderData = {
+      clientId: currentUser ? currentUser.uid : 'guest-' + Date.now(),
+      clientEmail: currentUser ? currentUser.email : 'guest@taxi.com',
+      clientName: clientName,
       from: from,
       to: to,
       fromLat: lat,
@@ -226,22 +256,28 @@
       status: 'created',
       price: Math.round(Math.random() * 300 + 100),
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      aiNote: 'Поиск водителя...'
-    })
-    .then(docRef => {
-      currentOrderId = docRef.id;
-      document.getElementById('order-status').innerHTML = '✅ Заказ создан. Ищем водителя...';
-      return assignNearestDriver(docRef.id, lat, lng);
-    })
-    .then(() => {
-      document.getElementById('order-status').innerHTML = '✅ Водитель назначен! Ожидайте подтверждения.';
-    })
-    .catch(e => alert('Ошибка: ' + e.message));
+      aiNote: 'Поиск ближайшего водителя...'
+    };
+
+    db.collection('orders').add(orderData)
+      .then(docRef => {
+        currentOrderId = docRef.id;
+        document.getElementById('order-status-message').innerHTML = '✅ Заказ создан! Ищем водителя...';
+        document.getElementById('order-status-card').classList.remove('hidden');
+        // Автоматически назначаем ближайшего водителя
+        return assignNearestDriver(docRef.id, lat, lng);
+      })
+      .then(() => {
+        document.getElementById('order-status-message').innerHTML = '✅ Водитель назначен! Ожидайте подтверждения.';
+      })
+      .catch(error => {
+        alert('❌ Ошибка: ' + error.message);
+      });
   }
 
-  // ИИ-назначение ближайшего водителя
+  // ===== ИИ-НАЗНАЧЕНИЕ БЛИЖАЙШЕГО ВОДИТЕЛЯ =====
   function assignNearestDriver(orderId, fromLat, fromLng) {
-    return db.collection('users')
+    return db.collection('drivers')
       .where('role', '==', 'driver')
       .where('available', '==', true)
       .get()
@@ -252,30 +288,44 @@
             aiNote: 'Нет свободных водителей'
           });
         }
-        let nearest = null, minDist = Infinity;
+
+        let nearest = null;
+        let minDist = Infinity;
         snapshot.forEach(doc => {
-          const d = doc.data();
-          if (d.lat && d.lng && d.lat !== 0 && d.lng !== 0) {
-            const dist = getDistance(fromLat, fromLng, d.lat, d.lng);
+          const data = doc.data();
+          if (data.lat && data.lng) {
+            const dist = getDistance(fromLat, fromLng, data.lat, data.lng);
             if (dist < minDist) {
               minDist = dist;
-              nearest = { id: doc.id, data: d, dist };
+              nearest = { id: doc.id, data: data, dist: dist };
             }
           }
         });
+
         if (!nearest) {
           return db.collection('orders').doc(orderId).update({
             status: 'error',
             aiNote: 'У водителей нет координат'
           });
         }
+
+        const driverId = nearest.id;
+        const driverData = nearest.data;
+
         return db.collection('orders').doc(orderId).update({
-          driverId: nearest.id,
-          driverEmail: nearest.data.email,
+          driverId: driverId,
+          driverEmail: driverData.email,
+          driverName: driverData.fullName || 'Водитель',
+          driverPhone: driverData.phone || '—',
+          driverCar: driverData.carModel + ' ' + (driverData.carNumber || ''),
           status: 'assigned',
-          aiNote: 'Назначен ' + nearest.data.email + ' (расст. ' + nearest.dist.toFixed(2) + ' км)'
+          aiNote: 'Назначен водитель ' + (driverData.fullName || driverData.email) + ' (расст. ' + nearest.dist.toFixed(2) + ' км)'
         })
-        .then(() => db.collection('users').doc(nearest.id).update({ available: false }));
+        .then(() => {
+          return db.collection('drivers').doc(driverId).update({
+            available: false
+          });
+        });
       });
   }
 
@@ -283,56 +333,133 @@
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 
-  // Слушаем последний заказ клиента (для отображения статуса и кнопки отмены)
+  // ===== СЛУШАЕМ ЗАКАЗ КЛИЕНТА (реальное время) =====
   function listenClientOrder() {
-    if (!currentUser) return;
-    db.collection('orders')
-      .where('clientId', '==', currentUser.uid)
+    if (orderUnsubscribe) orderUnsubscribe();
+
+    const clientId = currentUser ? currentUser.uid : 'guest-' + Date.now();
+
+    orderUnsubscribe = db.collection('orders')
+      .where('clientId', '==', clientId)
       .orderBy('createdAt', 'desc')
       .limit(1)
       .onSnapshot(snapshot => {
         snapshot.docChanges().forEach(change => {
-          if (change.type === 'modified' || change.type === 'added') {
+          if (change.type === 'added' || change.type === 'modified') {
             const data = change.doc.data();
             const orderId = change.doc.id;
             currentOrderId = orderId;
-            let html = '<div class="order-item"><b>Заказ:</b> ' + data.from + ' → ' + data.to +
-              ' | Статус: <span class="badge badge-'+data.status+'">'+data.status+'</span>' +
-              ' | ' + (data.aiNote || '') +
-              (data.driverEmail ? ' | 🚗 водитель: ' + data.driverEmail : '') +
-              '</div>';
-            document.getElementById('client-order-info').innerHTML = html;
-
-            // Показать кнопку отмены только если статус created или assigned
-            const cancelBtn = document.getElementById('cancel-order-btn');
-            if (data.status === 'created' || data.status === 'assigned') {
-              cancelBtn.classList.remove('hidden');
-            } else {
-              cancelBtn.classList.add('hidden');
-            }
+            updateOrderUI(orderId, data);
           }
         });
-      }, error => console.error('Ошибка прослушки заказа:', error));
+      }, error => {
+        console.error('Ошибка прослушки заказа:', error);
+      });
   }
 
-  // Отмена заказа
+  // ===== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ЗАКАЗА =====
+  function updateOrderUI(orderId, data) {
+    document.getElementById('order-status-card').classList.remove('hidden');
+
+    const statusMap = {
+      'created': '🟡 Создан',
+      'assigned': '🔵 Водитель назначен',
+      'accepted': '🟢 Заказ принят',
+      'started': '🟢 В пути',
+      'completed': '✅ Завершён',
+      'cancelled': '❌ Отменён',
+      'waiting': '⏳ Ожидание водителя'
+    };
+
+    const statusText = statusMap[data.status] || data.status;
+    const statusClass = 'status-' + data.status;
+
+    let html = `
+      <div class="order-status-card">
+        <div><strong>Откуда:</strong> ${data.from}</div>
+        <div><strong>Куда:</strong> ${data.to}</div>
+        <div><strong>Статус:</strong> <span class="status ${statusClass}">${statusText}</span></div>
+        <div><strong>Цена:</strong> ${data.price || 0} ₽</div>
+        <div><strong>🧠 ИИ:</strong> ${data.aiNote || '—'}</div>
+        <div><strong>🆔 Заказ:</strong> ${orderId.slice(0, 8)}...</div>
+      </div>
+    `;
+
+    document.getElementById('order-details').innerHTML = html;
+
+    // Показываем/скрываем кнопку отмены
+    const cancelBtn = document.getElementById('cancel-btn');
+    if (['created', 'assigned', 'waiting'].includes(data.status)) {
+      cancelBtn.style.display = 'inline-block';
+    } else {
+      cancelBtn.style.display = 'none';
+    }
+
+    // Информация о водителе
+    const driverInfo = document.getElementById('driver-info');
+    if (data.driverId && data.status !== 'cancelled' && data.status !== 'completed') {
+      driverInfo.classList.remove('hidden');
+      document.getElementById('driver-name-display').textContent = data.driverName || data.driverEmail || '—';
+      document.getElementById('driver-phone-display').textContent = data.driverPhone || '—';
+      document.getElementById('driver-car-display').textContent = data.driverCar || '—';
+
+      // Слушаем местоположение водителя в реальном времени
+      if (driverUnsubscribe) driverUnsubscribe();
+      driverUnsubscribe = db.collection('drivers').doc(data.driverId)
+        .onSnapshot(doc => {
+          if (doc.exists) {
+            const driverData = doc.data();
+            if (driverData.lat && driverData.lng) {
+              updateDriverMarker(driverData.lat, driverData.lng, driverData.fullName || driverData.email);
+              // Показываем маршрут между клиентом и водителем
+              showRoute(data.fromLat, data.fromLng, driverData.lat, driverData.lng);
+            }
+          }
+        }, error => console.error('Ошибка прослушки водителя:', error));
+    } else {
+      driverInfo.classList.add('hidden');
+      if (driverMarker) { map.removeLayer(driverMarker); driverMarker = null; }
+      if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+    }
+
+    // Обновляем маркер клиента
+    if (data.fromLat && data.fromLng) {
+      updateClientMarker(data.fromLat, data.fromLng);
+    }
+  }
+
+  // ===== ПОКАЗАТЬ МАРШРУТ МЕЖДУ КЛИЕНТОМ И ВОДИТЕЛЕМ =====
+  function showRoute(lat1, lng1, lat2, lng2) {
+    if (routeLayer) map.removeLayer(routeLayer);
+    routeLayer = L.polyline([[lat1, lng1], [lat2, lng2]], {
+      color: '#007bff',
+      weight: 3,
+      dashArray: '8, 8',
+      opacity: 0.7
+    }).addTo(map);
+  }
+
+  // ===== ОТМЕНА ЗАКАЗА =====
   function cancelOrder() {
     if (!currentOrderId) { alert('Нет активного заказа'); return; }
-    if (!confirm('Вы уверены, что хотите отменить заказ?')) return;
+    if (!confirm('⚠️ Вы уверены, что хотите отменить заказ?')) return;
     db.collection('orders').doc(currentOrderId).update({
       status: 'cancelled',
       aiNote: 'Отменён клиентом'
     })
     .then(() => {
-      alert('Заказ отменён');
-      document.getElementById('cancel-order-btn').classList.add('hidden');
+      alert('✅ Заказ отменён');
+      document.getElementById('cancel-btn').style.display = 'none';
     })
-    .catch(e => alert('Ошибка отмены: ' + e.message));
+    .catch(e => alert('❌ Ошибка: ' + e.message));
   }
+
+  // ===== ИНИЦИАЛИЗАЦИЯ =====
+  console.log('🚕 Taxi Client загружен');
 </script>
 </body>
 </html>
