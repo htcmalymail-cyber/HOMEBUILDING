@@ -2,77 +2,110 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>🚕 Taxi AI Platform – v0.3 (ближайший водитель)</title>
+  <title>🚕 Taxi AI – v0.4 (карты и реальное время)</title>
+  <!-- Подключаем Leaflet CSS и JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; }
-    .card { border: 1px solid #ccc; padding: 20px; margin: 15px 0; border-radius: 10px; background: #f9f9f9; }
-    button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
-    button:hover { background: #0056b3; }
-    input, select { padding: 8px; margin: 5px; width: 90%; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f0f2f5; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .card { background: white; padding: 20px; margin: 15px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .hidden { display: none; }
-    .role-select { display: flex; gap: 15px; align-items: center; }
+    button { padding: 8px 16px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+    button:hover { background: #0056b3; }
+    input, select { padding: 8px; margin: 5px; width: 100%; max-width: 300px; }
+    #map { height: 400px; width: 100%; border-radius: 8px; }
+    .flex-row { display: flex; gap: 20px; flex-wrap: wrap; }
+    .flex-col { flex: 1; min-width: 300px; }
+    .order-item { border-bottom: 1px solid #ddd; padding: 8px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+    .badge-created { background: #ffc107; }
+    .badge-assigned { background: #17a2b8; color: white; }
+    .badge-completed { background: #28a745; color: white; }
+    .badge-waiting { background: #dc3545; color: white; }
   </style>
 </head>
 <body>
+<div class="container">
 
-<h1>🚕 Taxi AI Platform <span style="font-size:14px;">v0.3 – ближайший водитель</span></h1>
+  <h1>🚕 Taxi AI Platform <span style="font-size:14px;">v0.4</span></h1>
 
-<!-- Блок авторизации -->
-<div id="auth-section" class="card">
-  <h3>Вход / Регистрация</h3>
-  <input type="email" id="email" placeholder="Email" value="driver@taxi.com">
-  <input type="password" id="password" placeholder="Пароль" value="123456">
-  <div class="role-select">
-    <label>Роль при регистрации:</label>
-    <select id="reg-role">
-      <option value="client">Клиент</option>
-      <option value="driver" selected>Водитель</option>
-    </select>
+  <!-- Блок авторизации -->
+  <div id="auth-section" class="card">
+    <h3>Вход / Регистрация</h3>
+    <input type="email" id="email" placeholder="Email" value="driver@taxi.com">
+    <input type="password" id="password" placeholder="Пароль" value="123456">
+    <div>
+      <label>Роль при регистрации:</label>
+      <select id="reg-role">
+        <option value="client">Клиент</option>
+        <option value="driver">Водитель</option>
+        <option value="dispatcher">Диспетчер</option>
+      </select>
+    </div>
+    <button onclick="signUp()">Зарегистрироваться</button>
+    <button onclick="signIn()">Войти</button>
+    <button onclick="signOut()">Выйти</button>
+    <p id="user-status">Не авторизован</p>
+    <p id="user-role"></p>
   </div>
-  <br>
-  <button onclick="signUp()">Зарегистрироваться</button>
-  <button onclick="signIn()">Войти</button>
-  <button onclick="signOut()">Выйти</button>
-  <p id="user-status">Не авторизован</p>
-  <p id="user-role"></p>
-</div>
 
-<!-- Панель клиента -->
-<div id="client-section" class="card hidden">
-  <h3>📱 Клиент — создать заказ</h3>
-  <input id="from" placeholder="Откуда (адрес)" value="Красная площадь, Москва">
-  <input id="to" placeholder="Куда (адрес)" value="Вокзал">
-  <div style="display: flex; gap: 10px;">
-    <input id="from-lat" placeholder="Широта отправления" value="55.7539" style="width:45%;">
-    <input id="from-lng" placeholder="Долгота отправления" value="37.6208" style="width:45%;">
+  <!-- Интерфейс КЛИЕНТА -->
+  <div id="client-section" class="hidden">
+    <div class="card">
+      <h2>📱 Клиент</h2>
+      <div class="flex-row">
+        <div class="flex-col">
+          <h4>Создать заказ</h4>
+          <input id="from" placeholder="Откуда (адрес)" value="Красная площадь, Москва">
+          <input id="to" placeholder="Куда (адрес)" value="Вокзал">
+          <button onclick="createOrder()">🚖 Заказать такси</button>
+          <p id="order-status"></p>
+          <div id="client-order-info"></div>
+        </div>
+        <div class="flex-col">
+          <h4>Свободные машины рядом</h4>
+          <div id="map-client" style="height: 400px;"></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <button onclick="createOrder()">🚖 Заказать такси</button>
-  <p id="order-status"></p>
-</div>
 
-<!-- Панель диспетчера -->
-<div id="dispatcher-section" class="card hidden">
-  <h3>📋 Диспетчер — все заказы</h3>
-  <button onclick="loadOrders()">Обновить список</button>
-  <div id="order-list"></div>
-</div>
-
-<!-- Панель водителя -->
-<div id="driver-section" class="card hidden">
-  <h3>🚗 Водитель — мои заказы</h3>
-  <button onclick="loadDriverOrders()">Обновить</button>
-  <div id="driver-orders"></div>
-  <br>
-  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-    <button onclick="updateLocation()">📍 Обновить местоположение</button>
-    <button onclick="toggleAvailability()">🔄 Доступен/Недоступен</button>
-    <button onclick="completeOrder()">✅ Завершить последний заказ</button>
+  <!-- Интерфейс ВОДИТЕЛЯ -->
+  <div id="driver-section" class="hidden">
+    <div class="card">
+      <h2>🚗 Водитель</h2>
+      <div class="flex-row">
+        <div class="flex-col">
+          <h4>Мои заказы</h4>
+          <div id="driver-orders-list"></div>
+          <br>
+          <button onclick="toggleAvailability()">🔄 Доступен/Недоступен</button>
+          <button onclick="completeOrder()">✅ Завершить последний заказ</button>
+          <p id="driver-status"></p>
+          <p id="driver-location-info"></p>
+        </div>
+        <div class="flex-col">
+          <h4>Карта (клиент / заказ)</h4>
+          <div id="map-driver" style="height: 400px;"></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <p id="driver-status"></p>
-  <p id="driver-location"></p>
+
+  <!-- Интерфейс ДИСПЕТЧЕРА -->
+  <div id="dispatcher-section" class="hidden">
+    <div class="card">
+      <h2>📋 Диспетчер</h2>
+      <button onclick="loadOrders()">Обновить список</button>
+      <div id="order-list"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -94,6 +127,14 @@
 
   let currentUser = null;
   let currentUserData = null;
+  let currentRole = null;
+
+  // Глобальные переменные для карт
+  let clientMap = null;
+  let driverMap = null;
+  let clientMarkers = {}; // id водителя -> маркер
+  let driverMarker = null; // маркер клиента на карте водителя
+  let watchId = null; // для GPS
 
   // ========== ОТСЛЕЖИВАНИЕ ВХОДА ==========
   auth.onAuthStateChanged(function(user) {
@@ -104,26 +145,31 @@
         .then(function(doc) {
           if (doc.exists) {
             currentUserData = doc.data();
-            var role = currentUserData.role || 'client';
-            document.getElementById('user-role').innerHTML = 'Роль: ' + role;
+            currentRole = currentUserData.role || 'client';
+            document.getElementById('user-role').innerHTML = 'Роль: ' + currentRole;
+            // Скрыть все секции
             document.getElementById('client-section').classList.add('hidden');
-            document.getElementById('dispatcher-section').classList.add('hidden');
             document.getElementById('driver-section').classList.add('hidden');
-            if (role === 'client') {
+            document.getElementById('dispatcher-section').classList.add('hidden');
+            // Показать нужную
+            if (currentRole === 'client') {
               document.getElementById('client-section').classList.remove('hidden');
-            } else if (role === 'dispatcher') {
+              initClientMap();
+              listenFreeDrivers();
+            } else if (currentRole === 'driver') {
+              document.getElementById('driver-section').classList.remove('hidden');
+              initDriverMap();
+              listenDriverOrders();
+              updateDriverStatus();
+              startGpsTracking();
+            } else if (currentRole === 'dispatcher') {
               document.getElementById('dispatcher-section').classList.remove('hidden');
               loadOrders();
-            } else if (role === 'driver') {
-              document.getElementById('driver-section').classList.remove('hidden');
-              loadDriverOrders();
-              updateDriverStatus();
-              updateLocationDisplay();
             } else {
               document.getElementById('client-section').classList.remove('hidden');
             }
           } else {
-            // Если документа нет – создаём с ролью по умолчанию
+            // Создаём документ, если нет
             var defaultRole = 'client';
             db.collection('users').doc(user.uid).set({
               email: user.email,
@@ -135,7 +181,6 @@
               lng: 0,
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
-              // Перезагружаем данные
               location.reload();
             });
           }
@@ -146,11 +191,13 @@
     } else {
       currentUser = null;
       currentUserData = null;
+      currentRole = null;
       document.getElementById('user-status').innerHTML = '❌ Не авторизован';
       document.getElementById('user-role').innerHTML = '';
       document.getElementById('client-section').classList.add('hidden');
-      document.getElementById('dispatcher-section').classList.add('hidden');
       document.getElementById('driver-section').classList.add('hidden');
+      document.getElementById('dispatcher-section').classList.add('hidden');
+      if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     }
   });
 
@@ -175,9 +222,8 @@
       })
       .then(function() {
         alert('Документ создан. Войдите с этими данными.');
-        // Если водитель – предложим обновить координаты
         if (role === 'driver') {
-          alert('Как водитель, обновите ваше местоположение через кнопку "Обновить местоположение" после входа.');
+          alert('После входа обновите местоположение через GPS.');
         }
       })
       .catch(function(error) {
@@ -201,33 +247,93 @@
     auth.signOut();
   }
 
-  // ========== ФУНКЦИЯ РАСЧЁТА РАССТОЯНИЯ (гаверсинус) ==========
+  // ========== ФУНКЦИИ РАССТОЯНИЯ ==========
   function getDistance(lat1, lon1, lat2, lon2) {
-    var R = 6371; // км
+    var R = 6371;
     var dLat = (lat2 - lat1) * Math.PI / 180;
     var dLon = (lon2 - lon1) * Math.PI / 180;
     var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
             Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
             Math.sin(dLon/2) * Math.sin(dLon/2);
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c; // расстояние в км
+    return R * c;
+  }
+
+  // ========== КЛИЕНТ: КАРТА И МАРКЕРЫ ==========
+  function initClientMap() {
+    if (clientMap) return;
+    clientMap = L.map('map-client').setView([55.7558, 37.6173], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(clientMap);
+    // Клик на карте для установки координат отправления
+    clientMap.on('click', function(e) {
+      var lat = e.latlng.lat.toFixed(6);
+      var lng = e.latlng.lng.toFixed(6);
+      document.getElementById('from').value = 'Точка на карте ('+lat+', '+lng+')';
+      // Сохраним координаты в скрытых полях (можно добавить скрытые input)
+      if (!document.getElementById('from-lat')) {
+        var latInput = document.createElement('input');
+        latInput.type = 'hidden';
+        latInput.id = 'from-lat';
+        latInput.value = lat;
+        document.getElementById('from').after(latInput);
+        var lngInput = document.createElement('input');
+        lngInput.type = 'hidden';
+        lngInput.id = 'from-lng';
+        lngInput.value = lng;
+        document.getElementById('from').after(lngInput);
+      } else {
+        document.getElementById('from-lat').value = lat;
+        document.getElementById('from-lng').value = lng;
+      }
+      alert('Точка отправления установлена: ' + lat + ', ' + lng);
+    });
+  }
+
+  // Слушаем свободных водителей (available = true) и обновляем маркеры
+  function listenFreeDrivers() {
+    db.collection('users')
+      .where('role', '==', 'driver')
+      .where('available', '==', true)
+      .onSnapshot(function(snapshot) {
+        snapshot.docChanges().forEach(function(change) {
+          var driverId = change.doc.id;
+          var data = change.doc.data();
+          if (change.type === 'added' || change.type === 'modified') {
+            if (data.lat && data.lng) {
+              // Добавить или обновить маркер
+              if (clientMarkers[driverId]) {
+                clientMap.removeLayer(clientMarkers[driverId]);
+              }
+              var marker = L.marker([data.lat, data.lng])
+                .bindPopup('Водитель: ' + (data.name || data.email) + '<br>Статус: свободен')
+                .addTo(clientMap);
+              clientMarkers[driverId] = marker;
+            }
+          } else if (change.type === 'removed') {
+            if (clientMarkers[driverId]) {
+              clientMap.removeLayer(clientMarkers[driverId]);
+              delete clientMarkers[driverId];
+            }
+          }
+        });
+      }, function(error) {
+        console.error('Ошибка прослушки водителей:', error);
+      });
   }
 
   // ========== КЛИЕНТ: СОЗДАНИЕ ЗАКАЗА ==========
   function createOrder() {
-    if (!currentUser) {
-      alert('Сначала войдите!');
-      return;
-    }
+    if (!currentUser) { alert('Сначала войдите!'); return; }
     var from = document.getElementById('from').value;
     var to = document.getElementById('to').value;
-    var fromLat = parseFloat(document.getElementById('from-lat').value);
-    var fromLng = parseFloat(document.getElementById('from-lng').value);
+    var fromLat = parseFloat(document.getElementById('from-lat')?.value || 55.7539);
+    var fromLng = parseFloat(document.getElementById('from-lng')?.value || 37.6208);
     if (isNaN(fromLat) || isNaN(fromLng)) {
-      alert('Введите корректные координаты отправления (числа)');
+      alert('Введите координаты отправления или кликните на карту');
       return;
     }
-
     db.collection('orders').add({
       clientId: currentUser.uid,
       clientEmail: currentUser.email,
@@ -246,47 +352,55 @@
     })
     .then(function() {
       document.getElementById('order-status').innerHTML = '✅ Водитель назначен!';
-      if (!document.getElementById('dispatcher-section').classList.contains('hidden')) {
-        loadOrders();
-      }
-      if (currentUserData && currentUserData.role === 'driver') {
-        loadDriverOrders();
-      }
+      // Покажем информацию о заказе клиенту
+      listenClientOrder();
     })
     .catch(function(error) {
       alert('Ошибка: ' + error.message);
     });
   }
 
-  // ========== ИИ-ДИСПЕТЧЕР: НАЗНАЧЕНИЕ БЛИЖАЙШЕГО ВОДИТЕЛЯ ==========
+  // Слушаем последний заказ клиента для отображения статуса
+  function listenClientOrder() {
+    if (!currentUser) return;
+    db.collection('orders')
+      .where('clientId', '==', currentUser.uid)
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .onSnapshot(function(snapshot) {
+        snapshot.docChanges().forEach(function(change) {
+          if (change.type === 'modified' || change.type === 'added') {
+            var data = change.doc.data();
+            var html = '<div class="order-item"><b>Ваш заказ:</b> ' + data.from + ' → ' + data.to +
+              ' | Статус: <span class="badge badge-'+data.status+'">'+data.status+'</span>' +
+              ' | ' + (data.aiNote || '') +
+              (data.driverEmail ? ' | 🚗 водитель: ' + data.driverEmail : '') +
+              '</div>';
+            document.getElementById('client-order-info').innerHTML = html;
+          }
+        });
+      }, function(error) {
+        console.error('Ошибка прослушки заказа клиента:', error);
+      });
+  }
+
+  // ========== ИИ-ДИСПЕТЧЕР: НАЗНАЧЕНИЕ БЛИЖАЙШЕГО ==========
   function assignNearestDriver(orderId, fromLat, fromLng) {
-    // Получаем всех свободных водителей
     return db.collection('users')
       .where('role', '==', 'driver')
       .where('available', '==', true)
       .get()
       .then(function(snapshot) {
         if (snapshot.empty) {
-          // Нет свободных водителей
           return db.collection('orders').doc(orderId).update({
             status: 'waiting',
             aiNote: 'Нет свободных водителей'
-          })
-          .then(function() {
-            return db.collection('ai_logs').add({
-              orderId: orderId,
-              decision: 'Нет свободных водителей',
-              timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
           });
         }
-
-        // Находим ближайшего
         var nearestDriver = null;
         var nearestDist = Infinity;
         snapshot.forEach(function(doc) {
           var data = doc.data();
-          // Проверяем, есть ли координаты
           if (data.lat && data.lng) {
             var dist = getDistance(fromLat, fromLng, data.lat, data.lng);
             if (dist < nearestDist) {
@@ -295,26 +409,21 @@
             }
           }
         });
-
         if (!nearestDriver) {
-          // Водители есть, но у них нет координат
           return db.collection('orders').doc(orderId).update({
             status: 'error',
             aiNote: 'У водителей нет координат'
           });
         }
-
-        // Назначаем ближайшего
         var driverId = nearestDriver.id;
         var driverData = nearestDriver.data;
         return db.collection('orders').doc(orderId).update({
           driverId: driverId,
           driverEmail: driverData.email,
           status: 'assigned',
-          aiNote: 'Назначен ближайший водитель ' + driverData.email + ' (расстояние ' + nearestDist.toFixed(2) + ' км)'
+          aiNote: 'Назначен ближайший водитель ' + driverData.email + ' (расст. ' + nearestDist.toFixed(2) + ' км)'
         })
         .then(function() {
-          // Делаем водителя недоступным
           return db.collection('users').doc(driverId).update({
             available: false
           });
@@ -322,7 +431,7 @@
         .then(function() {
           return db.collection('ai_logs').add({
             orderId: orderId,
-            decision: 'Назначен водитель ' + driverData.email + ' (дистанция ' + nearestDist.toFixed(2) + ' км)',
+            decision: 'Назначен водитель ' + driverData.email + ' (дист. ' + nearestDist.toFixed(2) + ' км)',
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
           });
         });
@@ -333,146 +442,81 @@
       });
   }
 
-  // ========== ДИСПЕТЧЕР: ВСЕ ЗАКАЗЫ ==========
-  function loadOrders() {
-    db.collection('orders')
-      .orderBy('createdAt', 'desc')
-      .limit(30)
-      .get()
-      .then(function(snapshot) {
-        var html = '';
-        snapshot.forEach(function(doc) {
-          var d = doc.data();
-          html += '<div style="border-bottom:1px solid #ddd; padding:8px;">' +
-            '<b>' + (d.from || '?') + '</b> → <b>' + (d.to || '?') + '</b> | ' +
-            'Статус: ' + d.status + ' | ' +
-            'Цена: ' + d.price + '₽ | ' +
-            'Клиент: ' + (d.clientEmail || 'anon') +
-            (d.aiNote ? ' 🧠 ' + d.aiNote : '') +
-            (d.driverId ? ' 🚗 водитель: ' + d.driverEmail : '') +
-            '</div>';
-        });
-        document.getElementById('order-list').innerHTML = html || 'Нет заказов';
-      })
-      .catch(function(error) {
-        alert('Ошибка загрузки заказов: ' + error.message);
-      });
+  // ========== ВОДИТЕЛЬ: КАРТА ==========
+  function initDriverMap() {
+    if (driverMap) return;
+    driverMap = L.map('map-driver').setView([55.7558, 37.6173], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(driverMap);
   }
 
-  // ========== ВОДИТЕЛЬ: МОИ ЗАКАЗЫ ==========
-  function loadDriverOrders() {
+  // Слушаем заказы, назначенные на этого водителя, и показываем на карте клиента
+  function listenDriverOrders() {
     if (!currentUser) return;
     db.collection('orders')
       .where('driverId', '==', currentUser.uid)
-      .orderBy('createdAt', 'desc')
-      .get()
-      .then(function(snapshot) {
+      .where('status', 'in', ['assigned', 'started'])
+      .onSnapshot(function(snapshot) {
+        // Обновляем список заказов
         var html = '';
         snapshot.forEach(function(doc) {
-          var d = doc.data();
-          html += '<div style="border-bottom:1px solid #ddd; padding:8px;">' +
-            '<b>' + d.from + '</b> → <b>' + d.to + '</b> | ' +
-            'Статус: ' + d.status + ' | ' +
-            'Цена: ' + d.price + '₽' +
-            (d.aiNote ? ' 🧠 ' + d.aiNote : '') +
+          var data = doc.data();
+          html += '<div class="order-item"><b>Заказ:</b> ' + data.from + ' → ' + data.to +
+            ' | Статус: <span class="badge badge-'+data.status+'">'+data.status+'</span>' +
+            (data.aiNote ? ' | ' + data.aiNote : '') +
             '</div>';
+          // Показываем клиента на карте, если есть координаты
+          if (data.fromLat && data.fromLng) {
+            if (driverMarker) {
+              driverMap.removeLayer(driverMarker);
+            }
+            driverMarker = L.marker([data.fromLat, data.fromLng])
+              .bindPopup('Клиент: ' + data.clientEmail + '<br>Адрес: ' + data.from)
+              .addTo(driverMap);
+            driverMap.setView([data.fromLat, data.fromLng], 14);
+          }
         });
-        document.getElementById('driver-orders').innerHTML = html || 'Нет назначенных заказов';
-      })
-      .catch(function(error) {
-        alert('Ошибка загрузки заказов водителя: ' + error.message);
+        document.getElementById('driver-orders-list').innerHTML = html || 'Нет активных заказов';
+      }, function(error) {
+        console.error('Ошибка прослушки заказов водителя:', error);
       });
   }
 
-  // ========== ВОДИТЕЛЬ: ОБНОВЛЕНИЕ МЕСТОПОЛОЖЕНИЯ ==========
-  function updateLocation() {
-    if (!currentUser || currentUserData.role !== 'driver') {
-      alert('Эта функция доступна только для водителей');
+  // ========== ВОДИТЕЛЬ: GPS-ТРЕКИНГ ==========
+  function startGpsTracking() {
+    if (!navigator.geolocation) {
+      alert('Ваш браузер не поддерживает геолокацию.');
       return;
     }
-    // Используем встроенную геолокацию браузера
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        function(position) {
-          var lat = position.coords.latitude;
-          var lng = position.coords.longitude;
-          db.collection('users').doc(currentUser.uid).update({
-            lat: lat,
-            lng: lng
-          })
-          .then(function() {
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    watchId = navigator.geolocation.watchPosition(
+      function(position) {
+        var lat = position.coords.latitude;
+        var lng = position.coords.longitude;
+        // Обновляем в Firestore
+        db.collection('users').doc(currentUser.uid).update({
+          lat: lat,
+          lng: lng
+        })
+        .then(function() {
+          if (currentUserData) {
             currentUserData.lat = lat;
             currentUserData.lng = lng;
-            updateLocationDisplay();
-            alert('Координаты обновлены: ' + lat + ', ' + lng);
-          })
-          .catch(function(error) {
-            alert('Ошибка сохранения координат: ' + error.message);
-          });
-        },
-        function(error) {
-          alert('Не удалось получить GPS: ' + error.message + '. Введите координаты вручную.');
-          // Предлагаем ввести вручную
-          var lat = prompt('Введите широту (например, 55.7539)', '55.7539');
-          var lng = prompt('Введите долготу (например, 37.6208)', '37.6208');
-          if (lat !== null && lng !== null) {
-            var newLat = parseFloat(lat);
-            var newLng = parseFloat(lng);
-            if (!isNaN(newLat) && !isNaN(newLng)) {
-              db.collection('users').doc(currentUser.uid).update({
-                lat: newLat,
-                lng: newLng
-              })
-              .then(function() {
-                currentUserData.lat = newLat;
-                currentUserData.lng = newLng;
-                updateLocationDisplay();
-                alert('Координаты обновлены вручную.');
-              })
-              .catch(function(error) {
-                alert('Ошибка сохранения: ' + error.message);
-              });
-            } else {
-              alert('Введите корректные числа');
-            }
           }
-        },
-        { enableHighAccuracy: true }
-      );
-    } else {
-      alert('Ваш браузер не поддерживает геолокацию. Введите координаты вручную.');
-      var lat = prompt('Введите широту (например, 55.7539)', '55.7539');
-      var lng = prompt('Введите долготу (например, 37.6208)', '37.6208');
-      if (lat !== null && lng !== null) {
-        var newLat = parseFloat(lat);
-        var newLng = parseFloat(lng);
-        if (!isNaN(newLat) && !isNaN(newLng)) {
-          db.collection('users').doc(currentUser.uid).update({
-            lat: newLat,
-            lng: newLng
-          })
-          .then(function() {
-            currentUserData.lat = newLat;
-            currentUserData.lng = newLng;
-            updateLocationDisplay();
-            alert('Координаты обновлены.');
-          })
-          .catch(function(error) {
-            alert('Ошибка сохранения: ' + error.message);
-          });
-        } else {
-          alert('Введите корректные числа');
-        }
-      }
-    }
-  }
-
-  function updateLocationDisplay() {
-    if (currentUserData && currentUserData.role === 'driver') {
-      var lat = currentUserData.lat || 'не установлены';
-      var lng = currentUserData.lng || 'не установлены';
-      document.getElementById('driver-location').innerHTML = '📍 Мои координаты: ' + lat + ', ' + lng;
-    }
+          document.getElementById('driver-location-info').innerHTML = 
+            '📍 Мои координаты: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
+        })
+        .catch(function(error) {
+          console.error('Ошибка обновления GPS:', error);
+        });
+      },
+      function(error) {
+        console.error('GPS ошибка:', error);
+        alert('Ошибка GPS: ' + error.message + '. Обновите местоположение вручную через кнопку.');
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+    );
   }
 
   // ========== ВОДИТЕЛЬ: ПЕРЕКЛЮЧЕНИЕ ДОСТУПНОСТИ ==========
@@ -534,10 +578,6 @@
           currentUserData.available = true;
           updateDriverStatus();
           alert('Заказ завершён! Вы снова доступны.');
-          loadDriverOrders();
-          if (!document.getElementById('dispatcher-section').classList.contains('hidden')) {
-            loadOrders();
-          }
         });
       })
       .catch(function(error) {
@@ -545,8 +585,33 @@
       });
   }
 
+  // ========== ДИСПЕТЧЕР ==========
+  function loadOrders() {
+    db.collection('orders')
+      .orderBy('createdAt', 'desc')
+      .limit(30)
+      .get()
+      .then(function(snapshot) {
+        var html = '';
+        snapshot.forEach(function(doc) {
+          var d = doc.data();
+          html += '<div class="order-item"><b>' + (d.from || '?') + '</b> → <b>' + (d.to || '?') + '</b> | ' +
+            'Статус: <span class="badge badge-'+d.status+'">'+d.status+'</span> | ' +
+            'Цена: ' + d.price + '₽ | ' +
+            'Клиент: ' + (d.clientEmail || 'anon') +
+            (d.aiNote ? ' 🧠 ' + d.aiNote : '') +
+            (d.driverId ? ' 🚗 водитель: ' + d.driverEmail : '') +
+            '</div>';
+        });
+        document.getElementById('order-list').innerHTML = html || 'Нет заказов';
+      })
+      .catch(function(error) {
+        alert('Ошибка загрузки заказов: ' + error.message);
+      });
+  }
+
   // ========== ИНИЦИАЛИЗАЦИЯ ==========
-  console.log('Taxi AI Platform v0.3 загружена');
+  console.log('Taxi AI Platform v0.4 загружена');
 </script>
 </body>
 </html>
