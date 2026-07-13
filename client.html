@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>🚕 Taxi – Клиент</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f0f2f5; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .card { background: white; padding: 20px; margin: 15px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .hidden { display: none; }
+    button { padding: 8px 16px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+    button:hover { background: #0056b3; }
+    input { padding: 8px; margin: 5px; width: 100%; max-width: 300px; }
+    #map { height: 400px; width: 100%; border-radius: 8px; }
+    .flex-row { display: flex; gap: 20px; flex-wrap: wrap; }
+    .flex-col { flex: 1; min-width: 300px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+    .badge-created { background: #ffc107; }
+    .badge-assigned { background: #17a2b8; color: white; }
+    .badge-completed { background: #28a745; color: white; }
+    .badge-waiting { background: #dc3545; color: white; }
+    .nav { margin-bottom: 20px; }
+    .nav a { margin-right: 15px; text-decoration: none; color: #007bff; font-weight: bold; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="nav">
+    <a href="client.html">Клиент</a>
+    <a href="driver.html">Водитель</a>
+  </div>
+  <h1>🚕 Taxi – Клиент</h1>
+
+  <!-- Авторизация -->
+  <div id="auth-section" class="card">
+    <h3>Вход / Регистрация</h3>
+    <input type="email" id="email" placeholder="Email" value="client@taxi.com">
+    <input type="password" id="password" placeholder="Пароль" value="123456">
+    <button onclick="signUp()">Зарегистрироваться</button>
+    <button onclick="signIn()">Войти</button>
+    <button onclick="signOut()">Выйти</button>
+    <p id="user-status">Не авторизован</p>
+  </div>
+
+  <!-- Интерфейс клиента -->
+  <div id="client-section" class="hidden">
+    <div class="card">
+      <div class="flex-row">
+        <div class="flex-col">
+          <h4>Создать заказ</h4>
+          <input id="from" placeholder="Откуда (адрес)" value="Красная площадь, Москва">
+          <input id="to" placeholder="Куда (адрес)" value="Вокзал">
+          <div style="display: flex; gap: 5px;">
+            <input id="from-lat" placeholder="Широта" value="55.7539" style="width:45%;">
+            <input id="from-lng" placeholder="Долгота" value="37.6208" style="width:45%;">
+          </div>
+          <button onclick="createOrder()">🚖 Заказать такси</button>
+          <p id="order-status"></p>
+          <div id="client-order-info"></div>
+        </div>
+        <div class="flex-col">
+          <h4>Свободные машины рядом</h4>
+          <div id="map"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+    authDomain: "taxi-ai-app-69628.firebaseapp.com",
+    projectId: "taxi-ai-app-69628",
+    storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+    messagingSenderId: "952357992434",
+    appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+    measurementId: "G-Z9NJFSSXH6"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  let currentUser = null;
+  let currentUserData = null;
+  let map = null;
+  let markers = {};
+
+  // === АУТЕНТИФИКАЦИЯ ===
+  auth.onAuthStateChanged(async function(user) {
+    if (user) {
+      currentUser = user;
+      document.getElementById('user-status').innerHTML = '✅ Вошёл: ' + user.email;
+      document.getElementById('auth-section').style.display = 'none';
+      document.getElementById('client-section').classList.remove('hidden');
+      await loadUserData();
+      initMap();
+      listenFreeDrivers();
+      listenClientOrder();
+    } else {
+      currentUser = null;
+      document.getElementById('user-status').innerHTML = '❌ Не авторизован';
+      document.getElementById('auth-section').style.display = 'block';
+      document.getElementById('client-section').classList.add('hidden');
+    }
+  });
+
+  function loadUserData() {
+    return db.collection('users').doc(currentUser.uid).get().then(doc => {
+      if (doc.exists) {
+        currentUserData = doc.data();
+        if (currentUserData.role !== 'client') {
+          // Если роль не клиент, перенаправим на соответствующую страницу
+          alert('Вы не клиент. Перейдите на страницу ' + currentUserData.role);
+          window.location.href = currentUserData.role + '.html';
+        }
+      } else {
+        // Создаём как клиента
+        return db.collection('users').doc(currentUser.uid).set({
+          email: currentUser.email,
+          name: 'Клиент',
+          role: 'client',
+          phone: '',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+    });
+  }
+
+  function signUp() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(cred => {
+        return db.collection('users').doc(cred.user.uid).set({
+          email: email,
+          name: 'Клиент',
+          role: 'client',
+          phone: '',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      })
+      .then(() => alert('Регистрация успешна! Войдите.'))
+      .catch(e => alert('Ошибка: ' + e.message));
+  }
+
+  function signIn() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    auth.signInWithEmailAndPassword(email, password)
+      .catch(e => alert('Ошибка входа: ' + e.message));
+  }
+
+  function signOut() { auth.signOut(); }
+
+  // === КАРТА ===
+  function initMap() {
+    if (map) return;
+    map = L.map('map').setView([55.7558, 37.6173], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+    map.on('click', function(e) {
+      const lat = e.latlng.lat.toFixed(6);
+      const lng = e.latlng.lng.toFixed(6);
+      document.getElementById('from-lat').value = lat;
+      document.getElementById('from-lng').value = lng;
+      document.getElementById('from').value = 'Точка на карте';
+      alert('Координаты отправления установлены: ' + lat + ', ' + lng);
+    });
+  }
+
+  // Слушаем свободных водителей и обновляем маркеры
+  function listenFreeDrivers() {
+    db.collection('users')
+      .where('role', '==', 'driver')
+      .where('available', '==', true)
+      .onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+          const id = change.doc.id;
+          const data = change.doc.data();
+          if (change.type === 'added' || change.type === 'modified') {
+            if (data.lat && data.lng) {
+              if (markers[id]) map.removeLayer(markers[id]);
+              markers[id] = L.marker([data.lat, data.lng])
+                .bindPopup('Водитель: ' + (data.name || data.email))
+                .addTo(map);
+            }
+          } else if (change.type === 'removed') {
+            if (markers[id]) {
+              map.removeLayer(markers[id]);
+              delete markers[id];
+            }
+          }
+        });
+      }, error => console.error('Ошибка прослушки водителей:', error));
+  }
+
+  // === СОЗДАНИЕ ЗАКАЗА ===
+  function createOrder() {
+    if (!currentUser) { alert('Войдите!'); return; }
+    const from = document.getElementById('from').value;
+    const to = document.getElementById('to').value;
+    const lat = parseFloat(document.getElementById('from-lat').value);
+    const lng = parseFloat(document.getElementById('from-lng').value);
+    if (isNaN(lat) || isNaN(lng)) { alert('Введите координаты или кликните на карту'); return; }
+
+    db.collection('orders').add({
+      clientId: currentUser.uid,
+      clientEmail: currentUser.email,
+      from: from,
+      to: to,
+      fromLat: lat,
+      fromLng: lng,
+      status: 'created',
+      price: Math.round(Math.random() * 300 + 100),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      aiNote: 'Поиск водителя...'
+    })
+    .then(docRef => {
+      document.getElementById('order-status').innerHTML = '✅ Заказ создан. Ищем водителя...';
+      return assignNearestDriver(docRef.id, lat, lng);
+    })
+    .then(() => {
+      document.getElementById('order-status').innerHTML = '✅ Водитель назначен!';
+    })
+    .catch(e => alert('Ошибка: ' + e.message));
+  }
+
+  // ИИ-назначение ближайшего водителя (как раньше)
+  function assignNearestDriver(orderId, fromLat, fromLng) {
+    return db.collection('users')
+      .where('role', '==', 'driver')
+      .where('available', '==', true)
+      .get()
+      .then(snapshot => {
+        if (snapshot.empty) {
+          return db.collection('orders').doc(orderId).update({
+            status: 'waiting',
+            aiNote: 'Нет свободных водителей'
+          });
+        }
+        let nearest = null, minDist = Infinity;
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          if (d.lat && d.lng) {
+            const dist = getDistance(fromLat, fromLng, d.lat, d.lng);
+            if (dist < minDist) {
+              minDist = dist;
+              nearest = { id: doc.id, data: d, dist };
+            }
+          }
+        });
+        if (!nearest) {
+          return db.collection('orders').doc(orderId).update({
+            status: 'error',
+            aiNote: 'У водителей нет координат'
+          });
+        }
+        return db.collection('orders').doc(orderId).update({
+          driverId: nearest.id,
+          driverEmail: nearest.data.email,
+          status: 'assigned',
+          aiNote: 'Назначен ' + nearest.data.email + ' (расст. ' + nearest.dist.toFixed(2) + ' км)'
+        })
+        .then(() => db.collection('users').doc(nearest.id).update({ available: false }));
+      });
+  }
+
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  // Слушаем последний заказ клиента
+  function listenClientOrder() {
+    if (!currentUser) return;
+    db.collection('orders')
+      .where('clientId', '==', currentUser.uid)
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'modified' || change.type === 'added') {
+            const data = change.doc.data();
+            let html = '<div class="order-item"><b>Заказ:</b> ' + data.from + ' → ' + data.to +
+              ' | Статус: <span class="badge badge-'+data.status+'">'+data.status+'</span>' +
+              ' | ' + (data.aiNote || '') +
+              (data.driverEmail ? ' | 🚗 водитель: ' + data.driverEmail : '') +
+              '</div>';
+            document.getElementById('client-order-info').innerHTML = html;
+          }
+        });
+      }, error => console.error('Ошибка прослушки заказа:', error));
+  }
+</script>
+</body>
+</html>
