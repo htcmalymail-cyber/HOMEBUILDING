@@ -34,15 +34,12 @@
     .nav { margin-bottom:20px; }
     .nav a { margin-right:15px; text-decoration:none; color:#007bff; font-weight:bold; }
     .alert { background:#fff3cd; border:1px solid #ffeeba; padding:15px; border-radius:8px; margin:10px 0; color:#856404; }
-    .success { background:#d4edda; border-color:#c3e6cb; color:#155724; }
-    .form-group { margin:12px 0; }
     .form-row { display:flex; gap:15px; flex-wrap:wrap; }
-    .form-row input { flex:1; min-width:200px; }
+    .form-row input, .form-row select { flex:1; min-width:200px; }
     .driver-list { margin-top:20px; max-height:300px; overflow-y:auto; }
     .driver-item { padding:8px 12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; flex-wrap:wrap; }
-    .driver-item .status { font-weight:600; }
-    .online { color:#28a745; }
-    .offline { color:#dc3545; }
+    .online { color:#28a745; font-weight:600; }
+    .offline { color:#dc3545; font-weight:600; }
   </style>
 </head>
 <body>
@@ -122,7 +119,7 @@
           </div>
         </div>
 
-        <!-- Список всех водителей (для диспетчера/просмотра) -->
+        <!-- Список всех водителей -->
         <div style="margin-top:20px;padding-top:20px;border-top:2px solid #eee;">
           <h4>📊 Все зарегистрированные водители</h4>
           <div id="all-drivers-list" class="driver-list"></div>
@@ -152,7 +149,6 @@
   let clientMarker = null;
   let watchId = null;
 
-  // === АУТЕНТИФИКАЦИЯ ===
   auth.onAuthStateChanged(async function(user) {
     if (user) {
       currentUser = user;
@@ -165,7 +161,6 @@
         if (currentUserData && currentUserData.role === 'driver') {
           document.getElementById('not-driver-alert').classList.add('hidden');
           document.getElementById('driver-content').classList.remove('hidden');
-          // Показываем данные водителя
           document.getElementById('driver-name-display').textContent = currentUserData.fullName || '—';
           document.getElementById('driver-car-display').textContent = currentUserData.carModel || '—';
           document.getElementById('driver-plate-display').textContent = currentUserData.carNumber || '—';
@@ -203,35 +198,11 @@
         currentUserData = doc.data();
         currentUserData.role = 'driver';
       } else {
-        // Проверяем, может быть старый документ в users
-        return db.collection('users').doc(currentUser.uid).get().then(userDoc => {
-          if (userDoc.exists && userDoc.data().role === 'driver') {
-            // Переносим данные из users в drivers
-            const data = userDoc.data();
-            return db.collection('drivers').doc(currentUser.uid).set({
-              email: currentUser.email,
-              fullName: data.name || 'Водитель',
-              passportId: data.passportId || '',
-              carModel: data.carModel || '',
-              carNumber: data.carNumber || '',
-              phone: data.phone || '',
-              available: data.available !== undefined ? data.available : true,
-              lat: data.lat || 55.7558,
-              lng: data.lng || 37.6173,
-              createdAt: data.createdAt || firebase.firestore.FieldValue.serverTimestamp(),
-              role: 'driver'
-            }).then(() => {
-              currentUserData = { ...data, role: 'driver' };
-            });
-          } else {
-            currentUserData = { role: 'client' };
-          }
-        });
+        currentUserData = { role: 'client' };
       }
     });
   }
 
-  // === РЕГИСТРАЦИЯ ВОДИТЕЛЯ С ПОЛНЫМИ ДАННЫМИ ===
   function signUpDriver() {
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value.trim();
@@ -242,7 +213,6 @@
     const phone = document.getElementById('reg-phone').value.trim();
     const status = document.getElementById('reg-status').value;
 
-    // Проверка заполнения
     if (!email || !password || !fullName || !passportId || !carModel || !carNumber || !phone) {
       alert('⚠️ Все поля обязательны для заполнения!');
       return;
@@ -252,10 +222,8 @@
       return;
     }
 
-    // Сначала создаём пользователя в Authentication
     auth.createUserWithEmailAndPassword(email, password)
       .then(cred => {
-        // Сохраняем ВСЕ данные в коллекцию "drivers"
         return db.collection('drivers').doc(cred.user.uid).set({
           email: email,
           fullName: fullName,
@@ -271,17 +239,15 @@
         });
       })
       .then(() => {
-        alert('✅ Регистрация водителя успешна! Все данные сохранены в базе.\nТеперь войдите.');
-        // Очищаем форму
+        alert('✅ Регистрация водителя успешна! Все данные сохранены.\nТеперь войдите.');
         document.getElementById('reg-password').value = '';
-        // Показываем сообщение об успехе
-        document.getElementById('user-status').innerHTML = '✅ Регистрация завершена! Войдите с вашим email и паролем.';
+        document.getElementById('user-status').innerHTML = '✅ Регистрация завершена! Войдите.';
       })
       .catch(error => {
         if (error.code === 'auth/email-already-in-use') {
-          alert('⚠️ Этот email уже зарегистрирован. Пожалуйста, войдите или используйте другой email.');
+          alert('⚠️ Этот email уже зарегистрирован. Войдите или используйте другой email.');
         } else {
-          alert('❌ Ошибка регистрации: ' + error.message);
+          alert('❌ Ошибка: ' + error.message);
         }
       });
   }
@@ -290,15 +256,11 @@
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
     auth.signInWithEmailAndPassword(email, password)
-      .then(() => {
-        document.getElementById('user-status').innerHTML = '✅ Вход выполнен';
-      })
       .catch(e => alert('❌ Ошибка входа: ' + e.message));
   }
 
   function signOut() { auth.signOut(); }
 
-  // === КАРТА ===
   function initMap() {
     if (map) return;
     map = L.map('map').setView([55.7558, 37.6173], 13);
@@ -307,7 +269,6 @@
     }).addTo(map);
   }
 
-  // === СЛУШАЕМ ЗАКАЗЫ ВОДИТЕЛЯ ===
   function listenDriverOrders() {
     if (!currentUser) return;
     db.collection('orders')
@@ -349,13 +310,10 @@
       status: 'accepted',
       aiNote: 'Водитель принял заказ'
     })
-    .then(() => {
-      alert('Заказ принят! Поездка началась.');
-    })
+    .then(() => alert('Заказ принят!'))
     .catch(e => alert('Ошибка: ' + e.message));
   }
 
-  // === GPS-ТРЕКИНГ ===
   function startGpsTracking() {
     if (!navigator.geolocation) {
       alert('Ваш браузер не поддерживает GPS.');
@@ -406,7 +364,6 @@
     }
   }
 
-  // === УПРАВЛЕНИЕ СТАТУСОМ ===
   function toggleAvailability() {
     if (!currentUserData) return;
     const newVal = !currentUserData.available;
@@ -455,7 +412,6 @@
       .catch(e => alert('Ошибка: ' + e.message));
   }
 
-  // === СПИСОК ВСЕХ ВОДИТЕЛЕЙ ===
   function loadAllDrivers() {
     db.collection('drivers')
       .where('role', '==', 'driver')
@@ -467,317 +423,13 @@
           html += `<div class="driver-item">
             <span><strong>${data.fullName || data.email}</strong> — ${data.carModel || '—'} (${data.carNumber || '—'})</span>
             <span>📞 ${data.phone || '—'}</span>
-            <span class="status ${data.available ? 'online' : 'offline'}">${status}</span>
+            <span class="${data.available ? 'online' : 'offline'}">${status}</span>
           </div>`;
         });
         document.getElementById('all-drivers-list').innerHTML = html || 'Нет зарегистрированных водителей';
       }, error => {
         console.error('Ошибка загрузки списка водителей:', error);
       });
-  }
-</script>
-</body>
-</html>    projectId: "taxi-ai-app-69628",
-    storageBucket: "taxi-ai-app-69628.firebasestorage.app",
-    messagingSenderId: "952357992434",
-    appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
-    measurementId: "G-Z9NJFSSXH6"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const auth = firebase.auth();
-
-  let currentUser = null;
-  let currentUserData = null;
-  let map = null;
-  let clientMarker = null;
-  let watchId = null;
-  let activeOrderId = null;
-
-  // === АУТЕНТИФИКАЦИЯ ===
-  auth.onAuthStateChanged(async function(user) {
-    if (user) {
-      currentUser = user;
-      document.getElementById('user-status').innerHTML = '✅ Вошёл: ' + user.email;
-      document.getElementById('auth-section').style.display = 'none';
-      document.getElementById('driver-section').classList.remove('hidden');
-      
-      // Загружаем данные пользователя
-      try {
-        await loadUserData();
-        // После загрузки проверяем роль
-        if (currentUserData && currentUserData.role === 'driver') {
-          // Показываем интерфейс водителя
-          document.getElementById('not-driver-alert').classList.add('hidden');
-          document.getElementById('driver-content').classList.remove('hidden');
-          initMap();
-          listenDriverOrders();
-          updateDriverStatus();
-          startGpsTracking();
-        } else {
-          // Пользователь авторизован, но не водитель
-          document.getElementById('not-driver-alert').classList.remove('hidden');
-          document.getElementById('driver-content').classList.add('hidden');
-        }
-      } catch (error) {
-        console.error('Ошибка загрузки:', error);
-      }
-    } else {
-      currentUser = null;
-      currentUserData = null;
-      document.getElementById('user-status').innerHTML = '❌ Не авторизован';
-      document.getElementById('auth-section').style.display = 'block';
-      document.getElementById('driver-section').classList.add('hidden');
-      document.getElementById('not-driver-alert').classList.add('hidden');
-      document.getElementById('driver-content').classList.add('hidden');
-      if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-    }
-  });
-
-  function loadUserData() {
-    return db.collection('users').doc(currentUser.uid).get().then(doc => {
-      if (doc.exists) {
-        currentUserData = doc.data();
-        // Если роль не driver, оставляем как есть (покажем предложение стать водителем)
-        // Если роль driver, но нет телефона – запросим
-        if (currentUserData.role === 'driver') {
-          if (!currentUserData.phone) {
-            const phone = prompt('Введите ваш номер телефона (обязательно):', '+7 999 888-77-66');
-            if (phone) {
-              return db.collection('users').doc(currentUser.uid).update({ phone: phone })
-                .then(() => { currentUserData.phone = phone; });
-            }
-          }
-          // Если координаты не заданы
-          if (!currentUserData.lat || currentUserData.lat === 0) {
-            return db.collection('users').doc(currentUser.uid).update({ lat: 55.7558, lng: 37.6173 });
-          }
-        }
-      } else {
-        // Если документа нет – создадим как клиента (но это не должно случиться, т.к. регистрация создаёт)
-        return db.collection('users').doc(currentUser.uid).set({
-          email: currentUser.email,
-          name: 'Пользователь',
-          role: 'client',
-          phone: '',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-          currentUserData = { role: 'client' };
-        });
-      }
-    });
-  }
-
-  // === ПОВЫШЕНИЕ ДО ВОДИТЕЛЯ ===
-  function upgradeToDriver() {
-    if (!currentUser) { alert('Сначала войдите'); return; }
-    const phone = document.getElementById('upgrade-phone').value.trim();
-    if (!phone) { alert('Введите номер телефона'); return; }
-    db.collection('users').doc(currentUser.uid).update({
-      role: 'driver',
-      phone: phone,
-      available: true,
-      lat: 55.7558,
-      lng: 37.6173
-    })
-    .then(() => {
-      alert('Поздравляем! Вы теперь водитель. Обновите страницу или перезайдите.');
-      // Обновляем данные и перезагружаем интерфейс
-      return loadUserData();
-    })
-    .then(() => {
-      location.reload(); // простой способ обновить состояние
-    })
-    .catch(e => alert('Ошибка обновления: ' + e.message));
-  }
-
-  // === РЕГИСТРАЦИЯ НОВОГО ВОДИТЕЛЯ ===
-  function signUp() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const phone = document.getElementById('phone').value.trim();
-    if (!phone) { alert('Номер телефона обязателен для регистрации водителя!'); return; }
-    auth.createUserWithEmailAndPassword(email, password)
-      .then(cred => {
-        return db.collection('users').doc(cred.user.uid).set({
-          email: email,
-          name: 'Водитель',
-          role: 'driver',
-          phone: phone,
-          available: true,
-          lat: 55.7558,
-          lng: 37.6173,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      })
-      .then(() => alert('Регистрация водителя успешна! Войдите.'))
-      .catch(e => alert('Ошибка: ' + e.message));
-  }
-
-  function signIn() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    auth.signInWithEmailAndPassword(email, password)
-      .catch(e => alert('Ошибка входа: ' + e.message));
-  }
-
-  function signOut() { auth.signOut(); }
-
-  // === КАРТА ===
-  function initMap() {
-    if (map) return;
-    map = L.map('map').setView([55.7558, 37.6173], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
-  }
-
-  // Слушаем заказы, назначенные на этого водителя (статусы assigned, accepted, started)
-  function listenDriverOrders() {
-    if (!currentUser) return;
-    db.collection('orders')
-      .where('driverId', '==', currentUser.uid)
-      .where('status', 'in', ['assigned', 'accepted', 'started'])
-      .onSnapshot(snapshot => {
-        let html = '';
-        let hasActive = false;
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const orderId = doc.id;
-          hasActive = true;
-          activeOrderId = orderId;
-          html += '<div class="order-item"><b>Заказ:</b> ' + data.from + ' → ' + data.to +
-            ' | Статус: <span class="badge badge-'+data.status+'">'+data.status+'</span>' +
-            (data.aiNote ? ' | ' + data.aiNote : '') +
-            '</div>';
-          // Показываем клиента на карте
-          if (data.fromLat && data.fromLng && data.status !== 'completed') {
-            if (clientMarker) map.removeLayer(clientMarker);
-            clientMarker = L.marker([data.fromLat, data.fromLng])
-              .bindPopup('Клиент: ' + data.clientEmail + '<br>Адрес: ' + data.from)
-              .addTo(map);
-            map.setView([data.fromLat, data.fromLng], 14);
-          }
-          if (data.status === 'assigned') {
-            html += '<button class="warning" onclick="acceptOrder(\''+orderId+'\')">✅ Принять заказ</button>';
-          }
-        });
-        document.getElementById('driver-orders-list').innerHTML = html || 'Нет активных заказов';
-        if (!hasActive) {
-          if (clientMarker) { map.removeLayer(clientMarker); clientMarker = null; }
-          activeOrderId = null;
-        }
-      }, error => console.error('Ошибка прослушки заказов водителя:', error));
-  }
-
-  // Принятие заказа
-  function acceptOrder(orderId) {
-    if (!orderId) return;
-    if (!confirm('Вы уверены, что принимаете этот заказ?')) return;
-    db.collection('orders').doc(orderId).update({
-      status: 'accepted',
-      aiNote: 'Водитель принял заказ'
-    })
-    .then(() => {
-      alert('Заказ принят! Поездка началась.');
-    })
-    .catch(e => alert('Ошибка: ' + e.message));
-  }
-
-  // === GPS-ТРЕКИНГ ===
-  function startGpsTracking() {
-    if (!navigator.geolocation) {
-      alert('Ваш браузер не поддерживает GPS. Введите координаты вручную.');
-      return;
-    }
-    if (watchId) navigator.geolocation.clearWatch(watchId);
-    watchId = navigator.geolocation.watchPosition(
-      position => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        db.collection('users').doc(currentUser.uid).update({ lat, lng })
-          .then(() => {
-            currentUserData.lat = lat;
-            currentUserData.lng = lng;
-            document.getElementById('driver-location-info').innerHTML = 
-              '📍 Мои координаты: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
-          })
-          .catch(e => console.error('Ошибка обновления GPS:', e));
-      },
-      error => {
-        console.error('GPS ошибка:', error);
-        alert('Ошибка GPS: ' + error.message + '. Введите координаты вручную через кнопку.');
-      },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
-    );
-  }
-
-  function manualLocation() {
-    const lat = prompt('Введите широту (например, 55.7539):', '55.7539');
-    const lng = prompt('Введите долготу (например, 37.6208):', '37.6208');
-    if (lat && lng) {
-      const newLat = parseFloat(lat);
-      const newLng = parseFloat(lng);
-      if (!isNaN(newLat) && !isNaN(newLng)) {
-        db.collection('users').doc(currentUser.uid).update({ lat: newLat, lng: newLng })
-          .then(() => {
-            currentUserData.lat = newLat;
-            currentUserData.lng = newLng;
-            document.getElementById('driver-location-info').innerHTML = 
-              '📍 Мои координаты: ' + newLat.toFixed(6) + ', ' + newLng.toFixed(6);
-            alert('Координаты обновлены!');
-          })
-          .catch(e => alert('Ошибка: ' + e.message));
-      } else {
-        alert('Введите корректные числа');
-      }
-    }
-  }
-
-  // === УПРАВЛЕНИЕ СТАТУСОМ ===
-  function toggleAvailability() {
-    if (!currentUserData) return;
-    const newVal = !currentUserData.available;
-    db.collection('users').doc(currentUser.uid).update({ available: newVal })
-      .then(() => {
-        currentUserData.available = newVal;
-        updateDriverStatus();
-        alert('Статус изменён: ' + (newVal ? 'Доступен' : 'Недоступен'));
-      })
-      .catch(e => alert('Ошибка: ' + e.message));
-  }
-
-  function updateDriverStatus() {
-    if (currentUserData && currentUserData.role === 'driver') {
-      const statusText = currentUserData.available ? '🟢 Доступен' : '🔴 Недоступен';
-      document.getElementById('driver-status').innerHTML = 'Текущий статус: ' + statusText;
-    }
-  }
-
-  function completeOrder() {
-    if (!currentUser) { alert('Войдите!'); return; }
-    db.collection('orders')
-      .where('driverId', '==', currentUser.uid)
-      .where('status', 'in', ['assigned', 'accepted', 'started'])
-      .orderBy('createdAt', 'desc')
-      .limit(1)
-      .get()
-      .then(snapshot => {
-        if (snapshot.empty) { alert('Нет активных заказов для завершения'); return; }
-        const doc = snapshot.docs[0];
-        const orderId = doc.id;
-        return db.collection('orders').doc(orderId).update({
-          status: 'completed',
-          aiNote: 'Завершён водителем'
-        })
-        .then(() => db.collection('users').doc(currentUser.uid).update({ available: true }))
-        .then(() => {
-          currentUserData.available = true;
-          updateDriverStatus();
-          alert('Заказ завершён! Вы снова доступны.');
-        });
-      })
-      .catch(e => alert('Ошибка: ' + e.message));
   }
 </script>
 </body>
