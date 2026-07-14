@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🚕 Taxi – Клиент</title>
   <!-- ============================================================ -->
-  <!-- ⚠️ ВСТАВЬТЕ ВАШ API-КЛЮЧ В СТРОКЕ НИЖЕ (ЗАМЕНИТЕ YOUR_API_KEY_HERE) -->
+  <!-- ⚠️ ВСТАВЬТЕ ВАШ АКТУАЛЬНЫЙ API-КЛЮЧ В СТРОКЕ НИЖЕ            -->
   <!-- ============================================================ -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvhiWw94K3ysl0QIMMhtzd0uAk2cgcGYQ" async defer></script>
   <!-- ============================================================ -->
@@ -30,7 +30,6 @@
       margin: 15px 0;
     }
     .hidden { display: none !important; }
-
     .nav {
       display: flex;
       flex-wrap: wrap;
@@ -42,9 +41,7 @@
     .nav .logout-btn { background: #dc3545; color: white; border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; }
     .nav .logout-btn:hover { background: #c82333; }
     #user-email { margin-left: auto; color: #555; font-size: 14px; }
-
     h1 { margin: 0 0 10px 0; font-weight: 600; }
-
     .bonus-panel {
       background: linear-gradient(135deg, #f9d976, #f39b7b);
       padding: 12px 20px;
@@ -58,7 +55,6 @@
     }
     .bonus-panel .balance { font-size: 22px; }
     .bonus-panel .hint { font-size: 13px; opacity: 0.8; }
-
     .flex-row { display: flex; gap: 25px; flex-wrap: wrap; }
     .flex-col { flex: 1; min-width: 300px; }
     label { font-weight: 600; display: block; margin-top: 12px; margin-bottom: 4px; }
@@ -92,6 +88,8 @@
     .btn-warning:hover { background: #e0a800; }
     .btn-waze { background: #33b5e5; color: white; }
     .btn-waze:hover { background: #1a8fc4; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #5a6268; }
 
     .price-panel {
       background: #e8f4f8;
@@ -101,7 +99,6 @@
     }
     .price-panel .price { font-size: 24px; font-weight: 700; color: #007bff; }
     .price-panel .small { font-size: 13px; color: #555; }
-
     #map {
       height: 480px;
       width: 100%;
@@ -110,7 +107,6 @@
       margin-top: 8px;
     }
     .map-hint { font-size: 13px; color: #666; margin-top: 6px; }
-
     .order-status-card {
       background: #f8f9fa;
       padding: 16px;
@@ -125,10 +121,8 @@
     .status-cancelled { color: #dc3545; }
     .status-offering { color: #17a2b8; }
     .status-searching { color: #ffc107; }
-
     .driver-info { background: #d4edda; padding: 12px; border-radius: 10px; margin-top: 10px; }
     .action-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-
     .gps-btn {
       background: #28a745;
       color: white;
@@ -144,20 +138,11 @@
     .location-status { font-size: 13px; color: #555; }
     .location-found { color: #28a745; font-weight: 600; }
     .location-error { color: #dc3545; font-weight: 600; }
-
     .pac-container { z-index: 1000; }
-
-    .route-loading {
-      display: none;
-      color: #007bff;
-      font-size: 14px;
-      margin-top: 5px;
-    }
-    .route-error {
-      color: #dc3545;
-      font-size: 13px;
-      margin-top: 5px;
-    }
+    .route-loading { display: none; color: #007bff; font-size: 14px; margin-top: 5px; }
+    .route-error { color: #dc3545; font-size: 13px; margin-top: 5px; }
+    .btn-row { display: flex; gap: 10px; }
+    .btn-row .btn { width: auto; flex: 1; }
   </style>
 </head>
 <body>
@@ -192,11 +177,9 @@
           <button class="gps-btn" onclick="getMyLocation()">📍 Определить</button>
           <span id="location-status" class="location-status">Не определено</span>
         </div>
-        <!-- Поле отправления теперь пустое -->
         <input type="text" id="from-address" placeholder="Введите адрес отправления" value="">
 
         <label>🏁 Куда</label>
-        <!-- Поле назначения пустое -->
         <input type="text" id="to-address" placeholder="Введите адрес назначения" value="">
 
         <!-- Скрытые поля для координат (пустые) -->
@@ -237,7 +220,11 @@
           <div style="font-size:13px; color:#555;">Доступно: <span id="bonus-balance-display">0.00</span> ₪</div>
         </div>
 
-        <button class="btn btn-primary" onclick="createOrder()">🚖 Заказать такси</button>
+        <!-- Кнопки действий -->
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="refreshRoute()" style="flex:1;">🔄 Обновить маршрут</button>
+          <button class="btn btn-primary" onclick="createOrder()" style="flex:2;">🚖 Заказать такси</button>
+        </div>
         <div id="order-status-message" style="margin-top:10px; font-weight:600;"></div>
       </div>
 
@@ -245,7 +232,7 @@
       <div class="flex-col">
         <div id="map"></div>
         <div class="map-hint">
-          💡 Введите адрес отправления и назначения, чтобы построить маршрут.<br>
+          💡 Введите адрес отправления и назначения, затем нажмите Enter или выберите из подсказок.<br>
           🏁 Флаг – пункт назначения.<br>
           📍 Синяя точка – ваше местоположение (если определено).<br>
           Кликните по карте, чтобы изменить точку отправления.
@@ -298,7 +285,7 @@
   let driverUnsubscribe = null;
   let currentDriverLat = null;
   let currentDriverLng = null;
-  let currentFromLat = null;    // теперь null до получения
+  let currentFromLat = null;
   let currentFromLng = null;
   let currentToLat = null;
   let currentToLng = null;
@@ -360,10 +347,7 @@
       await loadClientBonusBalance();
       listenClientOrder();
       setTimeout(ensureMapInitialized, 500);
-      // Автоматическое определение местоположения через 1.5 сек
-      setTimeout(() => {
-        getMyLocation();
-      }, 1500);
+      setTimeout(() => getMyLocation(), 1500);
     } else {
       const session = localStorage.getItem('clientSession');
       if (session) {
@@ -374,9 +358,7 @@
           await loadClientBonusBalance();
           listenClientOrder();
           setTimeout(ensureMapInitialized, 500);
-          setTimeout(() => {
-            getMyLocation();
-          }, 1500);
+          setTimeout(() => getMyLocation(), 1500);
         } catch(e) {
           window.location.href = 'index.html';
         }
@@ -449,7 +431,6 @@
     }
 
     try {
-      // Центр карты – Израиль (без смещения к конкретному адресу)
       const defaultLocation = { lat: 31.5, lng: 34.8 };
       map = new google.maps.Map(mapElement, {
         center: defaultLocation,
@@ -483,6 +464,7 @@
         suppressMarkers: true,
         polylineOptions: { strokeColor: '#007bff', strokeWeight: 4, strokeOpacity: 0.8 }
       });
+      console.log('✅ DirectionsRenderer создан');
 
       // Клик по карте – устанавливает "Откуда"
       map.addListener('click', function(e) {
@@ -496,6 +478,7 @@
         map.panTo({ lat, lng });
         currentFromLat = lat;
         currentFromLng = lng;
+        console.log('📍 Клик по карте, from:', lat, lng);
         updateRoute();
       });
 
@@ -507,6 +490,7 @@
         document.getElementById('from-address').value = '📍 Перемещено на карте';
         currentFromLat = pos.lat();
         currentFromLng = pos.lng();
+        console.log('🔄 Маркер перемещён, from:', pos.lat(), pos.lng());
         updateRoute();
       });
 
@@ -514,11 +498,12 @@
       const fromInput = document.getElementById('from-address');
       if (fromInput) {
         autocompleteFrom = new google.maps.places.Autocomplete(fromInput, {
-          types: ['geocode', 'establishment'],
-          componentRestrictions: { country: 'il' }
+          types: ['geocode', 'establishment']
+          // componentRestrictions: { country: 'il' }  // временно убрано для теста
         });
         autocompleteFrom.addListener('place_changed', function() {
           const place = autocompleteFrom.getPlace();
+          console.log('📌 Выбрано место (from):', place);
           if (place.geometry) {
             const lat = place.geometry.location.lat();
             const lng = place.geometry.location.lng();
@@ -529,7 +514,10 @@
             map.setCenter({ lat, lng });
             currentFromLat = lat;
             currentFromLng = lng;
+            console.log('📍 From coords:', lat, lng);
             updateRoute();
+          } else {
+            console.warn('⚠️ Место без геометрии:', place);
           }
         });
 
@@ -539,6 +527,7 @@
             e.preventDefault();
             const val = this.value.trim();
             if (val) {
+              console.log('⌨️ Enter (from):', val);
               geocodeAddress(val, 'from');
             }
           }
@@ -549,11 +538,12 @@
       const toInput = document.getElementById('to-address');
       if (toInput) {
         autocompleteTo = new google.maps.places.Autocomplete(toInput, {
-          types: ['geocode', 'establishment'],
-          componentRestrictions: { country: 'il' }
+          types: ['geocode', 'establishment']
+          // componentRestrictions: { country: 'il' }
         });
         autocompleteTo.addListener('place_changed', function() {
           const place = autocompleteTo.getPlace();
+          console.log('📌 Выбрано место (to):', place);
           if (place.geometry) {
             const lat = place.geometry.location.lat();
             const lng = place.geometry.location.lng();
@@ -563,7 +553,10 @@
             toMarker.setVisible(true);
             currentToLat = lat;
             currentToLng = lng;
+            console.log('📍 To coords:', lat, lng);
             updateRoute();
+          } else {
+            console.warn('⚠️ Место без геометрии:', place);
           }
         });
 
@@ -573,6 +566,7 @@
             e.preventDefault();
             const val = this.value.trim();
             if (val) {
+              console.log('⌨️ Enter (to):', val);
               geocodeAddress(val, 'to');
             }
           }
@@ -583,6 +577,7 @@
       fromInput.addEventListener('change', function() {
         const val = this.value.trim();
         if (val.length > 3) {
+          console.log('🔄 Change (from):', val);
           geocodeAddress(val, 'from');
         }
       });
@@ -590,15 +585,13 @@
       toInput.addEventListener('change', function() {
         const val = this.value.trim();
         if (val.length > 3) {
+          console.log('🔄 Change (to):', val);
           geocodeAddress(val, 'to');
         }
       });
 
       mapInitialized = true;
-      // НЕ вызываем updateRoute() автоматически
-
       console.log('🗺️ Google Maps полностью инициализирована');
-
     } catch (error) {
       console.error('❌ Ошибка инициализации карты:', error);
       document.getElementById('route-error').textContent = '❌ Ошибка загрузки карты: ' + error.message;
@@ -611,11 +604,14 @@
       document.getElementById('route-error').textContent = '⚠️ Введите более точный адрес';
       return;
     }
+    console.log(`🌐 Геокодирование "${address}" для ${type}`);
     const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: address, componentRestrictions: { country: 'il' } }, function(results, status) {
+    geocoder.geocode({ address: address }, function(results, status) {
+      console.log(`🔍 Результат геокодирования (${type}):`, status, results);
       if (status === 'OK' && results[0]) {
         const lat = results[0].geometry.location.lat();
         const lng = results[0].geometry.location.lng();
+        console.log(`✅ Найдены координаты для ${type}:`, lat, lng);
 
         if (type === 'from') {
           document.getElementById('from-lat').value = lat;
@@ -642,7 +638,6 @@
       } else {
         console.warn('⚠️ Адрес не найден:', address, status);
         document.getElementById('route-error').textContent = `⚠️ Адрес не найден (${status}). Уточните ввод.`;
-        // Сбросить старый маршрут, если был
         if (directionsRenderer) directionsRenderer.setDirections(null);
       }
     });
@@ -668,14 +663,15 @@
     const toLat = parseFloat(document.getElementById('to-lat').value);
     const toLng = parseFloat(document.getElementById('to-lng').value);
 
-    // Если хотя бы одни координаты отсутствуют – не строим маршрут
+    console.log('🛣️ updateRoute вызван, from:', fromLat, fromLng, 'to:', toLat, toLng);
+
     if (isNaN(fromLat) || isNaN(fromLng) || isNaN(toLat) || isNaN(toLng)) {
       document.getElementById('estimated-distance').textContent = '—';
       document.getElementById('estimated-price-range').textContent = '—';
       document.getElementById('estimated-time').textContent = '—';
       document.getElementById('route-error').textContent = '';
-      // Скрываем старый маршрут
       if (directionsRenderer) directionsRenderer.setDirections(null);
+      console.log('⏸️ Недостаточно координат, маршрут не строится');
       return;
     }
 
@@ -696,6 +692,7 @@
     const directionsService = new google.maps.DirectionsService();
     directionsService.route(request, function(result, status) {
       document.getElementById('route-loading').style.display = 'none';
+      console.log('🧭 Ответ Directions API:', status, result);
 
       if (status === 'OK') {
         directionsRenderer.setDirections(result);
@@ -718,15 +715,26 @@
         bounds.extend(origin);
         bounds.extend(destination);
         map.fitBounds(bounds, { padding: 40 });
-
+        console.log('✅ Маршрут построен, дистанция:', distanceKm, 'км');
       } else {
-        console.error('Ошибка маршрута:', status);
+        console.error('❌ Ошибка маршрута:', status);
         document.getElementById('route-error').textContent = '⚠️ Не удалось построить маршрут: ' + status;
         document.getElementById('estimated-distance').textContent = 'Ошибка';
         document.getElementById('estimated-price-range').textContent = '—';
         document.getElementById('estimated-time').textContent = '—';
       }
     });
+  }
+
+  // ==================== ОБНОВЛЕНИЕ МАРШРУТА ВРУЧНУЮ ====================
+  function refreshRoute() {
+    console.log('🔄 Принудительное обновление маршрута');
+    const from = document.getElementById('from-address').value.trim();
+    const to = document.getElementById('to-address').value.trim();
+    if (from) geocodeAddress(from, 'from');
+    if (to) geocodeAddress(to, 'to');
+    // Если координаты уже есть, просто вызываем updateRoute
+    updateRoute();
   }
 
   // ==================== GPS ====================
@@ -756,7 +764,7 @@
         }
         statusEl.textContent = '✅ Местоположение определено!';
         statusEl.className = 'location-status location-found';
-        // Обновляем маршрут, если есть "Куда"
+        console.log('📍 GPS позиция:', lat, lng);
         updateRoute();
       },
       err => {
@@ -767,6 +775,7 @@
         else msg += err.message;
         statusEl.textContent = msg;
         statusEl.className = 'location-status location-error';
+        console.warn('⚠️ Ошибка GPS:', err);
       },
       { enableHighAccuracy: true, timeout: 15000 }
     );
@@ -1119,13 +1128,11 @@
   }
 
   // ==================== ИНИЦИАЛИЗАЦИЯ ====================
-  // События для обновления маршрута при изменении координат (если вдруг изменились)
   document.getElementById('from-lat').addEventListener('change', updateRoute);
   document.getElementById('from-lng').addEventListener('change', updateRoute);
   document.getElementById('to-lat').addEventListener('change', updateRoute);
   document.getElementById('to-lng').addEventListener('change', updateRoute);
 
-  // Показываем/скрываем блок оплаты бонусами
   document.getElementById('payment-method').addEventListener('change', function() {
     const section = document.getElementById('bonus-payment-section');
     section.style.display = this.value === 'bonus' ? 'block' : 'none';
