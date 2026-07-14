@@ -604,15 +604,14 @@
           updateRoute();
         } else {
           // Адрес не найден – но мы сохраняем ТЕКСТОВЫЙ адрес
-          statusEl.textContent = '⚠️ Адрес не найден, но он будет передан водителю';
+          statusEl.textContent = '⚠️ Адрес не найден на карте, но будет передан водителю';
           statusEl.className = 'search-status error';
-          document.getElementById('route-error').textContent = '⚠️ Точный адрес не найден на карте, но он будет передан водителю.';
+          document.getElementById('route-error').textContent = '⚠️ Адрес не найден на карте, но будет передан водителю.';
           
           // Если это адрес назначения – сохраняем его как текст
           if (type === 'to') {
-            // Убеждаемся, что в поле to-address остался введённый текст
-            // Он уже есть в поле, ничего не меняем
-            console.log('📝 Адрес сохранён как текст:', address);
+            // Адрес уже в поле to-address, ничего не меняем
+            console.log('📝 Адрес назначения сохранён как текст:', address);
           }
         }
       })
@@ -770,22 +769,23 @@
 
   // ==================== СОЗДАНИЕ ЗАКАЗА ====================
   function createOrder() {
-    // Берём адреса из полей ввода (сохраняем ТЕКСТОВЫЙ адрес всегда)
-    const from = document.getElementById('from-address').value.trim() || '📍 Моё местоположение';
-    const to = document.getElementById('to-address').value.trim();
+    // Берём ТЕКСТОВЫЕ адреса из полей ввода
+    const fromText = document.getElementById('from-address').value.trim() || '📍 Моё местоположение';
+    const toText = document.getElementById('to-address').value.trim();
     
+    // Берём координаты из скрытых полей (если они есть)
     const fromLat = parseFloat(document.getElementById('from-lat').value);
     const fromLng = parseFloat(document.getElementById('from-lng').value);
     const toLat = parseFloat(document.getElementById('to-lat').value);
     const toLng = parseFloat(document.getElementById('to-lng').value);
 
-    if (!from || !to) { 
+    // Проверяем, что адреса заполнены
+    if (!fromText || !toText) { 
       alert('⚠️ Заполните адреса или установите точки на карте'); 
       return; 
     }
     
-    // Даже если координаты не найдены – заказ всё равно создаётся
-    // В этом случае используем координаты по умолчанию (0,0)
+    // Координаты могут быть NaN – это нормально, тогда используем 0
     const finalFromLat = isNaN(fromLat) ? 0 : fromLat;
     const finalFromLng = isNaN(fromLng) ? 0 : fromLng;
     const finalToLat = isNaN(toLat) ? 0 : toLat;
@@ -819,16 +819,22 @@
     if (session) { try { clientName = JSON.parse(session).name || 'Клиент'; } catch(e) {} }
     if (currentUserData?.name) clientName = currentUserData.name;
 
+    // ===== ФОРМИРУЕМ ЗАКАЗ =====
     const orderData = {
       clientId: currentUser ? currentUser.uid : 'guest-' + Date.now(),
       clientEmail: currentUser ? currentUser.email : 'guest@taxi.com',
       clientName: clientName,
-      from: from,          // ← Текстовый адрес отправления
-      to: to,              // ← Текстовый адрес назначения (всегда сохраняется!)
+      
+      // === ТЕКСТОВЫЕ АДРЕСА (всегда передаются) ===
+      from: fromText,    // ← Адрес отправления (текст)
+      to: toText,        // ← Адрес назначения (текст)
+      
+      // === КООРДИНАТЫ (если есть) ===
       fromLat: finalFromLat,
       fromLng: finalFromLng,
       toLat: finalToLat,
       toLng: finalToLng,
+      
       distance: distance,
       duration: currentDurationMin,
       price: price,
@@ -848,13 +854,14 @@
         currentOrderId = docRef.id;
         document.getElementById('order-status-message').innerHTML = '✅ Заказ создан! Ищем водителей...';
         document.getElementById('order-status-card').classList.remove('hidden');
-        // Если есть координаты – ищем водителей, иначе просто ждём
+        
+        // Если есть координаты клиента – ищем водителей
         if (finalFromLat !== 0 && finalFromLng !== 0) {
           return findAndOfferDrivers(docRef.id, finalFromLat, finalFromLng);
         } else {
           return db.collection('orders').doc(docRef.id).update({
             status: 'waiting',
-            aiNote: 'Ожидание подтверждения адреса'
+            aiNote: 'Ожидание координат клиента'
           });
         }
       })
