@@ -42,7 +42,7 @@
     #user-email { margin-left: auto; color: #555; font-size: 14px; }
     h1 { margin: 0 0 10px 0; font-weight: 600; }
     
-    /* БАННЕР РЕГИСТРАЦИИ — НОВЫЙ ДИЗАЙН */
+    /* БАННЕР РЕГИСТРАЦИИ */
     .reg-banner {
       background: linear-gradient(135deg, #ff6b35, #f7931e);
       padding: 16px 24px;
@@ -174,6 +174,96 @@
     .coords-info { font-size: 12px; color: #888; margin-top: 4px; }
     .coords-info .found { color: #28a745; }
     .coords-info .missing { color: #dc3545; }
+
+    /* ===== МОДАЛЬНОЕ ОКНО ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: white;
+      max-width: 450px;
+      width: 92%;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      position: relative;
+      animation: modalIn 0.3s ease;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    @keyframes modalIn {
+      from { opacity:0; transform:scale(0.9) translateY(20px); }
+      to { opacity:1; transform:scale(1) translateY(0); }
+    }
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 18px;
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      color: #999;
+    }
+    .modal-close:hover { color: #333; }
+    .modal-box h2 { margin: 0 0 8px 0; color: #1b2a3a; }
+    .modal-box .subtitle { color: #666; margin-bottom: 20px; font-size: 14px; }
+    .modal-box .subtitle strong { color: #ff6b35; }
+    .modal-box .form-group { margin-bottom: 14px; }
+    .modal-box .form-group label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 4px; }
+    .modal-box .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      font-size: 15px;
+    }
+    .modal-box .form-group input:focus { outline: 2px solid #007bff; border-color: transparent; }
+    .modal-box .btn-submit {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #ff6b35, #f7931e);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .modal-box .btn-submit:hover { transform: scale(1.02); }
+    .modal-box .btn-submit.blue { background: #007bff; }
+    .modal-box .btn-submit.blue:hover { background: #0056b3; }
+    .modal-box .status-msg {
+      margin-top: 12px;
+      font-size: 14px;
+      text-align: center;
+    }
+    .modal-box .status-msg.success { color: #28a745; }
+    .modal-box .status-msg.error { color: #dc3545; }
+    .modal-box .status-msg.info { color: #007bff; }
+    .modal-box .switch-link {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 13px;
+      color: #888;
+    }
+    .modal-box .switch-link a {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .modal-box .switch-link a:hover { text-decoration: underline; }
+    .modal-box .switch-link .orange { color: #ff6b35; }
   </style>
 </head>
 <body>
@@ -189,16 +279,16 @@
 
   <h1>🚕 Заказ такси</h1>
 
-  <!-- ====== БАННЕР РЕГИСТРАЦИИ (показывается ТОЛЬКО для гостей) ====== -->
+  <!-- ====== БАННЕР РЕГИСТРАЦИИ ====== -->
   <div id="regBanner" class="reg-banner hidden">
     <div>
       <div class="title">🎁 Получи <span class="bonus-amount">50 ₪</span> бонусов</div>
       <div class="sub">Зарегистрируйтесь сейчас и получайте 2% кэшбэк с каждой поездки</div>
     </div>
-    <button class="btn-reg" onclick="goToRegister()">🚀 Зарегистрироваться</button>
+    <button class="btn-reg" onclick="openRegisterModal()">🚀 Зарегистрироваться</button>
   </div>
 
-  <!-- Бонусный баланс (только для зарегистрированных) -->
+  <!-- Бонусный баланс -->
   <div id="bonus-panel" class="bonus-panel hidden">
     <div>
       <span>🎁 Бонусный баланс</span>
@@ -210,7 +300,6 @@
   <!-- Основная карточка -->
   <div class="card">
     <div class="flex-row">
-      <!-- Левая колонка: форма -->
       <div class="flex-col">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
           <label style="margin:0;">📍 Откуда</label>
@@ -222,18 +311,15 @@
         <label>🏁 Куда</label>
         <input type="text" id="to-address" placeholder="Введите адрес назначения" value="">
 
-        <!-- Скрытые поля для координат (могут быть пустыми!) -->
         <input type="hidden" id="from-lat" value="">
         <input type="hidden" id="from-lng" value="">
         <input type="hidden" id="to-lat" value="">
         <input type="hidden" id="to-lng" value="">
 
-        <!-- Статус координат -->
         <div class="coords-info" id="coords-status">
           <span class="missing">⚠️ Координаты не найдены — будет использован текстовый адрес</span>
         </div>
 
-        <!-- Предварительная стоимость -->
         <div class="price-panel">
           <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
             <div>
@@ -251,7 +337,6 @@
           <div id="route-error" class="route-error"></div>
         </div>
 
-        <!-- Способ оплаты -->
         <label>💳 Способ оплаты</label>
         <select id="payment-method">
           <option value="cash">💰 Наличные</option>
@@ -272,7 +357,6 @@
         <div id="order-status-message" style="margin-top:10px; font-weight:600;"></div>
       </div>
 
-      <!-- Правая колонка: карта -->
       <div class="flex-col">
         <div id="map"></div>
         <div class="map-hint">
@@ -296,6 +380,67 @@
     <div class="action-buttons">
       <button class="btn btn-danger" id="cancel-btn" onclick="cancelOrder()" style="width:auto;">❌ Отменить заказ</button>
       <button class="btn btn-waze" id="waze-btn" onclick="openWaze()" style="display:none; width:auto;">🗺️ Маршрут в Waze</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== МОДАЛЬНОЕ ОКНО РЕГИСТРАЦИИ ====== -->
+<div class="modal-overlay" id="registerModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeRegisterModal()">&times;</button>
+    
+    <!-- Форма регистрации -->
+    <div id="registerFormContainer">
+      <h2>🎁 Создайте аккаунт</h2>
+      <p class="subtitle">Зарегистрируйтесь и получайте <strong>2% кэшбэк</strong> с каждой поездки!</p>
+      
+      <form id="registerForm" onsubmit="registerUser(event)">
+        <div class="form-group">
+          <label>📧 Email</label>
+          <input type="email" id="regEmail" required placeholder="example@mail.com">
+        </div>
+        <div class="form-group">
+          <label>👤 Имя</label>
+          <input type="text" id="regName" required placeholder="Иван Иванов">
+        </div>
+        <div class="form-group">
+          <label>📱 Телефон</label>
+          <input type="tel" id="regPhone" placeholder="+7 999 123-45-67">
+        </div>
+        <div class="form-group">
+          <label>🔑 Пароль (минимум 6 символов)</label>
+          <input type="password" id="regPassword" required minlength="6" placeholder="••••••">
+        </div>
+        <button type="submit" class="btn-submit">🚀 Зарегистрироваться и получить 50 ₪ бонус</button>
+        <div id="registerStatus" class="status-msg"></div>
+      </form>
+      
+      <div class="switch-link">
+        Уже есть аккаунт? <a onclick="switchToLogin()">Войти</a>
+      </div>
+    </div>
+
+    <!-- Форма входа -->
+    <div id="loginFormContainer" style="display:none;">
+      <h2>🔐 Вход в аккаунт</h2>
+      <p class="subtitle">Войдите, чтобы заказывать такси с бонусами</p>
+      
+      <form id="loginForm" onsubmit="loginUser(event)">
+        <div class="form-group">
+          <label>📧 Email</label>
+          <input type="email" id="loginEmail" required placeholder="example@mail.com">
+        </div>
+        <div class="form-group">
+          <label>🔑 Пароль</label>
+          <input type="password" id="loginPassword" required placeholder="••••••">
+        </div>
+        <button type="submit" class="btn-submit blue">🔓 Войти</button>
+        <div id="loginStatus" class="status-msg"></div>
+      </form>
+      
+      <div class="switch-link">
+        Нет аккаунта? <a class="orange" onclick="switchToRegister()">Зарегистрироваться</a>
+      </div>
     </div>
   </div>
 </div>
@@ -381,17 +526,149 @@
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 
+  // ==================== МОДАЛЬНОЕ ОКНО ====================
+  function openRegisterModal() {
+    document.getElementById('registerModal').classList.add('active');
+    document.getElementById('registerFormContainer').style.display = 'block';
+    document.getElementById('loginFormContainer').style.display = 'none';
+    document.getElementById('registerStatus').textContent = '';
+    document.getElementById('registerStatus').className = 'status-msg';
+    document.getElementById('loginStatus').textContent = '';
+    document.getElementById('loginStatus').className = 'status-msg';
+  }
+
+  function closeRegisterModal() {
+    document.getElementById('registerModal').classList.remove('active');
+  }
+
+  function switchToLogin() {
+    document.getElementById('registerFormContainer').style.display = 'none';
+    document.getElementById('loginFormContainer').style.display = 'block';
+    document.getElementById('loginStatus').textContent = '';
+    document.getElementById('loginStatus').className = 'status-msg';
+  }
+
+  function switchToRegister() {
+    document.getElementById('registerFormContainer').style.display = 'block';
+    document.getElementById('loginFormContainer').style.display = 'none';
+    document.getElementById('registerStatus').textContent = '';
+    document.getElementById('registerStatus').className = 'status-msg';
+  }
+
+  // Закрытие по клику вне окна
+  document.getElementById('registerModal').addEventListener('click', function(e) {
+    if (e.target === this) closeRegisterModal();
+  });
+
+  // Закрытие по Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeRegisterModal();
+  });
+
+  // ==================== РЕГИСТРАЦИЯ ====================
+  async function registerUser(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const name = document.getElementById('regName').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    
+    const statusEl = document.getElementById('registerStatus');
+    statusEl.textContent = '⏳ Создание аккаунта...';
+    statusEl.className = 'status-msg info';
+    
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const user = userCredential.user;
+      
+      await user.updateProfile({ displayName: name });
+      
+      await db.collection('users').doc(user.uid).set({
+        email: email,
+        name: name,
+        phone: phone || '',
+        role: 'client',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      
+      await db.collection('users_bonus').doc(user.uid).set({
+        balance: 50,
+        totalEarned: 50,
+        totalSpent: 0,
+        level: 'Bronze',
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      
+      statusEl.textContent = '✅ Регистрация успешна! Бонус 50 ₪ начислен!';
+      statusEl.className = 'status-msg success';
+      
+      setTimeout(() => {
+        closeRegisterModal();
+        location.reload();
+      }, 1500);
+      
+    } catch (error) {
+      console.error('❌ Ошибка регистрации:', error);
+      let msg = '❌ ';
+      if (error.code === 'auth/email-already-in-use') {
+        msg += 'Этот email уже используется. Войдите в аккаунт.';
+      } else if (error.code === 'auth/weak-password') {
+        msg += 'Пароль должен содержать минимум 6 символов.';
+      } else if (error.code === 'auth/invalid-email') {
+        msg += 'Неверный формат email.';
+      } else {
+        msg += error.message;
+      }
+      statusEl.textContent = msg;
+      statusEl.className = 'status-msg error';
+    }
+  }
+
+  // ==================== ВХОД ====================
+  async function loginUser(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const statusEl = document.getElementById('loginStatus');
+    
+    statusEl.textContent = '⏳ Вход...';
+    statusEl.className = 'status-msg info';
+    
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+      statusEl.textContent = '✅ Вход выполнен!';
+      statusEl.className = 'status-msg success';
+      
+      setTimeout(() => {
+        closeRegisterModal();
+        location.reload();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Ошибка входа:', error);
+      let msg = '❌ ';
+      if (error.code === 'auth/user-not-found') {
+        msg += 'Пользователь не найден. Зарегистрируйтесь.';
+      } else if (error.code === 'auth/wrong-password') {
+        msg += 'Неверный пароль.';
+      } else {
+        msg += error.message;
+      }
+      statusEl.textContent = msg;
+      statusEl.className = 'status-msg error';
+    }
+  }
+
   // ==================== АУТЕНТИФИКАЦИЯ ====================
   auth.onAuthStateChanged(async function(user) {
     if (user) {
       currentUser = user;
       isRegistered = true;
-      document.getElementById('user-email').textContent = '👤 ' + user.email;
+      document.getElementById('user-email').textContent = '👤 ' + (user.displayName || user.email);
       
-      // Скрываем баннер регистрации
       document.getElementById('regBanner').classList.add('hidden');
-      
-      // Показываем бонус-панель
       document.getElementById('bonus-panel').classList.remove('hidden');
       
       await loadUserData();
@@ -400,17 +677,12 @@
       setTimeout(initMap, 500);
       setTimeout(() => getMyLocation(), 1500);
     } else {
-      // === ГОСТЬ (НЕ ЗАРЕГИСТРИРОВАН) ===
       isRegistered = false;
       currentUser = null;
       
-      // ПОКАЗЫВАЕМ БАННЕР РЕГИСТРАЦИИ
       document.getElementById('regBanner').classList.remove('hidden');
-      
-      // Скрываем бонус-панель
       document.getElementById('bonus-panel').classList.add('hidden');
       
-      // Проверяем сессию гостя
       const session = localStorage.getItem('clientSession');
       if (session) {
         try {
@@ -421,15 +693,11 @@
         document.getElementById('user-email').textContent = '👤 Гость (не зарегистрирован)';
       }
       
-      // Загружаем карту для гостя
       setTimeout(initMap, 500);
       setTimeout(() => getMyLocation(), 1500);
-      
-      // Слушаем заказы гостя
       listenClientOrder();
     }
     
-    // Обновляем кнопку заказа (активна только для зарегистрированных)
     updateOrderButton();
   });
 
@@ -442,7 +710,7 @@
         } else {
           return db.collection('users').doc(currentUser.uid).set({
             email: currentUser.email,
-            name: 'Клиент',
+            name: currentUser.displayName || 'Клиент',
             role: 'client',
             phone: '',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -459,23 +727,14 @@
     });
   }
 
-  // ==================== РЕГИСТРАЦИЯ ====================
-  function goToRegister() {
-    // Перенаправляем на страницу регистрации
-    window.location.href = 'index.html?action=register';
-  }
-
-  // ==================== ОБНОВЛЕНИЕ КНОПКИ ЗАКАЗА ====================
   function updateOrderButton() {
     const btn = document.getElementById('orderBtn');
     if (isRegistered) {
       btn.disabled = false;
       btn.textContent = '🚖 Заказать такси';
-      btn.title = '';
     } else {
       btn.disabled = true;
       btn.textContent = '🔒 Зарегистрируйтесь для заказа';
-      btn.title = 'Только зарегистрированные пользователи могут заказывать такси';
     }
   }
 
@@ -504,7 +763,7 @@
     }
   }
 
-  // ==================== КАРТА (Leaflet) ====================
+  // ==================== КАРТА ====================
   function initMap() {
     if (mapInitialized) return;
     const mapElement = document.getElementById('map');
@@ -563,11 +822,9 @@
       console.log('🗺️ Карта инициализирована');
     } catch (error) {
       console.error('❌ Ошибка инициализации карты:', error);
-      document.getElementById('route-error').textContent = '❌ Ошибка загрузки карты: ' + error.message;
     }
   }
 
-  // ==================== СТАТУС КООРДИНАТ ====================
   function updateCoordsStatus() {
     const fromLat = document.getElementById('from-lat').value;
     const fromLng = document.getElementById('from-lng').value;
@@ -587,7 +844,7 @@
     }
   }
 
-  // ==================== ГЕОКОДИРОВАНИЕ (Nominatim) ====================
+  // ==================== ГЕОКОДИРОВАНИЕ ====================
   function geocodeAddress(address, type) {
     if (!address || address.length < 2) {
       document.getElementById('route-error').textContent = '⚠️ Введите более точный адрес';
@@ -641,7 +898,6 @@
           updateCoordsStatus();
           updateRoute();
         } else {
-          // ⚠️ Адрес не найден — очищаем координаты, но оставляем текст
           document.getElementById('route-error').textContent = '⚠️ Адрес не найден на карте. Будет использован текстовый адрес.';
           if (type === 'from') {
             document.getElementById('from-lat').value = '';
@@ -662,7 +918,6 @@
         document.getElementById('route-loading').style.display = 'none';
         document.getElementById('route-error').textContent = '⚠️ Ошибка геокодирования. Будет использован текстовый адрес.';
         console.error('❌ Ошибка геокодирования:', error);
-        // Очищаем координаты при ошибке
         if (type === 'from') {
           document.getElementById('from-lat').value = '';
           document.getElementById('from-lng').value = '';
@@ -685,7 +940,6 @@
     const toLat = parseFloat(document.getElementById('to-lat').value);
     const toLng = parseFloat(document.getElementById('to-lng').value);
 
-    // Если нет координат — показываем заглушку
     if (isNaN(fromLat) || isNaN(fromLng) || isNaN(toLat) || isNaN(toLng)) {
       document.getElementById('estimated-distance').textContent = '—';
       document.getElementById('estimated-price-range').textContent = '—';
@@ -735,7 +989,6 @@
       });
   }
 
-  // ==================== ОБНОВЛЕНИЕ МАРШРУТА ====================
   function refreshRoute() {
     console.log('🔄 Принудительное обновление маршрута');
     const from = document.getElementById('from-address').value.trim();
@@ -806,7 +1059,6 @@
     document.getElementById('waze-btn').style.display = 'inline-block';
   }
 
-  // ==================== WAZE ====================
   function openWaze() {
     if (!currentFromLat || !currentFromLng || !currentDriverLat || !currentDriverLng) {
       alert('⚠️ Нет данных для маршрута');
@@ -818,10 +1070,9 @@
 
   // ==================== СОЗДАНИЕ ЗАКАЗА ====================
   function createOrder() {
-    // Проверка регистрации
     if (!isRegistered) {
       alert('⚠️ Только зарегистрированные пользователи могут заказывать такси!');
-      document.getElementById('regBanner').scrollIntoView({ behavior: 'smooth' });
+      openRegisterModal();
       return;
     }
 
@@ -837,8 +1088,6 @@
       return; 
     }
 
-    // 💡 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: координаты НЕ ОБЯЗАТЕЛЬНЫ
-    // Если координат нет — используем null, но адрес всё равно сохраняется
     const hasFromCoords = !isNaN(fromLat) && !isNaN(fromLng) && fromLat && fromLng;
     const hasToCoords = !isNaN(toLat) && !isNaN(toLng) && toLat && toLng;
 
@@ -847,7 +1096,7 @@
       distance = currentDistanceKm || getDistance(fromLat, fromLng, toLat, toLng);
     }
 
-    const price = calculatePrice(distance || 5); // если нет координат — базовая цена
+    const price = calculatePrice(distance || 5);
     const paymentMethod = document.getElementById('payment-method').value;
     let bonusUsed = 0;
     let finalPrice = price;
@@ -864,24 +1113,18 @@
     }
 
     let clientName = 'Клиент';
-    const session = localStorage.getItem('clientSession');
-    if (session) { try { clientName = JSON.parse(session).name || 'Клиент'; } catch(e) {} }
-    if (currentUserData?.name) clientName = currentUserData.name;
-    if (currentUser) clientName = currentUser.displayName || currentUser.email || clientName;
+    if (currentUser) clientName = currentUser.displayName || currentUser.email || 'Клиент';
 
-    // 📦 ФОРМИРУЕМ ЗАКАЗ ДЛЯ БД — ВСЕГДА ЕСТЬ АДРЕС, КООРДИНАТЫ — ОПЦИОНАЛЬНО
     const orderData = {
-      clientId: currentUser ? currentUser.uid : 'guest-' + Date.now(),
-      clientEmail: currentUser ? currentUser.email : 'guest@taxi.com',
+      clientId: currentUser.uid,
+      clientEmail: currentUser.email,
       clientName: clientName,
       from: from,
       to: to,
-      // Координаты могут быть null — это НОРМАЛЬНО для БД
       fromLat: hasFromCoords ? fromLat : null,
       fromLng: hasFromCoords ? fromLng : null,
       toLat: hasToCoords ? toLat : null,
       toLng: hasToCoords ? toLng : null,
-      // Флаг: есть ли координаты (для водителя)
       hasCoords: hasFromCoords && hasToCoords,
       distance: distance,
       duration: currentDurationMin || 0,
@@ -893,11 +1136,9 @@
       status: 'searching',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       aiNote: hasFromCoords && hasToCoords ? 'Поиск ближайших водителей...' : 'Водителю передан текстовый адрес (координаты не найдены)',
-      // Доп. поле для водителя
       driverInstructions: hasFromCoords && hasToCoords ? '' : '⚠️ Точные координаты не определены, используйте текстовый адрес'
     };
 
-    // Показываем пользователю предупреждение, если нет координат
     if (!hasFromCoords || !hasToCoords) {
       if (!confirm('⚠️ Для одного из адресов не найдены координаты.\nЗаказ будет передан водителю с текстовым адресом.\nПродолжить?')) {
         return;
@@ -910,11 +1151,9 @@
         document.getElementById('order-status-message').innerHTML = '✅ Заказ создан! Ищем водителей...';
         document.getElementById('order-status-card').classList.remove('hidden');
         
-        // Если есть координаты — ищем водителей рядом
         if (hasFromCoords && hasToCoords) {
           return findAndOfferDrivers(docRef.id, fromLat, fromLng);
         } else {
-          // Если координат нет — просто назначаем статус "waiting"
           return db.collection('orders').doc(docRef.id).update({
             status: 'waiting',
             aiNote: 'Ожидание водителя (адрес без координат)'
@@ -982,12 +1221,6 @@
         aiNote: `Предложено ${offeredIds.length} водителям`
       });
 
-      await db.collection('ai_logs').add({
-        orderId: orderId,
-        decision: `Предложено ${offeredIds.length} водителям`,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
       setTimeout(() => checkOfferExpired(orderId), OFFER_TIMEOUT * 1000);
     } catch (error) {
       console.error('❌ Ошибка ИИ-диспетчера:', error);
@@ -1017,7 +1250,6 @@
 
     const clientId = currentUser ? currentUser.uid : 'guest-' + Date.now();
 
-    // Используем простой запрос без orderBy для избежания ошибок индексов
     orderUnsubscribe = db.collection('orders')
       .where('clientId', '==', clientId)
       .onSnapshot(snapshot => {
@@ -1035,9 +1267,7 @@
         });
       }, error => {
         console.error('❌ Ошибка прослушки заказа:', error);
-        // Если ошибка связана с индексом — пробуем без фильтра
         if (error.message && error.message.includes('index')) {
-          // Временно отключаем прослушку
           if (orderUnsubscribe) {
             orderUnsubscribe();
             orderUnsubscribe = null;
@@ -1076,7 +1306,6 @@
       }
     }
 
-    // Показываем, есть ли координаты
     const coordsInfo = data.hasCoords 
       ? '✅ Координаты определены' 
       : '⚠️ Только текстовый адрес (координаты не найдены)';
@@ -1127,7 +1356,6 @@
       document.getElementById('waze-btn').style.display = 'none';
     }
 
-    // Показываем маршрут если есть координаты
     if (data.fromLat && data.fromLng && data.toLat && data.toLng) {
       fromMarker.setLatLng([data.fromLat, data.fromLng]);
       if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
@@ -1187,221 +1415,8 @@
     }
   });
 
-  console.log('🚕 Taxi Client v4.0 — с поддержкой заказов без координат');
+  console.log('🚕 Taxi Client v4.0 — с модальным окном регистрации');
   console.log('📌 Зарегистрирован: ' + (isRegistered ? 'ДА' : 'НЕТ (гость)'));
-</script>
-  <!-- ====== МОДАЛЬНОЕ ОКНО РЕГИСТРАЦИИ ====== -->
-<div id="registerModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center; backdrop-filter:blur(4px);">
-  <div style="background:white; max-width:450px; width:90%; padding:30px; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.3); position:relative; animation:modalIn 0.3s ease;">
-    <button onclick="closeRegisterModal()" style="position:absolute; top:12px; right:18px; background:none; border:none; font-size:28px; cursor:pointer; color:#999;">&times;</button>
-    
-    <h2 style="margin:0 0 8px 0; color:#1b2a3a;">🎁 Создайте аккаунт</h2>
-    <p style="color:#666; margin-bottom:20px; font-size:14px;">Зарегистрируйтесь и получайте <strong style="color:#ff6b35;">2% кэшбэк</strong> с каждой поездки!</p>
-    
-    <form id="registerForm" onsubmit="registerUser(event)">
-      <div style="margin-bottom:14px;">
-        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">📧 Email</label>
-        <input type="email" id="regEmail" required placeholder="example@mail.com" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
-      </div>
-      
-      <div style="margin-bottom:14px;">
-        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">👤 Имя</label>
-        <input type="text" id="regName" required placeholder="Иван Иванов" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
-      </div>
-      
-      <div style="margin-bottom:14px;">
-        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">📱 Телефон</label>
-        <input type="tel" id="regPhone" placeholder="+7 999 123-45-67" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
-      </div>
-      
-      <div style="margin-bottom:14px;">
-        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">🔑 Пароль (минимум 6 символов)</label>
-        <input type="password" id="regPassword" required minlength="6" placeholder="••••••" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
-      </div>
-      
-      <button type="submit" style="width:100%; padding:14px; background:linear-gradient(135deg,#ff6b35,#f7931e); color:white; border:none; border-radius:12px; font-size:17px; font-weight:700; cursor:pointer; transition:0.3s;">
-        🚀 Зарегистрироваться и получить 50 ₪ бонус
-      </button>
-      
-      <div id="registerStatus" style="margin-top:12px; font-size:14px; text-align:center; color:#28a745;"></div>
-      
-      <div style="margin-top:14px; text-align:center; font-size:13px; color:#888;">
-        Уже есть аккаунт? <a href="#" onclick="switchToLogin()" style="color:#007bff; text-decoration:none; font-weight:600;">Войти</a>
-      </div>
-    </form>
-    
-    <!-- Форма входа (скрыта по умолчанию) -->
-    <form id="loginForm" onsubmit="loginUser(event)" style="display:none;">
-      <h3 style="margin:0 0 14px 0;">🔐 Вход в аккаунт</h3>
-      <div style="margin-bottom:12px;">
-        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">📧 Email</label>
-        <input type="email" id="loginEmail" required placeholder="example@mail.com" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">🔑 Пароль</label>
-        <input type="password" id="loginPassword" required placeholder="••••••" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
-      </div>
-      <button type="submit" style="width:100%; padding:14px; background:#007bff; color:white; border:none; border-radius:12px; font-size:17px; font-weight:700; cursor:pointer; transition:0.3s;">
-        🔓 Войти
-      </button>
-      <div style="margin-top:12px; text-align:center; font-size:13px; color:#888;">
-        Нет аккаунта? <a href="#" onclick="switchToRegister()" style="color:#ff6b35; text-decoration:none; font-weight:600;">Зарегистрироваться</a>
-      </div>
-      <div id="loginStatus" style="margin-top:10px; font-size:14px; text-align:center;"></div>
-    </form>
-  </div>
-</div>
-
-<style>
-@keyframes modalIn {
-  from { opacity:0; transform:scale(0.9) translateY(20px); }
-  to { opacity:1; transform:scale(1) translateY(0); }
-}
-</style>
-
-<script>
-// ========== МОДАЛЬНОЕ ОКНО РЕГИСТРАЦИИ ==========
-function openRegisterModal() {
-  document.getElementById('registerModal').style.display = 'flex';
-  document.getElementById('registerForm').style.display = 'block';
-  document.getElementById('loginForm').style.display = 'none';
-  document.getElementById('registerStatus').textContent = '';
-  document.getElementById('registerStatus').style.color = '#28a745';
-}
-
-function closeRegisterModal() {
-  document.getElementById('registerModal').style.display = 'none';
-}
-
-function switchToLogin() {
-  document.getElementById('registerForm').style.display = 'none';
-  document.getElementById('loginForm').style.display = 'block';
-  document.getElementById('loginStatus').textContent = '';
-}
-
-function switchToRegister() {
-  document.getElementById('registerForm').style.display = 'block';
-  document.getElementById('loginForm').style.display = 'none';
-  document.getElementById('loginStatus').textContent = '';
-}
-
-// ========== РЕГИСТРАЦИЯ ==========
-async function registerUser(e) {
-  e.preventDefault();
-  
-  const email = document.getElementById('regEmail').value.trim();
-  const password = document.getElementById('regPassword').value;
-  const name = document.getElementById('regName').value.trim();
-  const phone = document.getElementById('regPhone').value.trim();
-  
-  const statusEl = document.getElementById('registerStatus');
-  statusEl.textContent = '⏳ Создание аккаунта...';
-  statusEl.style.color = '#007bff';
-  
-  try {
-    // 1. Создаём пользователя в Firebase Auth
-    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-    const user = userCredential.user;
-    
-    // 2. Обновляем профиль (имя)
-    await user.updateProfile({ displayName: name });
-    
-    // 3. Сохраняем данные в Firestore
-    await db.collection('users').doc(user.uid).set({
-      email: email,
-      name: name,
-      phone: phone || '',
-      role: 'client',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    
-    // 4. Даём бонус за регистрацию (50 ₪)
-    await db.collection('users_bonus').doc(user.uid).set({
-      balance: 50,
-      totalEarned: 50,
-      totalSpent: 0,
-      level: 'Bronze',
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    
-    statusEl.textContent = '✅ Регистрация успешна! Бонус 50 ₪ начислен!';
-    statusEl.style.color = '#28a745';
-    
-    setTimeout(() => {
-      closeRegisterModal();
-      location.reload(); // Обновляем страницу для применения изменений
-    }, 1500);
-    
-  } catch (error) {
-    console.error('❌ Ошибка регистрации:', error);
-    let msg = '❌ ';
-    if (error.code === 'auth/email-already-in-use') {
-      msg += 'Этот email уже используется. Войдите в аккаунт.';
-    } else if (error.code === 'auth/weak-password') {
-      msg += 'Пароль должен содержать минимум 6 символов.';
-    } else if (error.code === 'auth/invalid-email') {
-      msg += 'Неверный формат email.';
-    } else {
-      msg += error.message;
-    }
-    statusEl.textContent = msg;
-    statusEl.style.color = '#dc3545';
-  }
-}
-
-// ========== ВХОД ==========
-async function loginUser(e) {
-  e.preventDefault();
-  
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  const statusEl = document.getElementById('loginStatus');
-  
-  statusEl.textContent = '⏳ Вход...';
-  statusEl.style.color = '#007bff';
-  
-  try {
-    await auth.signInWithEmailAndPassword(email, password);
-    statusEl.textContent = '✅ Вход выполнен!';
-    statusEl.style.color = '#28a745';
-    
-    setTimeout(() => {
-      closeRegisterModal();
-      location.reload();
-    }, 1000);
-    
-  } catch (error) {
-    console.error('❌ Ошибка входа:', error);
-    let msg = '❌ ';
-    if (error.code === 'auth/user-not-found') {
-      msg += 'Пользователь не найден. Зарегистрируйтесь.';
-    } else if (error.code === 'auth/wrong-password') {
-      msg += 'Неверный пароль.';
-    } else {
-      msg += error.message;
-    }
-    statusEl.textContent = msg;
-    statusEl.style.color = '#dc3545';
-  }
-}
-
-// ========== КЛИК ПО БАННЕРУ ==========
-// Переопределяем функцию goToRegister
-function goToRegister() {
-  openRegisterModal();
-}
-
-// Закрытие модалки по клику вне окна
-document.getElementById('registerModal').addEventListener('click', function(e) {
-  if (e.target === this) closeRegisterModal();
-});
-
-// Закрытие по Escape
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeRegisterModal();
-});
-
-console.log('✅ Модальное окно регистрации загружено');
 </script>
 </body>
 </html>
