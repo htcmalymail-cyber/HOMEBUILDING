@@ -38,13 +38,14 @@
     .badge { display:inline-block; padding:3px 12px; border-radius:20px; font-size:13px; font-weight:600; }
     .badge-assigned { background:#17a2b8; color:white; }
     .badge-accepted { background:#28a745; color:white; }
+    .badge-offering { background:#17a2b8; color:white; }
     .badge-completed { background:#6c757d; color:white; }
     .status-available { color:#28a745; font-weight:600; }
     .status-unavailable { color:#dc3545; font-weight:600; }
     .client-marker { background:none; border:none; font-size:32px; line-height:1; }
     .driver-marker { background:none; border:none; font-size:40px; line-height:1; }
     .action-buttons { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
-    .alert-box { background:#fff3cd; padding:15px; border-radius:8px; margin:10px 0; color:#856404; }
+    .offer-card { background:#fff3cd; padding:12px; border-radius:8px; margin:8px 0; border-left:4px solid #ffc107; }
   </style>
 </head>
 <body>
@@ -84,7 +85,6 @@
   <!-- Интерфейс водителя -->
   <div id="driver-section" class="hidden">
     <div class="card">
-      <!-- Информация о водителе -->
       <div class="driver-info-card">
         <div class="flex-row">
           <div class="flex-col">
@@ -101,20 +101,18 @@
         <span id="driver-location-info" style="margin-left:15px;font-size:13px;color:#666;"></span>
       </div>
 
-      <!-- Заказы и карта -->
       <div class="flex-row">
         <div class="flex-col">
           <h4>📋 Мои заказы</h4>
-          <div id="driver-orders-list">
-            <p style="color:#999;">Загрузка заказов...</p>
-          </div>
+          <div id="driver-orders-list"><p style="color:#999;">Загрузка заказов...</p></div>
           <button class="danger" onclick="completeOrder()" style="margin-top:10px;">✅ Завершить заказ</button>
         </div>
         <div class="flex-col">
           <h4>🗺️ Карта</h4>
           <div id="map"></div>
           <div class="action-buttons">
-            <button class="waze-btn" id="waze-btn" onclick="openWaze()" style="display:none;">🗺️ Маршрут в Waze</button>
+            <button class="waze-btn" id="waze-to-client" onclick="openWazeToClient()" style="display:none;">🗺️ Маршрут к клиенту</button>
+            <button class="waze-btn" id="waze-to-route" onclick="openWazeToRoute()" style="display:none;">🗺️ Маршрут по маршруту</button>
           </div>
           <div style="margin-top:8px;font-size:12px;color:#666;">
             📍 <b>Синяя точка</b> – клиент &nbsp;|&nbsp; 🚗 <b>Машинка</b> – вы
@@ -139,6 +137,9 @@
   const db = firebase.firestore();
   const auth = firebase.auth();
 
+  // ============================================================
+  // 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+  // ============================================================
   let currentUser = null;
   let currentUserData = null;
   let map = null;
@@ -149,13 +150,27 @@
   let activeOrderId = null;
   let currentClientLat = null;
   let currentClientLng = null;
-  let currentDriverLat = 55.7558;
-  let currentDriverLng = 37.6208;
+  let currentDriverLat = 32.0853;
+  let currentDriverLng = 34.7818;
+  let currentRouteToLat = null;
+  let currentRouteToLng = null;
   let orderUnsubscribe = null;
 
-  // ===== АУТЕНТИФИКАЦИЯ =====
+  // ============================================================
+  // 2. ТАРИФЫ (для отображения)
+  // ============================================================
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  // ============================================================
+  // 3. АУТЕНТИФИКАЦИЯ
+  // ============================================================
   auth.onAuthStateChanged(async function(user) {
-    console.log('🔐 Auth changed:', user ? user.email : 'null');
     if (user) {
       currentUser = user;
       document.getElementById('user-status').innerHTML = '✅ Вошёл: ' + user.email;
@@ -163,8 +178,6 @@
       
       try {
         await loadUserData();
-        console.log('📋 Данные пользователя:', currentUserData);
-        
         if (currentUserData && currentUserData.role === 'driver') {
           document.getElementById('auth-section').style.display = 'none';
           document.getElementById('driver-section').classList.remove('hidden');
@@ -194,14 +207,11 @@
       if (doc.exists) {
         currentUserData = doc.data();
         currentUserData.role = 'driver';
-        console.log('✅ Данные водителя загружены из drivers');
       } else {
-        // Проверяем в users
         return db.collection('users').doc(currentUser.uid).get().then(userDoc => {
           if (userDoc.exists && userDoc.data().role === 'driver') {
             const data = userDoc.data();
             currentUserData = { ...data, role: 'driver' };
-            // Сохраняем в drivers
             return db.collection('drivers').doc(currentUser.uid).set({
               email: currentUser.email,
               fullName: data.name || 'Водитель',
@@ -210,8 +220,8 @@
               carNumber: data.carNumber || '',
               phone: data.phone || '',
               available: data.available !== undefined ? data.available : true,
-              lat: data.lat || 55.7558,
-              lng: data.lng || 37.6208,
+              lat: data.lat || 32.0853,
+              lng: data.lng || 34.7818,
               role: 'driver'
             });
           } else {
@@ -219,13 +229,10 @@
           }
         });
       }
-    }).then(() => {
-      console.log('✅ Загрузка данных завершена');
     });
   }
 
   function showDriverInterface() {
-    console.log('🔄 Показываем интерфейс водителя');
     document.getElementById('driver-name-display').textContent = currentUserData.fullName || '—';
     document.getElementById('driver-car-display').textContent = currentUserData.carModel || '—';
     document.getElementById('driver-plate-display').textContent = currentUserData.carNumber || '—';
@@ -233,7 +240,6 @@
     updateDriverStatusDisplay();
     updateDriverLocationDisplay();
     
-    // Инициализируем карту
     setTimeout(() => {
       initMap();
       listenDriverOrders();
@@ -241,7 +247,9 @@
     }, 300);
   }
 
-  // ===== РЕГИСТРАЦИЯ =====
+  // ============================================================
+  // 4. РЕГИСТРАЦИЯ / ВХОД
+  // ============================================================
   function signUpDriver() {
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value.trim();
@@ -270,8 +278,8 @@
           carNumber: carNumber,
           phone: phone,
           available: true,
-          lat: 55.7558,
-          lng: 37.6208,
+          lat: 32.0853,
+          lng: 34.7818,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           role: 'driver'
         });
@@ -303,116 +311,87 @@
     });
   }
 
-  // ===== КАРТА =====
+  // ============================================================
+  // 5. КАРТА (центр — Израиль)
+  // ============================================================
   function initMap() {
-    if (map) {
-      console.log('🗺️ Карта уже инициализирована');
-      return;
-    }
-    console.log('🗺️ Инициализируем карту...');
-    try {
-      map = L.map('map').setView([currentDriverLat || 55.7558, currentDriverLng || 37.6208], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-      }).addTo(map);
-      console.log('✅ Карта создана');
-    } catch (e) {
-      console.error('❌ Ошибка инициализации карты:', e);
+    if (map) return;
+    const defaultLat = currentUserData?.lat || 32.0853;
+    const defaultLng = currentUserData?.lng || 34.7818;
+    map = L.map('map').setView([defaultLat, defaultLng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    if (currentUserData?.lat && currentUserData?.lng) {
+      updateDriverMarker(currentUserData.lat, currentUserData.lng);
+      map.setView([currentUserData.lat, currentUserData.lng], 15);
     }
   }
 
-  // ===== МАРКЕР ВОДИТЕЛЯ =====
   function updateDriverMarker(lat, lng) {
-    if (!map) return;
     if (driverMarker) map.removeLayer(driverMarker);
-    
-    const driverIcon = L.divIcon({
-      className: 'driver-marker',
-      html: '🚗',
-      iconSize: [44, 44],
-      iconAnchor: [22, 44]
-    });
-    
-    driverMarker = L.marker([lat, lng], { icon: driverIcon })
-      .addTo(map)
-      .bindPopup('🚗 <b>Вы</b><br>📍 ' + lat.toFixed(6) + ', ' + lng.toFixed(6));
-    
+    const icon = L.divIcon({ className: 'driver-marker', html: '🚗', iconSize: [44, 44], iconAnchor: [22, 44] });
+    driverMarker = L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('🚗 Вы');
     currentDriverLat = lat;
     currentDriverLng = lng;
   }
 
-  // ===== МАРКЕР КЛИЕНТА =====
-  function updateClientMarker(lat, lng, clientName) {
-    if (!map) return;
+  function updateClientMarker(lat, lng, name) {
     if (clientMarker) map.removeLayer(clientMarker);
-    
-    const clientIcon = L.divIcon({
-      className: 'client-marker',
-      html: '📍',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32]
-    });
-    
-    clientMarker = L.marker([lat, lng], { icon: clientIcon })
-      .addTo(map)
-      .bindPopup('📍 <b>' + (clientName || 'Клиент') + '</b>');
-    
+    const icon = L.divIcon({ className: 'client-marker', html: '📍', iconSize: [32, 32], iconAnchor: [16, 32] });
+    clientMarker = L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('📍 ' + (name || 'Клиент'));
     currentClientLat = lat;
     currentClientLng = lng;
-    
-    // Показываем кнопку Waze
-    const wazeBtn = document.getElementById('waze-btn');
-    if (currentClientLat && currentClientLng && currentDriverLat && currentDriverLng) {
-      wazeBtn.style.display = 'inline-block';
-    }
-    
     showRoute(lat, lng, currentDriverLat, currentDriverLng);
-    map.setView([(lat + currentDriverLat)/2, (lng + currentDriverLng)/2], 13);
   }
 
-  // ===== МАРШРУТ =====
+  function updateRouteToMarker(lat, lng) {
+    currentRouteToLat = lat;
+    currentRouteToLng = lng;
+  }
+
   function showRoute(lat1, lng1, lat2, lng2) {
-    if (!map) return;
     if (routeLayer) map.removeLayer(routeLayer);
     routeLayer = L.polyline([[lat1, lng1], [lat2, lng2]], {
-      color: '#007bff',
-      weight: 3,
-      dashArray: '8, 8',
-      opacity: 0.7
+      color: '#007bff', weight: 3, dashArray: '8, 8', opacity: 0.7
     }).addTo(map);
   }
 
-  // ===== WAZE =====
-  function openWaze() {
+  // ============================================================
+  // 6. WAZE КНОПКИ
+  // ============================================================
+  function openWazeToClient() {
     if (!currentClientLat || !currentClientLng || !currentDriverLat || !currentDriverLng) {
       alert('⚠️ Нет данных для построения маршрута');
       return;
     }
-    const fromLat = currentDriverLat;
-    const fromLng = currentDriverLng;
-    const toLat = currentClientLat;
-    const toLng = currentClientLng;
-    const wazeUrl = `https://waze.com/ul?ll=${toLat},${toLng}&navigate=yes&from=${fromLat},${fromLng}`;
-    window.open(wazeUrl, '_blank');
+    const url = `https://waze.com/ul?ll=${currentClientLat},${currentClientLng}&navigate=yes&from=${currentDriverLat},${currentDriverLng}`;
+    window.open(url, '_blank');
   }
 
-  // ===== GPS =====
-  function startGpsTracking() {
-    if (!navigator.geolocation) {
-      alert('⚠️ Ваш браузер не поддерживает GPS');
+  function openWazeToRoute() {
+    if (!currentClientLat || !currentClientLng || !currentRouteToLat || !currentRouteToLng) {
+      alert('⚠️ Нет данных для построения маршрута. Нет точки назначения в заказе.');
       return;
     }
+    const url = `https://waze.com/ul?ll=${currentRouteToLat},${currentRouteToLng}&navigate=yes&from=${currentClientLat},${currentClientLng}`;
+    window.open(url, '_blank');
+  }
+
+  // ============================================================
+  // 7. GPS
+  // ============================================================
+  function startGpsTracking() {
+    if (!navigator.geolocation) { alert('⚠️ GPS не поддерживается'); return; }
     if (watchId) navigator.geolocation.clearWatch(watchId);
     watchId = navigator.geolocation.watchPosition(
-      position => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
+      pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
         db.collection('drivers').doc(currentUser.uid).update({ lat, lng })
           .then(() => {
-            if (currentUserData) {
-              currentUserData.lat = lat;
-              currentUserData.lng = lng;
-            }
+            if (currentUserData) { currentUserData.lat = lat; currentUserData.lng = lng; }
             currentDriverLat = lat;
             currentDriverLng = lng;
             updateDriverMarker(lat, lng);
@@ -420,34 +399,28 @@
           })
           .catch(e => console.error('Ошибка обновления GPS:', e));
       },
-      error => {
-        console.error('GPS ошибка:', error);
-      },
+      err => console.error('GPS ошибка:', err),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
     );
   }
 
   function updateDriverLocationDisplay() {
     if (currentUserData) {
-      const lat = currentUserData.lat || '—';
-      const lng = currentUserData.lng || '—';
-      document.getElementById('driver-location-info').textContent = '📍 ' + lat + ', ' + lng;
+      document.getElementById('driver-location-info').textContent = 
+        '📍 ' + (currentUserData.lat || '—') + ', ' + (currentUserData.lng || '—');
     }
   }
 
   function manualLocation() {
-    const lat = prompt('Введите широту:', '55.7539');
-    const lng = prompt('Введите долготу:', '37.6208');
+    const lat = prompt('Введите широту:', '32.0853');
+    const lng = prompt('Введите долготу:', '34.7818');
     if (lat && lng) {
       const newLat = parseFloat(lat);
       const newLng = parseFloat(lng);
       if (!isNaN(newLat) && !isNaN(newLng)) {
         db.collection('drivers').doc(currentUser.uid).update({ lat: newLat, lng: newLng })
           .then(() => {
-            if (currentUserData) {
-              currentUserData.lat = newLat;
-              currentUserData.lng = newLng;
-            }
+            if (currentUserData) { currentUserData.lat = newLat; currentUserData.lng = newLng; }
             currentDriverLat = newLat;
             currentDriverLng = newLng;
             updateDriverMarker(newLat, newLng);
@@ -459,79 +432,9 @@
     }
   }
 
-  // ===== ЗАКАЗЫ =====
-  function listenDriverOrders() {
-    if (orderUnsubscribe) {
-      orderUnsubscribe();
-      orderUnsubscribe = null;
-    }
-    if (!currentUser) return;
-
-    console.log('📋 Подписка на заказы для водителя:', currentUser.uid);
-    
-    orderUnsubscribe = db.collection('orders')
-      .where('driverId', '==', currentUser.uid)
-      .where('status', 'in', ['assigned', 'accepted', 'started'])
-      .onSnapshot(snapshot => {
-        console.log('📋 Получено заказов:', snapshot.size);
-        let html = '';
-        let hasActive = false;
-        
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const orderId = doc.id;
-          hasActive = true;
-          activeOrderId = orderId;
-          
-          const statusMap = {
-            'assigned': 'Назначен',
-            'accepted': 'Принят',
-            'started': 'В пути'
-          };
-          
-          html += '<div class="order-item"><b>Заказ:</b> ' + data.from + ' → ' + data.to +
-            ' | Статус: <span class="badge badge-'+data.status+'">'+(statusMap[data.status] || data.status)+'</span>' +
-            (data.aiNote ? ' | ' + data.aiNote : '') +
-            '</div>';
-          
-          // Показываем клиента на карте
-          if (data.fromLat && data.fromLng && data.status !== 'completed') {
-            console.log('📍 Показываем клиента на карте:', data.fromLat, data.fromLng);
-            updateClientMarker(data.fromLat, data.fromLng, data.clientName || data.clientEmail);
-          }
-          
-          if (data.status === 'assigned') {
-            html += '<button class="warning" onclick="acceptOrder(\''+orderId+'\')">✅ Принять заказ</button>';
-          }
-        });
-        
-        document.getElementById('driver-orders-list').innerHTML = html || 'Нет активных заказов';
-        
-        if (!hasActive) {
-          if (clientMarker) { map.removeLayer(clientMarker); clientMarker = null; }
-          if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
-          document.getElementById('waze-btn').style.display = 'none';
-          currentClientLat = null;
-          currentClientLng = null;
-        }
-      }, error => {
-        console.error('❌ Ошибка прослушки заказов:', error);
-        document.getElementById('driver-orders-list').innerHTML = '<p style="color:red;">Ошибка загрузки заказов: ' + error.message + '</p>';
-      });
-  }
-
-  function acceptOrder(orderId) {
-    if (!orderId) return;
-    if (!confirm('Принять заказ?')) return;
-    db.collection('orders').doc(orderId).update({
-      status: 'accepted',
-      aiNote: 'Водитель принял заказ'
-    })
-    .then(() => alert('✅ Заказ принят!'))
-    .catch(e => alert('❌ Ошибка: ' + e.message));
-  }
-
-  // ===== СТАТУС =====
+  // ============================================================
+  // 8. СТАТУС
+  // ============================================================
   function toggleAvailability() {
     if (!currentUserData) return;
     const newVal = !currentUserData.available;
@@ -552,8 +455,146 @@
     }
   }
 
+  // ============================================================
+  // 9. ЗАКАЗЫ
+  // ============================================================
+  function listenDriverOrders() {
+    if (orderUnsubscribe) orderUnsubscribe();
+    if (!currentUser) return;
+
+    // 1) Подписка на ЗАКАЗЫ, где водитель уже назначен (активные)
+    orderUnsubscribe = db.collection('orders')
+      .where('driverId', '==', currentUser.uid)
+      .where('status', 'in', ['assigned', 'accepted', 'started'])
+      .onSnapshot(snapshot => {
+        renderOrders(snapshot, 'Активные заказы');
+      }, error => console.error('Ошибка прослушки активных заказов:', error));
+
+    // 2) Подписка на ПРЕДЛОЖЕНИЯ (статус offering, водитель в списке offeredTo)
+    db.collection('orders')
+      .where('status', '==', 'offering')
+      .onSnapshot(snapshot => {
+        // Фильтруем только те заказы, где этот водитель в списке offeredTo
+        const myOffers = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.offeredTo && data.offeredTo.includes(currentUser.uid)) {
+            myOffers.push({ id: doc.id, data: data });
+          }
+        });
+        renderOffers(myOffers);
+      }, error => console.error('Ошибка прослушки предложений:', error));
+  }
+
+  function renderOrders(snapshot, title) {
+    let html = `<div style="font-weight:600; margin:5px 0;">${title}</div>`;
+    let hasActive = false;
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const orderId = doc.id;
+      hasActive = true;
+      activeOrderId = orderId;
+
+      html += `<div class="order-item">
+        <b>Заказ:</b> ${data.from} → ${data.to}
+        <br>Статус: <span class="badge badge-${data.status}">${data.status}</span>
+        ${data.aiNote ? ' | ' + data.aiNote : ''}
+      </div>`;
+
+      if (data.fromLat && data.fromLng) {
+        updateClientMarker(data.fromLat, data.fromLng, data.clientName || data.clientEmail);
+        if (data.toLat && data.toLng) {
+          updateRouteToMarker(data.toLat, data.toLng);
+        }
+        document.getElementById('waze-to-client').style.display = 'inline-block';
+        if (data.toLat && data.toLng) {
+          document.getElementById('waze-to-route').style.display = 'inline-block';
+        }
+      }
+    });
+
+    if (!hasActive) {
+      html += '<p style="color:#999;">Нет активных заказов</p>';
+      if (clientMarker) { map.removeLayer(clientMarker); clientMarker = null; }
+      if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+      document.getElementById('waze-to-client').style.display = 'none';
+      document.getElementById('waze-to-route').style.display = 'none';
+    }
+
+    document.getElementById('driver-orders-list').innerHTML = html;
+  }
+
+  function renderOffers(offers) {
+    let html = '<div style="font-weight:600; margin:5px 0;">📨 Новые предложения</div>';
+    if (offers.length === 0) {
+      html += '<p style="color:#999;">Нет новых предложений</p>';
+    } else {
+      offers.forEach(({ id, data }) => {
+        const expires = data.offerExpiresAt ? new Date(data.offerExpiresAt.toDate()).toLocaleTimeString() : '—';
+        html += `<div class="offer-card">
+          <b>🚗 Новый заказ!</b>
+          <br>📍 ${data.from} → ${data.to}
+          <br>💰 ${data.price} ₪ | Способ оплаты: ${data.paymentMethod || '—'}
+          <br>⏳ До ${expires}
+          <br><button class="warning" onclick="acceptOrder('${id}')">✅ Принять заказ</button>
+        </div>`;
+      });
+    }
+    // Добавляем к существующему списку (не перезаписывая активные заказы)
+    const existing = document.getElementById('driver-orders-list').innerHTML;
+    document.getElementById('driver-orders-list').innerHTML = existing + html;
+  }
+
+  // ============================================================
+  // 10. ПРИНЯТЬ ЗАКАЗ
+  // ============================================================
+  function acceptOrder(orderId) {
+    if (!currentUser) { alert('Войдите!'); return; }
+
+    db.collection('orders').doc(orderId).get()
+      .then(doc => {
+        if (!doc.exists) { alert('❌ Заказ не найден'); return; }
+        const data = doc.data();
+        if (data.status !== 'offering') {
+          alert('⏳ Заказ уже обработан другим водителем');
+          return;
+        }
+        if (!data.offeredTo || !data.offeredTo.includes(currentUser.uid)) {
+          alert('❌ Вам не предложен этот заказ');
+          return;
+        }
+
+        return db.collection('orders').doc(orderId).update({
+          status: 'accepted',
+          driverId: currentUser.uid,
+          driverEmail: currentUser.email,
+          driverName: currentUserData?.fullName || 'Водитель',
+          driverPhone: currentUserData?.phone || '—',
+          driverCar: (currentUserData?.carModel || '') + ' ' + (currentUserData?.carNumber || ''),
+          aiNote: 'Принят водителем',
+          acceptedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      })
+      .then(() => {
+        return db.collection('drivers').doc(currentUser.uid).update({
+          available: false
+        });
+      })
+      .then(() => {
+        alert('✅ Заказ принят! Поездка началась.');
+        if (currentUserData) currentUserData.available = false;
+        updateDriverStatusDisplay();
+      })
+      .catch(error => alert('❌ Ошибка: ' + error.message));
+  }
+
+  // ============================================================
+  // 11. ЗАВЕРШИТЬ ЗАКАЗ + НАЧИСЛЕНИЕ БОНУСА
+  // ============================================================
   function completeOrder() {
     if (!currentUser) { alert('Войдите!'); return; }
+
     db.collection('orders')
       .where('driverId', '==', currentUser.uid)
       .where('status', 'in', ['assigned', 'accepted', 'started'])
@@ -563,25 +604,99 @@
       .then(snapshot => {
         if (snapshot.empty) { alert('Нет активных заказов'); return; }
         const doc = snapshot.docs[0];
+        const orderData = doc.data();
         const orderId = doc.id;
+
         return db.collection('orders').doc(orderId).update({
           status: 'completed',
-          aiNote: 'Завершён водителем'
+          aiNote: 'Завершён водителем',
+          completedAt: firebase.firestore.FieldValue.serverTimestamp()
         })
-        .then(() => db.collection('drivers').doc(currentUser.uid).update({ available: true }))
         .then(() => {
-          if (currentUserData) {
-            currentUserData.available = true;
-          }
+          return db.collection('drivers').doc(currentUser.uid).update({
+            available: true
+          });
+        })
+        .then(() => {
+          if (currentUserData) currentUserData.available = true;
           updateDriverStatusDisplay();
-          alert('✅ Заказ завершён!');
-          document.getElementById('waze-btn').style.display = 'none';
+          // Начисляем бонус клиенту
+          return calculateAndAddBonus(orderId, orderData);
+        })
+        .then(() => {
+          alert('✅ Заказ завершён! Бонус начислен клиенту.');
+          document.getElementById('waze-to-client').style.display = 'none';
+          document.getElementById('waze-to-route').style.display = 'none';
         });
       })
       .catch(e => alert('❌ Ошибка: ' + e.message));
   }
 
-  console.log('🚕 Driver page loaded');
+  // ============================================================
+  // 12. НАЧИСЛЕНИЕ БОНУСА (2%)
+  // ============================================================
+  async function calculateAndAddBonus(orderId, orderData) {
+    const clientId = orderData.clientId;
+    if (!clientId || clientId.startsWith('guest-')) return;
+
+    const MIN_DISTANCE = 2.0;
+    const BONUS_RATE = 0.02;
+
+    let distanceKm = orderData.distance || 2.5;
+    if (orderData.fromLat && orderData.fromLng && orderData.toLat && orderData.toLng) {
+      distanceKm = getDistance(orderData.fromLat, orderData.fromLng, orderData.toLat, orderData.toLng);
+    }
+
+    if (distanceKm < MIN_DISTANCE) {
+      await db.collection('ai_logs').add({
+        orderId: orderId,
+        decision: `Бонус не начислен (дистанция ${distanceKm.toFixed(2)} км < ${MIN_DISTANCE} км)`,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      return;
+    }
+
+    const bonusAmount = Math.round((orderData.price || 0) * BONUS_RATE * 100) / 100;
+    if (bonusAmount <= 0) return;
+
+    try {
+      const clientRef = db.collection('users_bonus').doc(clientId);
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(clientRef);
+        const currentBalance = doc.exists ? (doc.data().balance || 0) : 0;
+        const currentTotalEarned = doc.exists ? (doc.data().totalEarned || 0) : 0;
+
+        transaction.set(clientRef, {
+          balance: currentBalance + bonusAmount,
+          totalEarned: currentTotalEarned + bonusAmount,
+          totalSpent: doc.exists ? (doc.data().totalSpent || 0) : 0,
+          level: currentTotalEarned + bonusAmount > 500 ? 'Silver' : 'Bronze',
+          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        const transRef = db.collection('bonus_transactions').doc();
+        transaction.set(transRef, {
+          clientId: clientId,
+          orderId: orderId,
+          type: 'earned',
+          amount: bonusAmount,
+          description: `2% бонус за поездку (${distanceKm.toFixed(1)} км, ${orderData.price}₪)`,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          status: 'completed'
+        });
+      });
+
+      await db.collection('ai_logs').add({
+        orderId: orderId,
+        decision: `Начислен бонус ${bonusAmount}₪ клиенту (2% от ${orderData.price}₪)`,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log(`✅ Бонус ${bonusAmount}₪ начислен клиенту ${clientId}`);
+    } catch (error) {
+      console.error('❌ Ошибка начисления бонуса:', error);
+    }
+  }
 </script>
 </body>
 </html>
