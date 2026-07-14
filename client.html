@@ -9,7 +9,6 @@
   <!-- ============================================================ -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvhiWw94K3ysl0QIMMhtzd0uAk2cgcGYQ" async defer></script>
   <!-- ============================================================ -->
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -147,6 +146,19 @@
     .location-error { color: #dc3545; font-weight: 600; }
 
     .pac-container { z-index: 1000; }
+
+    /* Стили для маршрута */
+    .route-loading {
+      display: none;
+      color: #007bff;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+    .route-error {
+      color: #dc3545;
+      font-size: 13px;
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -206,7 +218,8 @@
             </div>
           </div>
           <div class="small" style="margin-top:6px;">* ±5% колебание, итоговая цена может отличаться</div>
-          <div id="route-loading" style="display:none; color:#007bff;">⏳ Расчёт маршрута...</div>
+          <div id="route-loading" class="route-loading">⏳ Расчёт маршрута...</div>
+          <div id="route-error" class="route-error"></div>
         </div>
 
         <!-- Способ оплаты -->
@@ -233,7 +246,8 @@
         <div class="map-hint">
           💡 Кликните по карте, чтобы изменить точку отправления.<br>
           🏁 Флаг – пункт назначения.<br>
-          🔵 Синяя линия – реальный маршрут по дорогам.
+          🔵 Синяя линия – реальный маршрут по дорогам.<br>
+          📍 Синяя точка – ваше местоположение.
         </div>
       </div>
     </div>
@@ -291,6 +305,7 @@
   let currentDurationMin = 0;
   let autocompleteFrom = null;
   let autocompleteTo = null;
+  let mapInitialized = false;
 
   // ==================== ТАРИФЫ ====================
   const TARIFF = {
@@ -327,6 +342,14 @@
     return { min, max, display: `${min.toFixed(2)} – ${max.toFixed(2)} ₪` };
   }
 
+  function getDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
   // ==================== АУТЕНТИФИКАЦИЯ ====================
   auth.onAuthStateChanged(async function(user) {
     if (user) {
@@ -336,6 +359,8 @@
       await loadClientBonusBalance();
       listenClientOrder();
       setTimeout(getMyLocation, 1500);
+      // Отложенная инициализация карты с проверкой готовности API
+      setTimeout(ensureMapInitialized, 500);
     } else {
       const session = localStorage.getItem('clientSession');
       if (session) {
@@ -346,6 +371,7 @@
           await loadClientBonusBalance();
           listenClientOrder();
           setTimeout(getMyLocation, 1500);
+          setTimeout(ensureMapInitialized, 500);
         } catch(e) {
           window.location.href = 'index.html';
         }
@@ -408,131 +434,137 @@
 
   // ==================== ИНИЦИАЛИЗАЦИЯ КАРТЫ ====================
   window.initMap = function() {
-    const defaultLocation = { lat: 32.0853, lng: 34.7818 };
+    console.log('🗺️ Google Maps API загружен, инициализация карты...');
+    if (mapInitialized) return;
+    
+    const mapElement = document.getElementById('map');
+    if (!mapElement) {
+      console.error('❌ Элемент #map не найден');
+      return;
+    }
 
-    map = new google.maps.Map(document.getElementById('map'), {
-      center: defaultLocation,
-      zoom: 12,
-      mapId: 'DEMO_MAP_ID'
-    });
+    try {
+      const defaultLocation = { lat: 32.0853, lng: 34.7818 };
+      map = new google.maps.Map(mapElement, {
+        center: defaultLocation,
+        zoom: 12,
+        mapId: 'DEMO_MAP_ID'
+      });
+      console.log('✅ Карта создана');
 
-    // Маркер отправления
-    fromMarker = new google.maps.Marker({
-      position: defaultLocation,
-      map: map,
-      icon: {
-        url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-        scaledSize: new google.maps.Size(40, 40)
-      },
-      label: {
-        text: '📍',
-        fontSize: '24px',
-        fontWeight: 'bold'
-      },
-      draggable: true,
-      title: 'Точка отправления'
-    });
+      fromMarker = new google.maps.Marker({
+        position: defaultLocation,
+        map: map,
+        icon: { url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png', scaledSize: new google.maps.Size(40, 40) },
+        label: { text: '📍', fontSize: '24px', fontWeight: 'bold' },
+        draggable: true,
+        title: 'Точка отправления'
+      });
 
-    // Маркер назначения
-    const toLocation = { lat: 31.7683, lng: 35.2137 };
-    toMarker = new google.maps.Marker({
-      position: toLocation,
-      map: map,
-      icon: {
-        url: 'https://maps.google.com/mapfiles/ms/icons/red-pushpin.png',
-        scaledSize: new google.maps.Size(32, 32)
-      },
-      label: {
-        text: '🏁',
-        fontSize: '24px',
-        fontWeight: 'bold'
-      },
-      title: 'Пункт назначения'
-    });
+      const toLocation = { lat: 31.7683, lng: 35.2137 };
+      toMarker = new google.maps.Marker({
+        position: toLocation,
+        map: map,
+        icon: { url: 'https://maps.google.com/mapfiles/ms/icons/red-pushpin.png', scaledSize: new google.maps.Size(32, 32) },
+        label: { text: '🏁', fontSize: '24px', fontWeight: 'bold' },
+        title: 'Пункт назначения'
+      });
 
-    // Directions Renderer для маршрута
-    directionsRenderer = new google.maps.DirectionsRenderer({
-      map: map,
-      suppressMarkers: true,
-      polylineOptions: {
-        strokeColor: '#007bff',
-        strokeWeight: 4,
-        strokeOpacity: 0.8
-      }
-    });
+      directionsRenderer = new google.maps.DirectionsRenderer({
+        map: map,
+        suppressMarkers: true,
+        polylineOptions: { strokeColor: '#007bff', strokeWeight: 4, strokeOpacity: 0.8 }
+      });
 
-    // Обработчик клика по карте
-    map.addListener('click', function(e) {
-      const lat = e.latLng.lat();
-      const lng = e.latLng.lng();
-      document.getElementById('from-lat').value = lat;
-      document.getElementById('from-lng').value = lng;
-      document.getElementById('from-address').value = '📍 Точка на карте';
-      fromMarker.setPosition({ lat, lng });
-      map.panTo({ lat, lng });
-      currentFromLat = lat;
-      currentFromLng = lng;
-      updateRoute();
-    });
-
-    // Привязываем перемещение маркера
-    fromMarker.addListener('dragend', function() {
-      const pos = fromMarker.getPosition();
-      document.getElementById('from-lat').value = pos.lat();
-      document.getElementById('from-lng').value = pos.lng();
-      document.getElementById('from-address').value = '📍 Перемещено на карте';
-      currentFromLat = pos.lat();
-      currentFromLng = pos.lng();
-      updateRoute();
-    });
-
-    // Настройка автодополнения
-    const fromInput = document.getElementById('from-address');
-    const toInput = document.getElementById('to-address');
-
-    autocompleteFrom = new google.maps.places.Autocomplete(fromInput, {
-      types: ['geocode', 'establishment'],
-      componentRestrictions: { country: 'il' }
-    });
-
-    autocompleteTo = new google.maps.places.Autocomplete(toInput, {
-      types: ['geocode', 'establishment'],
-      componentRestrictions: { country: 'il' }
-    });
-
-    autocompleteFrom.addListener('place_changed', function() {
-      const place = autocompleteFrom.getPlace();
-      if (place.geometry) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
+      map.addListener('click', function(e) {
+        const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
         document.getElementById('from-lat').value = lat;
         document.getElementById('from-lng').value = lng;
+        document.getElementById('from-address').value = '📍 Точка на карте';
         fromMarker.setPosition({ lat, lng });
-        map.setCenter({ lat, lng });
+        map.panTo({ lat, lng });
         currentFromLat = lat;
         currentFromLng = lng;
         updateRoute();
-      }
-    });
+      });
 
-    autocompleteTo.addListener('place_changed', function() {
-      const place = autocompleteTo.getPlace();
-      if (place.geometry) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        document.getElementById('to-lat').value = lat;
-        document.getElementById('to-lng').value = lng;
-        toMarker.setPosition({ lat, lng });
-        currentToLat = lat;
-        currentToLng = lng;
+      fromMarker.addListener('dragend', function() {
+        const pos = fromMarker.getPosition();
+        document.getElementById('from-lat').value = pos.lat();
+        document.getElementById('from-lng').value = pos.lng();
+        document.getElementById('from-address').value = '📍 Перемещено на карте';
+        currentFromLat = pos.lat();
+        currentFromLng = pos.lng();
         updateRoute();
-      }
-    });
+      });
 
-    // Загружаем начальный маршрут
-    setTimeout(updateRoute, 500);
-    console.log('🗺️ Google Maps инициализирована');
+      // Автодополнение
+      const fromInput = document.getElementById('from-address');
+      const toInput = document.getElementById('to-address');
+
+      if (fromInput) {
+        autocompleteFrom = new google.maps.places.Autocomplete(fromInput, {
+          types: ['geocode', 'establishment'],
+          componentRestrictions: { country: 'il' }
+        });
+        autocompleteFrom.addListener('place_changed', function() {
+          const place = autocompleteFrom.getPlace();
+          if (place.geometry) {
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+            document.getElementById('from-lat').value = lat;
+            document.getElementById('from-lng').value = lng;
+            fromMarker.setPosition({ lat, lng });
+            map.setCenter({ lat, lng });
+            currentFromLat = lat;
+            currentFromLng = lng;
+            updateRoute();
+          }
+        });
+      }
+
+      if (toInput) {
+        autocompleteTo = new google.maps.places.Autocomplete(toInput, {
+          types: ['geocode', 'establishment'],
+          componentRestrictions: { country: 'il' }
+        });
+        autocompleteTo.addListener('place_changed', function() {
+          const place = autocompleteTo.getPlace();
+          if (place.geometry) {
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+            document.getElementById('to-lat').value = lat;
+            document.getElementById('to-lng').value = lng;
+            toMarker.setPosition({ lat, lng });
+            currentToLat = lat;
+            currentToLng = lng;
+            updateRoute();
+          }
+        });
+      }
+
+      mapInitialized = true;
+      setTimeout(updateRoute, 500);
+      console.log('🗺️ Google Maps полностью инициализирована');
+
+    } catch (error) {
+      console.error('❌ Ошибка инициализации карты:', error);
+      document.getElementById('route-error').textContent = '❌ Ошибка загрузки карты: ' + error.message;
+    }
   };
+
+  function ensureMapInitialized() {
+    if (typeof google !== 'undefined' && google.maps && !mapInitialized) {
+      console.log('🔁 API уже загружен, инициализируем карту...');
+      window.initMap();
+    } else if (typeof google === 'undefined' || !google.maps) {
+      console.log('⏳ API ещё не загружен, ожидаем...');
+      setTimeout(ensureMapInitialized, 1000);
+    } else {
+      console.log('✅ Карта уже инициализирована');
+    }
+  }
 
   // ==================== ПОСТРОЕНИЕ МАРШРУТА ====================
   function updateRoute() {
@@ -545,10 +577,12 @@
       document.getElementById('estimated-distance').textContent = '—';
       document.getElementById('estimated-price-range').textContent = '—';
       document.getElementById('estimated-time').textContent = '—';
+      document.getElementById('route-error').textContent = '';
       return;
     }
 
     document.getElementById('route-loading').style.display = 'block';
+    document.getElementById('route-error').textContent = '';
 
     const origin = new google.maps.LatLng(fromLat, fromLng);
     const destination = new google.maps.LatLng(toLat, toLng);
@@ -584,7 +618,6 @@
         document.getElementById('estimated-price-range').textContent = priceRange.display;
         document.getElementById('tariff-display').textContent = getCurrentTariff().toFixed(2);
 
-        // Центрируем карту по маршруту
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(origin);
         bounds.extend(destination);
@@ -592,10 +625,10 @@
 
       } else {
         console.error('Ошибка маршрута:', status);
+        document.getElementById('route-error').textContent = '⚠️ Не удалось построить маршрут: ' + status;
         document.getElementById('estimated-distance').textContent = 'Ошибка';
         document.getElementById('estimated-price-range').textContent = '—';
         document.getElementById('estimated-time').textContent = '—';
-        // Показываем прямую линию
         showStraightLine(fromLat, fromLng, toLat, toLng);
       }
     });
@@ -766,14 +799,6 @@
       .catch(error => {
         alert('❌ Ошибка: ' + error.message);
       });
-  }
-
-  function getDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 
   // ==================== ИИ-ДИСПЕТЧЕР ====================
