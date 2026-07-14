@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🚕 Taxi – Клиент</title>
-  <!-- Leaflet CSS & JS (бесплатная карта) -->
+  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Firebase -->
@@ -39,7 +39,9 @@
     .nav a { text-decoration: none; color: #007bff; font-weight: 600; }
     .nav .logout-btn { background: #dc3545; color: white; border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; }
     .nav .logout-btn:hover { background: #c82333; }
-    #user-email { margin-left: auto; color: #555; font-size: 14px; }
+    .nav .login-btn { background: #28a745; color: white; border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .nav .login-btn:hover { background: #218838; }
+    #user-info { margin-left: auto; color: #555; font-size: 14px; }
     h1 { margin: 0 0 10px 0; font-weight: 600; }
     .bonus-panel {
       background: linear-gradient(135deg, #f9d976, #f39b7b);
@@ -155,17 +157,96 @@
     .search-status.success { color: #28a745; }
     .search-status.error { color: #dc3545; }
     .search-status.loading { color: #007bff; }
+
+    /* Модальное окно для регистрации */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal h2 { margin-top: 0; text-align: center; }
+    .modal p { text-align: center; color: #666; }
+    .modal input { margin-bottom: 12px; }
+    .modal .btn { width: 100%; }
+    .modal .btn-secondary { background: #6c757d; margin-top: 6px; }
+    .modal .btn-secondary:hover { background: #5a6268; }
+    .modal .divider {
+      text-align: center;
+      padding: 10px 0;
+      color: #999;
+      font-size: 13px;
+    }
+    .modal .divider::before,
+    .modal .divider::after {
+      content: '';
+      display: inline-block;
+      width: 30%;
+      height: 1px;
+      background: #ddd;
+      vertical-align: middle;
+      margin: 0 10px;
+    }
+    .auth-error {
+      color: #dc3545;
+      font-size: 13px;
+      text-align: center;
+      margin-top: 8px;
+      display: none;
+    }
+    .auth-success {
+      color: #28a745;
+      font-size: 13px;
+      text-align: center;
+      margin-top: 8px;
+      display: none;
+    }
   </style>
 </head>
 <body>
+
+<!-- Модальное окно для авторизации -->
+<div id="auth-modal" class="modal-overlay">
+  <div class="modal">
+    <h2>🔐 Авторизация</h2>
+    <p>Введите данные для входа или регистрации</p>
+    
+    <div id="auth-error" class="auth-error"></div>
+    <div id="auth-success" class="auth-success"></div>
+    
+    <input type="text" id="auth-passport" placeholder="🪪 ID паспорта (обязательно)" required>
+    <input type="tel" id="auth-phone" placeholder="📞 Телефон (обязательно)" required>
+    <input type="text" id="auth-name" placeholder="👤 Ваше имя (обязательно)" required>
+    
+    <button class="btn btn-primary" onclick="loginOrRegister()">🔑 Войти / Зарегистрироваться</button>
+  </div>
+</div>
 
 <div class="container">
   <!-- Навигация -->
   <div class="nav">
     <a href="index.html">🏠 Главная</a>
     <a href="client.html">🚕 Клиент</a>
-    <button class="logout-btn" onclick="signOut()">🚪 Выйти</button>
-    <span id="user-email"></span>
+    <button class="login-btn" id="login-btn" onclick="showAuthModal()" style="display:none;">🔑 Войти</button>
+    <button class="logout-btn" id="logout-btn" onclick="signOut()" style="display:none;">🚪 Выйти</button>
+    <span id="user-info"></span>
   </div>
 
   <h1>🚕 Заказ такси</h1>
@@ -182,7 +263,6 @@
   <!-- Основная карточка -->
   <div class="card">
     <div class="flex-row">
-      <!-- Левая колонка: форма -->
       <div class="flex-col">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
           <label style="margin:0;">📍 Откуда</label>
@@ -195,13 +275,11 @@
         <input type="text" id="to-address" placeholder="Введите адрес назначения" value="">
         <div id="search-status" class="search-status"></div>
 
-        <!-- Скрытые поля для координат -->
         <input type="hidden" id="from-lat" value="">
         <input type="hidden" id="from-lng" value="">
         <input type="hidden" id="to-lat" value="">
         <input type="hidden" id="to-lng" value="">
 
-        <!-- Предварительная стоимость -->
         <div class="price-panel">
           <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
             <div>
@@ -219,7 +297,6 @@
           <div id="route-error" class="route-error"></div>
         </div>
 
-        <!-- Способ оплаты -->
         <label>💳 Способ оплаты</label>
         <select id="payment-method">
           <option value="cash">💰 Наличные</option>
@@ -240,14 +317,13 @@
         <div id="order-status-message" style="margin-top:10px; font-weight:600;"></div>
       </div>
 
-      <!-- Правая колонка: карта -->
       <div class="flex-col">
         <div id="map"></div>
         <div class="map-hint">
           💡 Введите адрес и нажмите Enter.<br>
           🏁 Флаг – пункт назначения. 📍 Синяя точка – ваше местоположение.<br>
           🚗 Зелёные машинки – свободные такси.<br>
-          Кликните по карте, чтобы изменить отправление.
+          🔑 Войдите в аккаунт, чтобы получать бонусы!
         </div>
       </div>
     </div>
@@ -286,7 +362,7 @@
 
   // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
   let currentUser = null;
-  let currentUserData = null;
+  let currentClientData = null;
   let map = null;
   let fromMarker = null;
   let toMarker = null;
@@ -351,84 +427,200 @@
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 
-  // ==================== АУТЕНТИФИКАЦИЯ ====================
-  auth.onAuthStateChanged(async function(user) {
-    if (user) {
-      currentUser = user;
-      document.getElementById('user-email').textContent = '👤 ' + user.email;
-      await loadUserData();
-      await loadClientBonusBalance();
-      listenClientOrder();
-      listenTaxiDrivers();
-      setTimeout(initMap, 500);
-      setTimeout(() => getMyLocation(), 1500);
-    } else {
-      const session = localStorage.getItem('clientSession');
-      if (session) {
-        try {
-          const data = JSON.parse(session);
-          document.getElementById('user-email').textContent = '👤 ' + (data.name || 'Клиент');
-          await loadUserData();
-          await loadClientBonusBalance();
-          listenClientOrder();
-          listenTaxiDrivers();
-          setTimeout(initMap, 500);
-          setTimeout(() => getMyLocation(), 1500);
-        } catch(e) {
-          window.location.href = 'index.html';
-        }
-      } else {
-        window.location.href = 'index.html';
-      }
-    }
-  });
+  // ==================== АВТОРИЗАЦИЯ ====================
+  function showAuthModal() {
+    document.getElementById('auth-modal').classList.remove('hidden');
+    document.getElementById('auth-error').style.display = 'none';
+    document.getElementById('auth-success').style.display = 'none';
+  }
 
-  function loadUserData() {
-    if (!currentUser) return Promise.resolve();
-    return db.collection('users').doc(currentUser.uid).get()
-      .then(doc => {
-        if (doc.exists) {
-          currentUserData = doc.data();
-        } else {
-          return db.collection('users').doc(currentUser.uid).set({
-            email: currentUser.email,
-            name: 'Клиент',
-            role: 'client',
-            phone: '',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-          }).then(() => { currentUserData = { role: 'client' }; });
-        }
-      })
-      .catch(e => console.error('Ошибка загрузки данных пользователя:', e));
+  function hideAuthModal() {
+    document.getElementById('auth-modal').classList.add('hidden');
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+    document.getElementById('auth-success').style.display = 'none';
+  }
+
+  function showSuccess(msg) {
+    const el = document.getElementById('auth-success');
+    el.textContent = msg;
+    el.style.display = 'block';
+    document.getElementById('auth-error').style.display = 'none';
+  }
+
+  async function loginOrRegister() {
+    const passportId = document.getElementById('auth-passport').value.trim();
+    const phone = document.getElementById('auth-phone').value.trim();
+    const name = document.getElementById('auth-name').value.trim();
+
+    if (!passportId) { showError('⚠️ Введите ID паспорта'); return; }
+    if (!phone) { showError('⚠️ Введите номер телефона'); return; }
+    if (!name) { showError('⚠️ Введите ваше имя'); return; }
+
+    showError('');
+    showSuccess('⏳ Проверка данных...');
+
+    try {
+      // 1. Проверяем, существует ли пользователь с такой связкой
+      const snapshot = await db.collection('clients')
+        .where('passportId', '==', passportId)
+        .where('phone', '==', phone)
+        .get();
+
+      if (!snapshot.empty) {
+        // Пользователь найден → вход
+        const doc = snapshot.docs[0];
+        currentClientData = doc.data();
+        currentUser = { uid: doc.id };
+        
+        // Сохраняем сессию
+        localStorage.setItem('clientSession', JSON.stringify({
+          passportId: passportId,
+          phone: phone,
+          name: currentClientData.name
+        }));
+        
+        showSuccess('✅ Вход выполнен успешно!');
+        setTimeout(() => {
+          hideAuthModal();
+          updateUIAfterAuth();
+        }, 1000);
+        return;
+      }
+
+      // 2. Проверяем, не занят ли ID паспорта
+      const checkId = await db.collection('clients')
+        .where('passportId', '==', passportId)
+        .get();
+      
+      if (!checkId.empty) {
+        showError('❌ Этот ID паспорта уже зарегистрирован с другим телефоном');
+        return;
+      }
+
+      // 3. Проверяем, не занят ли телефон
+      const checkPhone = await db.collection('clients')
+        .where('phone', '==', phone)
+        .get();
+      
+      if (!checkPhone.empty) {
+        showError('❌ Этот телефон уже зарегистрирован с другим ID паспорта');
+        return;
+      }
+
+      // 4. Регистрация нового пользователя
+      const docRef = db.collection('clients').doc();
+      const newClient = {
+        passportId: passportId,
+        phone: phone,
+        name: name,
+        role: 'client',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        bonusBalance: 0,
+        totalEarned: 0,
+        totalSpent: 0,
+        level: 'Bronze'
+      };
+
+      await docRef.set(newClient);
+      
+      currentClientData = newClient;
+      currentUser = { uid: docRef.id };
+
+      // Сохраняем сессию
+      localStorage.setItem('clientSession', JSON.stringify({
+        passportId: passportId,
+        phone: phone,
+        name: name
+      }));
+
+      showSuccess('✅ Регистрация успешна!');
+      setTimeout(() => {
+        hideAuthModal();
+        updateUIAfterAuth();
+      }, 1000);
+
+    } catch (error) {
+      console.error('❌ Ошибка авторизации:', error);
+      showError('❌ Ошибка: ' + error.message);
+    }
+  }
+
+  function updateUIAfterAuth() {
+    if (currentClientData) {
+      document.getElementById('user-info').textContent = `👤 ${currentClientData.name} (${currentClientData.phone})`;
+      document.getElementById('login-btn').style.display = 'none';
+      document.getElementById('logout-btn').style.display = 'inline-block';
+      loadClientBonusBalance();
+    }
   }
 
   function signOut() {
-    auth.signOut().then(() => {
+    if (confirm('Выйти из аккаунта?')) {
       localStorage.removeItem('clientSession');
-      window.location.href = 'index.html';
-    });
+      currentUser = null;
+      currentClientData = null;
+      document.getElementById('user-info').textContent = '';
+      document.getElementById('login-btn').style.display = 'inline-block';
+      document.getElementById('logout-btn').style.display = 'none';
+      document.getElementById('bonus-panel').classList.add('hidden');
+      location.reload();
+    }
+  }
+
+  // ==================== ЗАГРУЗКА СЕССИИ ====================
+  function loadSession() {
+    try {
+      const data = localStorage.getItem('clientSession');
+      if (data) {
+        const session = JSON.parse(data);
+        if (session.passportId && session.phone && session.name) {
+          // Проверяем существование пользователя в Firebase
+          db.collection('clients')
+            .where('passportId', '==', session.passportId)
+            .where('phone', '==', session.phone)
+            .get()
+            .then(snapshot => {
+              if (!snapshot.empty) {
+                currentClientData = snapshot.docs[0].data();
+                currentUser = { uid: snapshot.docs[0].id };
+                updateUIAfterAuth();
+                initMap();
+                setTimeout(() => getMyLocation(), 1000);
+                listenTaxiDrivers();
+                listenClientOrder();
+              } else {
+                // Сессия недействительна
+                localStorage.removeItem('clientSession');
+                showAuthModal();
+              }
+            })
+            .catch(() => {
+              showAuthModal();
+            });
+          return true;
+        }
+      }
+    } catch(e) {}
+    return false;
   }
 
   // ==================== БОНУСЫ ====================
   async function loadClientBonusBalance() {
-    const clientId = currentUser ? currentUser.uid : null;
-    if (!clientId) return;
+    if (!currentClientData) return;
     try {
-      const doc = await db.collection('users_bonus').doc(clientId).get();
-      let balance = 0;
-      if (doc.exists) balance = doc.data().balance || 0;
-      else {
-        await db.collection('users_bonus').doc(clientId).set({
-          balance: 0,
-          totalEarned: 0,
-          totalSpent: 0,
-          level: 'Bronze',
-          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-        });
+      const doc = await db.collection('clients').doc(currentUser.uid).get();
+      if (doc.exists) {
+        const data = doc.data();
+        const balance = data.bonusBalance || 0;
+        document.getElementById('client-bonus-balance').textContent = balance.toFixed(2) + ' ₪';
+        document.getElementById('bonus-balance-display').textContent = balance.toFixed(2);
+        document.getElementById('bonus-panel').classList.remove('hidden');
       }
-      document.getElementById('client-bonus-balance').textContent = balance.toFixed(2) + ' ₪';
-      document.getElementById('bonus-balance-display').textContent = balance.toFixed(2);
-      document.getElementById('bonus-panel').classList.remove('hidden');
     } catch (e) {
       console.error('Ошибка загрузки бонусов:', e);
     }
@@ -548,7 +740,6 @@
 
     const statusEl = document.getElementById('search-status');
 
-    // Если это "📍 Моё местоположение" – используем уже сохранённые координаты
     if (address === '📍 Моё местоположение' && currentFromLat && currentFromLng) {
       if (type === 'from') {
         document.getElementById('from-lat').value = currentFromLat;
@@ -603,14 +794,10 @@
           document.getElementById('route-error').textContent = '';
           updateRoute();
         } else {
-          // Адрес не найден – но мы сохраняем ТЕКСТОВЫЙ адрес
           statusEl.textContent = '⚠️ Адрес не найден на карте, но будет передан водителю';
           statusEl.className = 'search-status error';
           document.getElementById('route-error').textContent = '⚠️ Адрес не найден на карте, но будет передан водителю.';
-          
-          // Если это адрес назначения – сохраняем его как текст
           if (type === 'to') {
-            // Адрес уже в поле to-address, ничего не меняем
             console.log('📝 Адрес назначения сохранён как текст:', address);
           }
         }
@@ -769,29 +956,31 @@
 
   // ==================== СОЗДАНИЕ ЗАКАЗА ====================
   function createOrder() {
-    // Берём ТЕКСТОВЫЕ адреса из полей ввода
+    // Проверяем авторизацию
+    if (!currentUser || !currentClientData) {
+      alert('⚠️ Пожалуйста, войдите в аккаунт для заказа такси');
+      showAuthModal();
+      return;
+    }
+
     const fromText = document.getElementById('from-address').value.trim() || '📍 Моё местоположение';
     const toText = document.getElementById('to-address').value.trim();
     
-    // Берём координаты из скрытых полей (если они есть)
     const fromLat = parseFloat(document.getElementById('from-lat').value);
     const fromLng = parseFloat(document.getElementById('from-lng').value);
     const toLat = parseFloat(document.getElementById('to-lat').value);
     const toLng = parseFloat(document.getElementById('to-lng').value);
 
-    // Проверяем, что адреса заполнены
     if (!fromText || !toText) { 
       alert('⚠️ Заполните адреса или установите точки на карте'); 
       return; 
     }
     
-    // Координаты могут быть NaN – это нормально, тогда используем 0
     const finalFromLat = isNaN(fromLat) ? 0 : fromLat;
     const finalFromLng = isNaN(fromLng) ? 0 : fromLng;
     const finalToLat = isNaN(toLat) ? 0 : toLat;
     const finalToLng = isNaN(toLng) ? 0 : toLng;
 
-    // Расчёт расстояния и цены только если есть координаты
     let distance = 0;
     let price = 0;
     if (finalFromLat !== 0 && finalFromLng !== 0 && finalToLat !== 0 && finalToLng !== 0) {
@@ -814,27 +1003,17 @@
       finalPrice = price - bonusUsed;
     }
 
-    let clientName = 'Клиент';
-    const session = localStorage.getItem('clientSession');
-    if (session) { try { clientName = JSON.parse(session).name || 'Клиент'; } catch(e) {} }
-    if (currentUserData?.name) clientName = currentUserData.name;
-
-    // ===== ФОРМИРУЕМ ЗАКАЗ =====
     const orderData = {
-      clientId: currentUser ? currentUser.uid : 'guest-' + Date.now(),
-      clientEmail: currentUser ? currentUser.email : 'guest@taxi.com',
-      clientName: clientName,
-      
-      // === ТЕКСТОВЫЕ АДРЕСА (всегда передаются) ===
-      from: fromText,    // ← Адрес отправления (текст)
-      to: toText,        // ← Адрес назначения (текст)
-      
-      // === КООРДИНАТЫ (если есть) ===
+      clientId: currentUser.uid,
+      clientName: currentClientData.name,
+      clientPhone: currentClientData.phone,
+      passportId: currentClientData.passportId,
+      from: fromText,
+      to: toText,
       fromLat: finalFromLat,
       fromLng: finalFromLng,
       toLat: finalToLat,
       toLng: finalToLng,
-      
       distance: distance,
       duration: currentDurationMin,
       price: price,
@@ -849,13 +1028,14 @@
 
     console.log('📝 Создание заказа:', orderData);
 
+    document.getElementById('order-status-message').innerHTML = '⏳ Создание заказа...';
+
     db.collection('orders').add(orderData)
       .then(docRef => {
         currentOrderId = docRef.id;
         document.getElementById('order-status-message').innerHTML = '✅ Заказ создан! Ищем водителей...';
         document.getElementById('order-status-card').classList.remove('hidden');
         
-        // Если есть координаты клиента – ищем водителей
         if (finalFromLat !== 0 && finalFromLng !== 0) {
           return findAndOfferDrivers(docRef.id, finalFromLat, finalFromLng);
         } else {
@@ -869,8 +1049,13 @@
         document.getElementById('order-status-message').innerHTML = '📨 Заказ передан водителям';
       })
       .catch(error => {
-        alert('❌ Ошибка: ' + error.message);
         console.error('❌ Ошибка создания заказа:', error);
+        let errorMessage = error.message;
+        if (error.code === 'permission-denied') {
+          errorMessage = '❌ Нет прав на запись. Проверьте правила Firebase.';
+        }
+        alert('❌ Ошибка: ' + errorMessage);
+        document.getElementById('order-status-message').innerHTML = '❌ Ошибка создания заказа';
       });
   }
 
@@ -949,10 +1134,10 @@
   function listenClientOrder() {
     if (orderUnsubscribe) orderUnsubscribe();
 
-    const clientId = currentUser ? currentUser.uid : 'guest-' + Date.now();
+    if (!currentUser) return;
 
     orderUnsubscribe = db.collection('orders')
-      .where('clientId', '==', clientId)
+      .where('clientId', '==', currentUser.uid)
       .orderBy('createdAt', 'desc')
       .limit(1)
       .onSnapshot(snapshot => {
@@ -1015,6 +1200,7 @@
         <div><strong>Дистанция:</strong> ${(data.distance || 0).toFixed(1)} км</div>
         <div><strong>🧠 ИИ:</strong> ${data.aiNote || '—'}</div>
         <div><strong>🆔 Заказ:</strong> ${orderId.slice(0, 8)}...</div>
+        <div style="font-size:12px; color:#888; margin-top:4px;">🪪 ${data.passportId || ''} | 📞 ${data.clientPhone || ''}</div>
         ${bonusInfo}
       </div>
     `;
@@ -1114,7 +1300,16 @@
     }
   });
 
-  console.log('🚕 Taxi Client v3.0 (OpenStreetMap) загружен');
+  // ==================== ЗАПУСК ====================
+  console.log('🚕 Taxi Client v4.0 (с авторизацией) загружен');
+
+  // Пытаемся загрузить сессию, иначе показываем модалку
+  const hasSession = loadSession();
+  if (!hasSession) {
+    setTimeout(() => {
+      showAuthModal();
+    }, 300);
+  }
 </script>
 </body>
 </html>
