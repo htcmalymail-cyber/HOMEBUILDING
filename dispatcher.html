@@ -11,7 +11,7 @@
     body { font-family: 'Segoe UI', sans-serif; margin:0; padding:20px; background:#f0f2f5; }
     .container { max-width:1400px; margin:0 auto; }
     .card { background:white; padding:20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:15px 0; }
-    .hidden { display:none; }
+    .hidden { display:none !important; }
     button { padding:10px 20px; margin:5px; border:none; border-radius:6px; color:#fff; font-weight:600; cursor:pointer; font-size:14px; }
     button.primary { background:#007bff; }
     button.primary:hover { background:#0056b3; }
@@ -41,12 +41,15 @@
     .status-completed { background:#6c757d; color:white; }
     .status-cancelled { background:#dc3545; color:white; }
     .status-waiting { background:#fd7e14; color:white; }
+    .status-offering { background:#17a2b8; color:white; }
+    .status-searching { background:#ffc107; color:#212529; }
     .section-title { font-size:18px; font-weight:600; margin:15px 0 10px; color:#333; }
     .stats { display:flex; gap:20px; flex-wrap:wrap; margin:10px 0; }
     .stat-item { background:#e8f4f8; padding:10px 20px; border-radius:8px; font-size:14px; }
     .stat-item strong { font-size:20px; display:block; }
     .action-buttons { display:flex; gap:5px; flex-wrap:wrap; }
     .action-buttons button { padding:5px 12px; font-size:12px; }
+    .alert-box { background:#fff3cd; padding:15px; border-radius:8px; margin:10px 0; color:#856404; }
   </style>
 </head>
 <body>
@@ -59,25 +62,22 @@
   </div>
   <h1>🚕 Taxi – Диспетчер</h1>
 
-  <!-- Блок регистрации/входа -->
   <div id="auth-section" class="card">
     <h3>📝 Регистрация диспетчера</h3>
-    <p style="color:#666;font-size:14px;">Заполните все поля для регистрации в системе</p>
-    
     <div class="form-row">
-      <input type="email" id="reg-email" placeholder="Email (логин)" value="dispatcher@taxi.com">
-      <input type="password" id="reg-password" placeholder="Пароль (мин. 6 символов)" value="123456">
+      <input type="email" id="reg-email" placeholder="Email" value="dispatcher@taxi.com">
+      <input type="password" id="reg-password" placeholder="Пароль" value="123456">
     </div>
     <div class="form-row">
-      <input type="text" id="reg-fullname" placeholder="ФИО диспетчера" value="Петрова Анна Сергеевна">
-      <input type="text" id="reg-passport" placeholder="ID паспорта (серия + номер)" value="4610 789012">
+      <input type="text" id="reg-fullname" placeholder="ФИО" value="Петрова Анна Сергеевна">
+      <input type="text" id="reg-passport" placeholder="ID паспорта" value="4610 789012">
     </div>
     <div class="form-row">
-      <input type="text" id="reg-phone" placeholder="Номер телефона" value="+7 999 111-22-33">
+      <input type="text" id="reg-phone" placeholder="Телефон" value="+7 999 111-22-33">
     </div>
-    <button onclick="signUpDispatcher()">📋 Зарегистрироваться как диспетчер</button>
-    <hr style="margin:20px 0;">
-    <h4>🔑 Вход для диспетчера</h4>
+    <button onclick="signUpDispatcher()">📋 Зарегистрироваться</button>
+    <hr>
+    <h4>🔑 Вход</h4>
     <div class="form-row">
       <input type="email" id="login-email" placeholder="Email" value="dispatcher@taxi.com">
       <input type="password" id="login-password" placeholder="Пароль" value="123456">
@@ -87,21 +87,18 @@
     <p id="user-status" style="margin-top:10px;font-weight:600;">Не авторизован</p>
   </div>
 
-  <!-- Интерфейс диспетчера -->
   <div id="dispatcher-section" class="hidden">
     <div class="card">
-      <div id="not-dispatcher-alert" class="alert" style="background:#fff3cd;padding:15px;border-radius:8px;color:#856404;">
+      <div id="not-dispatcher-alert" class="alert-box" style="display:none;">
         <strong>⚠️ Вы вошли, но не зарегистрированы как диспетчер.</strong>
-        <br>Заполните форму выше и нажмите «Зарегистрироваться как диспетчер».
+        <br>Заполните форму выше и нажмите «Зарегистрироваться».
       </div>
-      <div id="dispatcher-content" class="hidden">
-        <!-- Информация о диспетчере -->
-        <div style="background:#e8f4f8;padding:12px;border-radius:8px;margin-bottom:15px;">
+      <div id="dispatcher-content">
+        <div style="background:#e8f4f8; padding:12px; border-radius:8px; margin-bottom:15px;">
           <p><strong>👤 Диспетчер:</strong> <span id="dispatcher-name-display"></span></p>
           <p><strong>📞 Телефон:</strong> <span id="dispatcher-phone-display"></span></p>
         </div>
 
-        <!-- Статистика -->
         <div class="stats">
           <div class="stat-item">👨‍✈️ Водителей: <strong id="stat-drivers">0</strong></div>
           <div class="stat-item">📋 Всего заказов: <strong id="stat-orders">0</strong></div>
@@ -109,48 +106,32 @@
           <div class="stat-item">✅ Завершено: <strong id="stat-completed">0</strong></div>
         </div>
 
-        <!-- Вкладки -->
         <div style="margin:15px 0;">
           <button class="primary" onclick="showTab('drivers')">🚗 Водители</button>
           <button class="primary" onclick="showTab('orders')">📋 Заказы</button>
         </div>
 
-        <!-- Список водителей -->
         <div id="tab-drivers">
           <h4>🚗 Все зарегистрированные водители</h4>
-          <div id="drivers-list-container">
+          <div style="overflow-x:auto;">
             <table class="table" id="drivers-table">
-              <thead>
-                <tr>
-                  <th>ФИО</th>
-                  <th>Авто</th>
-                  <th>Номер</th>
-                  <th>Телефон</th>
-                  <th>Статус</th>
-                  <th>Текущий заказ</th>
-                  <th>Действия</th>
-                </tr>
-              </thead>
+              <thead><tr>
+                <th>ФИО</th><th>Авто</th><th>Номер</th><th>Телефон</th>
+                <th>Статус</th><th>Текущий заказ</th><th>Действия</th>
+              </tr></thead>
               <tbody id="drivers-tbody"></tbody>
             </table>
           </div>
         </div>
 
-        <!-- Список заказов -->
         <div id="tab-orders" class="hidden">
           <h4>📋 Все заказы</h4>
-          <div id="orders-list-container">
+          <div style="overflow-x:auto;">
             <table class="table" id="orders-table">
-              <thead>
-                <tr>
-                  <th>Заказ</th>
-                  <th>Клиент</th>
-                  <th>Статус</th>
-                  <th>Водитель</th>
-                  <th>Цена</th>
-                  <th>Действия</th>
-                </tr>
-              </thead>
+              <thead><tr>
+                <th>Заказ</th><th>Клиент</th><th>Статус</th>
+                <th>Водитель</th><th>Цена</th><th>Действия</th>
+              </tr></thead>
               <tbody id="orders-tbody"></tbody>
             </table>
           </div>
@@ -178,7 +159,6 @@
   let currentUserData = null;
   let currentTab = 'drivers';
 
-  // === АУТЕНТИФИКАЦИЯ ===
   auth.onAuthStateChanged(async function(user) {
     if (user) {
       currentUser = user;
@@ -190,21 +170,17 @@
         await loadUserData();
         if (currentUserData && currentUserData.role === 'dispatcher') {
           document.getElementById('not-dispatcher-alert').style.display = 'none';
-          document.getElementById('dispatcher-content').classList.remove('hidden');
+          document.getElementById('dispatcher-content').style.display = 'block';
           document.getElementById('dispatcher-name-display').textContent = currentUserData.fullName || '—';
           document.getElementById('dispatcher-phone-display').textContent = currentUserData.phone || '—';
-          
-          // Загружаем данные в реальном времени
           loadAllDrivers();
           loadAllOrders();
           showTab('drivers');
         } else {
           document.getElementById('not-dispatcher-alert').style.display = 'block';
-          document.getElementById('dispatcher-content').classList.add('hidden');
+          document.getElementById('dispatcher-content').style.display = 'none';
         }
-      } catch (error) {
-        console.error('Ошибка загрузки:', error);
-      }
+      } catch (e) { console.error('Ошибка загрузки:', e); }
     } else {
       currentUser = null;
       currentUserData = null;
@@ -216,16 +192,11 @@
 
   function loadUserData() {
     return db.collection('dispatchers').doc(currentUser.uid).get().then(doc => {
-      if (doc.exists) {
-        currentUserData = doc.data();
-        currentUserData.role = 'dispatcher';
-      } else {
-        currentUserData = { role: 'client' };
-      }
+      if (doc.exists) { currentUserData = doc.data(); currentUserData.role = 'dispatcher'; }
+      else { currentUserData = { role: 'client' }; }
     });
   }
 
-  // === РЕГИСТРАЦИЯ ДИСПЕТЧЕРА ===
   function signUpDispatcher() {
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value.trim();
@@ -234,226 +205,165 @@
     const phone = document.getElementById('reg-phone').value.trim();
 
     if (!email || !password || !fullName || !passportId || !phone) {
-      alert('⚠️ Все поля обязательны для заполнения!');
+      alert('⚠️ Все поля обязательны!');
       return;
     }
-    if (password.length < 6) {
-      alert('⚠️ Пароль должен быть не менее 6 символов');
-      return;
-    }
+    if (password.length < 6) { alert('⚠️ Пароль минимум 6 символов'); return; }
 
     auth.createUserWithEmailAndPassword(email, password)
       .then(cred => {
         return db.collection('dispatchers').doc(cred.user.uid).set({
-          email: email,
-          fullName: fullName,
-          passportId: passportId,
-          phone: phone,
+          email, fullName, passportId, phone,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           role: 'dispatcher'
         });
       })
-      .then(() => {
-        alert('✅ Регистрация диспетчера успешна! Все данные сохранены.\nТеперь войдите.');
-        document.getElementById('reg-password').value = '';
-        document.getElementById('user-status').innerHTML = '✅ Регистрация завершена! Войдите.';
-      })
-      .catch(error => {
-        if (error.code === 'auth/email-already-in-use') {
-          alert('⚠️ Этот email уже зарегистрирован. Войдите или используйте другой email.');
-        } else {
-          alert('❌ Ошибка: ' + error.message);
-        }
-      });
+      .then(() => { alert('✅ Регистрация диспетчера успешна! Войдите.'); document.getElementById('reg-password').value = ''; })
+      .catch(e => alert('❌ Ошибка: ' + e.message));
   }
 
   function signIn() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-    auth.signInWithEmailAndPassword(email, password)
-      .catch(e => alert('❌ Ошибка входа: ' + e.message));
+    auth.signInWithEmailAndPassword(email, password).catch(e => alert('❌ Ошибка входа: ' + e.message));
   }
+  function signOut() { auth.signOut().then(() => { window.location.href = 'index.html'; }); }
 
-  function signOut() { auth.signOut(); }
-
-  // === ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ===
   function showTab(tab) {
     currentTab = tab;
     document.getElementById('tab-drivers').classList.add('hidden');
     document.getElementById('tab-orders').classList.add('hidden');
-    if (tab === 'drivers') {
-      document.getElementById('tab-drivers').classList.remove('hidden');
-    } else {
-      document.getElementById('tab-orders').classList.remove('hidden');
-    }
+    document.getElementById('tab-' + tab).classList.remove('hidden');
   }
 
-  // === ЗАГРУЗКА ВСЕХ ВОДИТЕЛЕЙ ===
+  // ===== ВОДИТЕЛИ =====
   function loadAllDrivers() {
-    db.collection('drivers')
-      .where('role', '==', 'driver')
-      .onSnapshot(snapshot => {
-        const tbody = document.getElementById('drivers-tbody');
-        let html = '';
-        let count = 0;
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const driverId = doc.id;
-          count++;
-          const statusClass = data.available ? 'status-online' : 'status-offline';
-          const statusText = data.available ? '🟢 Онлайн' : '🔴 Офлайн';
-          
-          // Проверяем, есть ли у водителя активный заказ
-          let currentOrder = '—';
-          db.collection('orders')
-            .where('driverId', '==', driverId)
-            .where('status', 'in', ['assigned', 'accepted', 'started'])
-            .get()
-            .then(snapshot2 => {
-              if (!snapshot2.empty) {
-                const order = snapshot2.docs[0].data();
-                currentOrder = order.from + ' → ' + order.to;
-              }
-            });
+    db.collection('drivers').where('role', '==', 'driver').onSnapshot(snapshot => {
+      const tbody = document.getElementById('drivers-tbody');
+      let html = '';
+      let count = 0;
+      const driverIds = [];
+      const driverDataMap = {};
 
-          html += `<tr>
-            <td><strong>${data.fullName || data.email}</strong></td>
-            <td>${data.carModel || '—'}</td>
-            <td>${data.carNumber || '—'}</td>
-            <td>${data.phone || '—'}</td>
-            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-            <td id="order-${driverId}">Загрузка...</td>
-            <td>
-              <div class="action-buttons">
-                <button class="danger" onclick="deleteDriver('${driverId}')">🗑️ Удалить</button>
-              </div>
-            </td>
-          </tr>`;
-        });
-        tbody.innerHTML = html || '<tr><td colspan="7">Нет зарегистрированных водителей</td></tr>';
-        document.getElementById('stat-drivers').textContent = count;
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const driverId = doc.id;
+        count++;
+        driverIds.push(driverId);
+        driverDataMap[driverId] = data;
 
-        // Загружаем активные заказы для каждого водителя
-        snapshot.forEach(doc => {
-          const driverId = doc.id;
-          db.collection('orders')
-            .where('driverId', '==', driverId)
-            .where('status', 'in', ['assigned', 'accepted', 'started'])
-            .get()
-            .then(snapshot2 => {
-              const cell = document.getElementById(`order-${driverId}`);
-              if (cell) {
-                if (!snapshot2.empty) {
-                  const order = snapshot2.docs[0].data();
-                  cell.textContent = order.from + ' → ' + order.to;
-                } else {
-                  cell.textContent = '—';
-                }
-              }
-            });
-        });
-      }, error => {
-        console.error('Ошибка загрузки водителей:', error);
+        const statusClass = data.available ? 'status-online' : 'status-offline';
+        const statusText = data.available ? '🟢 Онлайн' : '🔴 Офлайн';
+
+        html += `<tr>
+          <td><strong>${data.fullName || data.email}</strong></td>
+          <td>${data.carModel || '—'}</td>
+          <td>${data.carNumber || '—'}</td>
+          <td>${data.phone || '—'}</td>
+          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          <td id="order-${driverId}">Загрузка...</td>
+          <td><button class="danger" onclick="deleteDriver('${driverId}')">🗑️ Удалить</button></td>
+        </tr>`;
       });
+
+      tbody.innerHTML = html || '<tr><td colspan="7">Нет зарегистрированных водителей</td></tr>';
+      document.getElementById('stat-drivers').textContent = count;
+
+      // Загружаем активные заказы для каждого водителя
+      driverIds.forEach(id => {
+        db.collection('orders')
+          .where('driverId', '==', id)
+          .where('status', 'in', ['assigned', 'accepted', 'started'])
+          .get()
+          .then(snap => {
+            const cell = document.getElementById('order-' + id);
+            if (cell) {
+              if (!snap.empty) {
+                const order = snap.docs[0].data();
+                cell.textContent = order.from + ' → ' + order.to;
+              } else {
+                cell.textContent = '—';
+              }
+            }
+          });
+      });
+    });
   }
 
-  // === УДАЛЕНИЕ ВОДИТЕЛЯ ===
   function deleteDriver(driverId) {
-    if (!confirm('⚠️ Вы уверены, что хотите удалить этого водителя из системы? Это действие необратимо!')) return;
-    
-    // Удаляем документ водителя
+    if (!confirm('⚠️ Удалить водителя?')) return;
     db.collection('drivers').doc(driverId).delete()
-      .then(() => {
-        alert('✅ Водитель удалён из системы');
-      })
-      .catch(e => alert('❌ Ошибка удаления: ' + e.message));
+      .then(() => alert('✅ Водитель удалён'))
+      .catch(e => alert('❌ Ошибка: ' + e.message));
   }
 
-  // === ЗАГРУЗКА ВСЕХ ЗАКАЗОВ ===
+  // ===== ЗАКАЗЫ =====
   function loadAllOrders() {
-    db.collection('orders')
-      .orderBy('createdAt', 'desc')
-      .onSnapshot(snapshot => {
-        const tbody = document.getElementById('orders-tbody');
-        let html = '';
-        let total = 0;
-        let active = 0;
-        let completed = 0;
-        
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const orderId = doc.id;
-          total++;
-          if (data.status === 'completed') completed++;
-          if (['created', 'assigned', 'accepted', 'started'].includes(data.status)) active++;
-          
-          const statusClass = 'status-' + data.status;
-          const statusMap = {
-            'created': 'Создан',
-            'assigned': 'Назначен',
-            'accepted': 'Принят',
-            'started': 'В пути',
-            'completed': 'Завершён',
-            'cancelled': 'Отменён',
-            'waiting': 'Ожидание'
-          };
-          
-          // Получаем имя водителя
-          let driverName = data.driverEmail || '—';
-          
-          html += `<tr>
-            <td><strong>${data.from || '?'}</strong> → ${data.to || '?'}</td>
-            <td>${data.clientEmail || '—'}</td>
-            <td><span class="status-badge ${statusClass}">${statusMap[data.status] || data.status}</span></td>
-            <td>${driverName}</td>
-            <td>${data.price || 0} ₽</td>
-            <td>
-              <div class="action-buttons">
-                ${data.status !== 'completed' && data.status !== 'cancelled' ? `
-                  <button class="danger" onclick="cancelOrder('${orderId}')">❌ Отменить</button>
-                  <button class="warning" onclick="reassignOrder('${orderId}')">🔄 Назначить</button>
-                ` : ''}
-              </div>
-            </td>
-          </tr>`;
-        });
-        tbody.innerHTML = html || '<tr><td colspan="6">Нет заказов</td></tr>';
-        
-        document.getElementById('stat-orders').textContent = total;
-        document.getElementById('stat-active').textContent = active;
-        document.getElementById('stat-completed').textContent = completed;
-      }, error => {
-        console.error('Ошибка загрузки заказов:', error);
+    db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+      const tbody = document.getElementById('orders-tbody');
+      let html = '';
+      let total = 0, active = 0, completed = 0;
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const orderId = doc.id;
+        total++;
+        if (data.status === 'completed') completed++;
+        if (['searching', 'offering', 'created', 'assigned', 'accepted', 'started'].includes(data.status)) active++;
+
+        const statusMap = {
+          'searching': '🔍 Поиск',
+          'offering': '📨 Предложение',
+          'created': '🟡 Создан',
+          'assigned': '🔵 Назначен',
+          'accepted': '🟢 Принят',
+          'started': '🟢 В пути',
+          'completed': '✅ Завершён',
+          'cancelled': '❌ Отменён',
+          'waiting': '⏳ Ожидание'
+        };
+
+        const statusClass = 'status-' + data.status;
+
+        html += `<tr>
+          <td><strong>${data.from || '?'}</strong> → ${data.to || '?'}</td>
+          <td>${data.clientName || data.clientEmail || '—'}</td>
+          <td><span class="status-badge ${statusClass}">${statusMap[data.status] || data.status}</span></td>
+          <td>${data.driverName || data.driverEmail || '—'}</td>
+          <td>${data.finalPrice || data.price || 0} ₪</td>
+          <td>
+            <div class="action-buttons">
+              ${data.status !== 'completed' && data.status !== 'cancelled' ? `
+                <button class="danger" onclick="cancelOrder('${orderId}')">❌ Отменить</button>
+                <button class="warning" onclick="reassignOrder('${orderId}')">🔄 Назначить</button>
+              ` : ''}
+            </div>
+          </td>
+        </tr>`;
       });
+
+      tbody.innerHTML = html || '<tr><td colspan="6">Нет заказов</td></tr>';
+      document.getElementById('stat-orders').textContent = total;
+      document.getElementById('stat-active').textContent = active;
+      document.getElementById('stat-completed').textContent = completed;
+    });
   }
 
-  // === ОТМЕНА ЗАКАЗА (диспетчер) ===
   function cancelOrder(orderId) {
-    if (!confirm('⚠️ Вы уверены, что хотите отменить этот заказ?')) return;
+    if (!confirm('⚠️ Отменить заказ?')) return;
     db.collection('orders').doc(orderId).update({
       status: 'cancelled',
       aiNote: 'Отменён диспетчером'
-    })
-    .then(() => {
-      alert('✅ Заказ отменён');
-    })
-    .catch(e => alert('❌ Ошибка: ' + e.message));
+    }).then(() => alert('✅ Заказ отменён')).catch(e => alert('❌ Ошибка: ' + e.message));
   }
 
-  // === ПЕРЕНАЗНАЧЕНИЕ ЗАКАЗА (диспетчер) ===
   function reassignOrder(orderId) {
-    // Получаем список свободных водителей
     db.collection('drivers')
       .where('role', '==', 'driver')
       .where('available', '==', true)
       .get()
       .then(snapshot => {
-        if (snapshot.empty) {
-          alert('⚠️ Нет свободных водителей для назначения');
-          return;
-        }
-        
-        // Создаём список для выбора
+        if (snapshot.empty) { alert('⚠️ Нет свободных водителей'); return; }
         let driverList = '';
         const drivers = [];
         snapshot.forEach(doc => {
@@ -461,37 +371,23 @@
           drivers.push({ id: doc.id, name: data.fullName || data.email, car: data.carModel || '' });
           driverList += `${drivers.length}. ${data.fullName || data.email} (${data.carModel || ''})\n`;
         });
-        
-        const choice = prompt(`Выберите водителя для назначения:\n${driverList}\n\nВведите номер водителя (1-${drivers.length}):`);
+        const choice = prompt(`Выберите водителя:\n${driverList}\nВведите номер (1-${drivers.length}):`);
         if (!choice) return;
-        
-        const index = parseInt(choice) - 1;
-        if (isNaN(index) || index < 0 || index >= drivers.length) {
-          alert('❌ Неверный выбор');
-          return;
-        }
-        
-        const selectedDriver = drivers[index];
-        
-        // Назначаем водителя на заказ
+        const idx = parseInt(choice) - 1;
+        if (isNaN(idx) || idx < 0 || idx >= drivers.length) { alert('❌ Неверный выбор'); return; }
+        const selected = drivers[idx];
+
         db.collection('orders').doc(orderId).update({
-          driverId: selectedDriver.id,
-          driverEmail: selectedDriver.name,
+          driverId: selected.id,
+          driverEmail: selected.name,
           status: 'assigned',
-          aiNote: `Переназначен диспетчером на ${selectedDriver.name}`
-        })
-        .then(() => {
-          // Делаем водителя недоступным
-          return db.collection('drivers').doc(selectedDriver.id).update({
-            available: false
-          });
-        })
-        .then(() => {
-          alert(`✅ Заказ назначен на ${selectedDriver.name}`);
-        })
-        .catch(e => alert('❌ Ошибка назначения: ' + e.message));
-      })
-      .catch(e => alert('❌ Ошибка загрузки водителей: ' + e.message));
+          aiNote: `Переназначен диспетчером на ${selected.name}`
+        }).then(() => {
+          return db.collection('drivers').doc(selected.id).update({ available: false });
+        }).then(() => {
+          alert(`✅ Заказ назначен на ${selected.name}`);
+        }).catch(e => alert('❌ Ошибка: ' + e.message));
+      });
   }
 </script>
 </body>
