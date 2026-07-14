@@ -559,4 +559,274 @@
             updateDriverLocationDisplay();
             alert('✅ Координаты обновлены!');
           })
-          .catch(e => alert('❌ Ошибка: ' +
+          .catch(e => alert('❌ Ошибка: ' + e.message));
+      }
+    }
+  }
+
+  // ==================== СТАТУС ====================
+  function toggleAvailability() {
+    if (!currentUserData) return;
+    const newVal = !currentUserData.available;
+    db.collection('drivers').doc(currentUser.uid).update({ available: newVal })
+      .then(() => {
+        currentUserData.available = newVal;
+        updateDriverStatusDisplay();
+        alert('Статус: ' + (newVal ? '🟢 На линии' : '🔴 Не на линии'));
+      })
+      .catch(e => alert('❌ Ошибка: ' + e.message));
+  }
+
+  function updateDriverStatusDisplay() {
+    if (currentUserData && currentUserData.role === 'driver') {
+      const statusText = currentUserData.available ? '🟢 На линии' : '🔴 Не на линии';
+      document.getElementById('driver-status-display').textContent = statusText;
+      document.getElementById('driver-status-display').className = currentUserData.available ? 'status-available' : 'status-unavailable';
+    }
+  }
+
+  // ==================== ЗАКАЗЫ ====================
+  function listenDriverOrders() {
+    if (orderUnsubscribe) orderUnsubscribe();
+    if (!currentUser) return;
+
+    // Активные заказы
+    orderUnsubscribe = db.collection('orders')
+      .where('driverId', '==', currentUser.uid)
+      .where('status', 'in', ['assigned', 'accepted', 'started'])
+      .onSnapshot(snapshot => {
+        renderOrders(snapshot);
+      }, error => console.error('Ошибка прослушки активных заказов:', error));
+
+    // Предложения
+    db.collection('orders')
+      .where('status', '==', 'offering')
+      .onSnapshot(snapshot => {
+        const myOffers = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.offeredTo && data.offeredTo.includes(currentUser.uid)) {
+            myOffers.push({ id: doc.id, data: data });
+          }
+        });
+        renderOffers(myOffers);
+      }, error => console.error('Ошибка прослушки предложений:', error));
+  }
+
+  function renderOrders(snapshot) {
+    let html = '<div style="font-weight:600; margin:5px 0;">📋 Активные заказы</div>';
+    let hasActive = false;
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const orderId = doc.id;
+      hasActive = true;
+      activeOrderId = orderId;
+
+      html += `<div class="order-item">
+        <b>Заказ:</b> ${data.from} → ${data.to}
+        <br>Статус: <span class="badge badge-${data.status}">${data.status}</span>
+        ${data.aiNote ? ' | ' + data.aiNote : ''}
+      </div>`;
+
+      if (data.fromLat && data.fromLng) {
+        updateClientMarker(data.fromLat, data.fromLng, data.clientName || data.clientEmail);
+        if (data.toLat && data.toLng) {
+          updateRouteToDestination(data.toLat, data.toLng);
+        }
+        document.getElementById('waze-to-client').style.display = 'inline-block';
+        if (data.toLat && data.toLng) {
+          document.getElementById('waze-to-route').style.display = 'inline-block';
+        }
+      }
+    });
+
+    if (!hasActive) {
+      html += '<p style="color:#999;">Нет активных заказов</p>';
+      if (clientMarker) { clientMarker.setMap(null); clientMarker = null; }
+      document.getElementById('waze-to-client').style.display = 'none';
+      document.getElementById('waze-to-route').style.display = 'none';
+      if (directionsRenderer) directionsRenderer.setMap(null);
+    }
+
+    document.getElementById('driver-orders-list').innerHTML = html;
+  }
+
+  function renderOffers(offers) {
+    let html = '<div style="font-weight:600; margin:5px 0;">📨 Новые предложения</div>';
+    if (offers.length === 0) {
+      html += '<p style="color:#999;">Нет новых предложений</p>';
+    } else {
+      offers.forEach(({ id, data }) => {
+        const expires = data.offerExpiresAt ? new Date(data.offerExpiresAt.toDate()).toLocaleTimeString() : '—';
+        html += `<div class="offer-card">
+          <b>🚗 Новый заказ!</b>
+          <br>📍 ${data.from} → ${data.to}
+          <br>💰 ${data.price} ₪ | Способ оплаты: ${data.paymentMethod || '—'}
+          <br>⏳ До ${expires}
+          <br><button class="btn btn-warning" onclick="acceptOrder('${id}')">✅ Принять заказ</button>
+        </div>`;
+      });
+    }
+    const existing = document.getElementById('driver-orders-list').innerHTML;
+    document.getElementById('driver-orders-list').innerHTML = existing + html;
+  }
+
+  // ==================== ПРИНЯТЬ ЗАКАЗ ====================
+  function acceptOrder(orderId) {
+    if (!currentUser) { alert('Войдите!'); return; }
+
+    db.collection('orders').doc(orderId).get()
+      .then(doc => {
+        if (!doc.exists) { alert('❌ Заказ не найден'); return; }
+        const data = doc.data();
+        if (data.status !== 'offering') {
+          alert('⏳ Заказ уже обработан другим водителем');
+          return;
+        }
+        if (!data.offeredTo || !data.offeredTo.includes(currentUser.uid)) {
+          alert('❌ Вам не предложен этот заказ');
+          return;
+        }
+
+        return db.collection('orders').doc(orderId).update({
+          status: 'accepted',
+          driverId: currentUser.uid,
+          driverEmail: currentUser.email,
+          driverName: currentUserData?.fullName || 'Водитель',
+          driverPhone: currentUserData?.phone || '—',
+          driverCar: (currentUserData?.carModel || '') + ' ' + (currentUserData?.carNumber || ''),
+          aiNote: 'Принят водителем',
+          acceptedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      })
+      .then(() => {
+        return db.collection('drivers').doc(currentUser.uid).update({
+          available: false
+        });
+      })
+      .then(() => {
+        alert('✅ Заказ принят! Поездка началась.');
+        if (currentUserData) currentUserData.available = false;
+        updateDriverStatusDisplay();
+      })
+      .catch(error => alert('❌ Ошибка: ' + error.message));
+  }
+
+  // ==================== ЗАВЕРШИТЬ ЗАКАЗ ====================
+  function completeOrder() {
+    if (!currentUser) { alert('Войдите!'); return; }
+
+    db.collection('orders')
+      .where('driverId', '==', currentUser.uid)
+      .where('status', 'in', ['assigned', 'accepted', 'started'])
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .get()
+      .then(snapshot => {
+        if (snapshot.empty) { alert('Нет активных заказов'); return; }
+        const doc = snapshot.docs[0];
+        const orderData = doc.data();
+        const orderId = doc.id;
+
+        return db.collection('orders').doc(orderId).update({
+          status: 'completed',
+          aiNote: 'Завершён водителем',
+          completedAt: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => {
+          return db.collection('drivers').doc(currentUser.uid).update({
+            available: true
+          });
+        })
+        .then(() => {
+          if (currentUserData) currentUserData.available = true;
+          updateDriverStatusDisplay();
+          return calculateAndAddBonus(orderId, orderData);
+        })
+        .then(() => {
+          alert('✅ Заказ завершён! Бонус начислен клиенту.');
+          document.getElementById('waze-to-client').style.display = 'none';
+          document.getElementById('waze-to-route').style.display = 'none';
+          if (directionsRenderer) directionsRenderer.setMap(null);
+        });
+      })
+      .catch(e => alert('❌ Ошибка: ' + e.message));
+  }
+
+  // ==================== БОНУС ====================
+  function getDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  async function calculateAndAddBonus(orderId, orderData) {
+    const clientId = orderData.clientId;
+    if (!clientId || clientId.startsWith('guest-')) return;
+
+    const MIN_DISTANCE = 2.0;
+    const BONUS_RATE = 0.02;
+
+    let distanceKm = orderData.distance || 0;
+    if (distanceKm === 0 && orderData.fromLat && orderData.fromLng && orderData.toLat && orderData.toLng) {
+      distanceKm = getDistance(orderData.fromLat, orderData.fromLng, orderData.toLat, orderData.toLng);
+    }
+
+    if (distanceKm < MIN_DISTANCE) {
+      await db.collection('ai_logs').add({
+        orderId: orderId,
+        decision: `Бонус не начислен (дистанция ${distanceKm.toFixed(2)} км < ${MIN_DISTANCE} км)`,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      return;
+    }
+
+    const bonusAmount = Math.round((orderData.price || 0) * BONUS_RATE * 100) / 100;
+    if (bonusAmount <= 0) return;
+
+    try {
+      const clientRef = db.collection('users_bonus').doc(clientId);
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(clientRef);
+        const currentBalance = doc.exists ? (doc.data().balance || 0) : 0;
+        const currentTotalEarned = doc.exists ? (doc.data().totalEarned || 0) : 0;
+
+        transaction.set(clientRef, {
+          balance: currentBalance + bonusAmount,
+          totalEarned: currentTotalEarned + bonusAmount,
+          totalSpent: doc.exists ? (doc.data().totalSpent || 0) : 0,
+          level: currentTotalEarned + bonusAmount > 500 ? 'Silver' : 'Bronze',
+          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        const transRef = db.collection('bonus_transactions').doc();
+        transaction.set(transRef, {
+          clientId: clientId,
+          orderId: orderId,
+          type: 'earned',
+          amount: bonusAmount,
+          description: `2% бонус за поездку (${distanceKm.toFixed(1)} км, ${orderData.price}₪)`,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          status: 'completed'
+        });
+      });
+
+      await db.collection('ai_logs').add({
+        orderId: orderId,
+        decision: `Начислен бонус ${bonusAmount}₪ клиенту (2% от ${orderData.price}₪)`,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log(`✅ Бонус ${bonusAmount}₪ начислен клиенту ${clientId}`);
+    } catch (error) {
+      console.error('❌ Ошибка начисления бонуса:', error);
+    }
+  }
+
+  console.log('🚗 Driver page loaded (Google Maps)');
+</script>
+</body>
+</html>
