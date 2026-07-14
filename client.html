@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🚕 Taxi – Клиент</title>
-  <!-- Leaflet CSS + JS -->
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Firebase -->
@@ -30,7 +30,6 @@
     }
     .hidden { display: none !important; }
 
-    /* Навигация */
     .nav {
       display: flex;
       flex-wrap: wrap;
@@ -38,27 +37,13 @@
       align-items: center;
       margin-bottom: 20px;
     }
-    .nav a {
-      text-decoration: none;
-      color: #007bff;
-      font-weight: 600;
-    }
-    .nav .logout-btn {
-      background: #dc3545;
-      color: white;
-      border: none;
-      padding: 8px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-    }
+    .nav a { text-decoration: none; color: #007bff; font-weight: 600; }
+    .nav .logout-btn { background: #dc3545; color: white; border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; }
     .nav .logout-btn:hover { background: #c82333; }
     #user-email { margin-left: auto; color: #555; font-size: 14px; }
 
-    /* Заголовок */
     h1 { margin: 0 0 10px 0; font-weight: 600; }
 
-    /* Бонусная панель */
     .bonus-panel {
       background: linear-gradient(135deg, #f9d976, #f39b7b);
       padding: 12px 20px;
@@ -73,22 +58,9 @@
     .bonus-panel .balance { font-size: 22px; }
     .bonus-panel .hint { font-size: 13px; opacity: 0.8; }
 
-    /* Форма */
-    .flex-row {
-      display: flex;
-      gap: 25px;
-      flex-wrap: wrap;
-    }
-    .flex-col {
-      flex: 1;
-      min-width: 300px;
-    }
-    label {
-      font-weight: 600;
-      display: block;
-      margin-top: 12px;
-      margin-bottom: 4px;
-    }
+    .flex-row { display: flex; gap: 25px; flex-wrap: wrap; }
+    .flex-col { flex: 1; min-width: 300px; }
+    label { font-weight: 600; display: block; margin-top: 12px; margin-bottom: 4px; }
     input, select {
       width: 100%;
       padding: 10px 14px;
@@ -97,10 +69,7 @@
       font-size: 14px;
       margin-bottom: 6px;
     }
-    input:focus, select:focus {
-      outline: 2px solid #007bff;
-      border-color: transparent;
-    }
+    input:focus, select:focus { outline: 2px solid #007bff; border-color: transparent; }
     .btn {
       padding: 12px 24px;
       border: none;
@@ -123,21 +92,15 @@
     .btn-waze { background: #33b5e5; color: white; }
     .btn-waze:hover { background: #1a8fc4; }
 
-    /* Цена */
     .price-panel {
       background: #e8f4f8;
       padding: 14px 18px;
       border-radius: 12px;
       margin: 12px 0;
     }
-    .price-panel .price {
-      font-size: 24px;
-      font-weight: 700;
-      color: #007bff;
-    }
+    .price-panel .price { font-size: 24px; font-weight: 700; color: #007bff; }
     .price-panel .small { font-size: 13px; color: #555; }
 
-    /* Карта */
     #map {
       height: 480px;
       width: 100%;
@@ -145,23 +108,15 @@
       background: #e9ecef;
       margin-top: 8px;
     }
-    .map-hint {
-      font-size: 13px;
-      color: #666;
-      margin-top: 6px;
-    }
+    .map-hint { font-size: 13px; color: #666; margin-top: 6px; }
 
-    /* Статус заказа */
     .order-status-card {
       background: #f8f9fa;
       padding: 16px;
       border-radius: 12px;
       margin-top: 15px;
     }
-    .order-status-card .status {
-      font-weight: 700;
-      font-size: 18px;
-    }
+    .order-status-card .status { font-weight: 700; font-size: 18px; }
     .status-created { color: #ffc107; }
     .status-assigned { color: #17a2b8; }
     .status-accepted { color: #28a745; }
@@ -170,25 +125,13 @@
     .status-offering { color: #17a2b8; }
     .status-searching { color: #ffc107; }
 
-    .driver-info {
-      background: #d4edda;
-      padding: 12px;
-      border-radius: 10px;
-      margin-top: 10px;
-    }
-    .action-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 12px;
-    }
+    .driver-info { background: #d4edda; padding: 12px; border-radius: 10px; margin-top: 10px; }
+    .action-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 
-    /* Маркеры */
     .client-marker { background: none; border: none; font-size: 32px; line-height: 1; }
     .driver-marker { background: none; border: none; font-size: 38px; line-height: 1; }
     .dest-marker { background: none; border: none; font-size: 28px; line-height: 1; }
 
-    /* Автодополнение (подсказки) */
     .autocomplete-suggestions {
       background: white;
       border: 1px solid #ccc;
@@ -205,12 +148,24 @@
       cursor: pointer;
       border-bottom: 1px solid #f0f0f0;
     }
-    .autocomplete-suggestions div:hover {
-      background: #e8f4f8;
+    .autocomplete-suggestions div:hover { background: #e8f4f8; }
+    .autocomplete-wrapper { position: relative; }
+
+    .gps-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      margin-right: 10px;
     }
-    .autocomplete-wrapper {
-      position: relative;
-    }
+    .gps-btn:hover { background: #218838; }
+    .location-status { font-size: 13px; color: #555; }
+    .location-found { color: #28a745; font-weight: 600; }
+    .location-error { color: #dc3545; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -240,14 +195,18 @@
     <div class="flex-row">
       <!-- Левая колонка: форма -->
       <div class="flex-col">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <label style="margin:0;">📍 Откуда</label>
+          <button class="gps-btn" onclick="getMyLocation()">📍 Определить</button>
+          <span id="location-status" class="location-status">Не определено</span>
+        </div>
         <div class="autocomplete-wrapper">
-          <label>📍 Откуда</label>
           <input type="text" id="from-address" placeholder="Введите адрес отправления" value="Тель-Авив, ул. Алленби 1">
           <div id="from-suggestions" class="autocomplete-suggestions"></div>
         </div>
 
+        <label>🏁 Куда</label>
         <div class="autocomplete-wrapper">
-          <label>🏁 Куда</label>
           <input type="text" id="to-address" placeholder="Введите адрес назначения" value="Иерусалим, Центральный автовокзал">
           <div id="to-suggestions" class="autocomplete-suggestions"></div>
         </div>
@@ -267,10 +226,12 @@
             </div>
             <div style="text-align:right;">
               <div>📏 <span id="estimated-distance">—</span> км</div>
+              <div class="small">⏱ <span id="estimated-time">—</span> мин</div>
               <div class="small">Тариф: <span id="tariff-display">1.95</span> ₪/км</div>
             </div>
           </div>
           <div class="small" style="margin-top:6px;">* ±5% колебание, итоговая цена может отличаться</div>
+          <div id="route-loading" style="display:none; color:#007bff;">⏳ Расчёт маршрута...</div>
         </div>
 
         <!-- Способ оплаты -->
@@ -297,7 +258,7 @@
         <div class="map-hint">
           💡 Кликните по карте, чтобы изменить точку отправления.<br>
           🏁 Флаг – пункт назначения.<br>
-          🟢 Пунктир – предполагаемый маршрут.
+          🟢 Синяя линия – реальный маршрут по дорогам.
         </div>
       </div>
     </div>
@@ -341,18 +302,19 @@
   let clientMarker = null;
   let driverMarker = null;
   let routeLayer = null;          // клиент → водитель
-  let routeToDestLayer = null;    // клиент → назначение
+  let routeToDestLayer = null;    // клиент → назначение (реальный маршрут)
   let currentOrderId = null;
   let orderUnsubscribe = null;
   let driverUnsubscribe = null;
   let currentDriverLat = null;
   let currentDriverLng = null;
 
-  // Координаты по умолчанию (Израиль)
   let currentClientLat = 32.0853;
   let currentClientLng = 34.7818;
   let currentToLat = 31.7683;
   let currentToLng = 35.2137;
+  let currentDistanceKm = 0;      // реальное расстояние по дорогам
+  let currentDurationMin = 0;
 
   // ==================== ТАРИФЫ ИЗРАИЛЯ ====================
   const TARIFF = {
@@ -389,14 +351,6 @@
     return { min, max, display: `${min.toFixed(2)} – ${max.toFixed(2)} ₪` };
   }
 
-  function getDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  }
-
   // ==================== АУТЕНТИФИКАЦИЯ ====================
   auth.onAuthStateChanged(async function(user) {
     if (user) {
@@ -408,8 +362,8 @@
       listenClientOrder();
       // Определяем GPS через 1 сек
       setTimeout(getMyLocation, 1000);
-      // Обновляем цену и маршрут
-      updateEstimatedPrice();
+      // Загружаем начальный маршрут
+      updateRouteAndPrice();
     } else {
       const session = localStorage.getItem('clientSession');
       if (session) {
@@ -421,7 +375,7 @@
           initMap();
           listenClientOrder();
           setTimeout(getMyLocation, 1000);
-          updateEstimatedPrice();
+          updateRouteAndPrice();
         } catch(e) {
           window.location.href = 'index.html';
         }
@@ -490,7 +444,6 @@
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Клик по карте → установка точки отправления
     map.on('click', function(e) {
       const lat = e.latlng.lat.toFixed(6);
       const lng = e.latlng.lng.toFixed(6);
@@ -500,7 +453,7 @@
       currentClientLat = parseFloat(lat);
       currentClientLng = parseFloat(lng);
       updateClientMarker(currentClientLat, currentClientLng);
-      updateEstimatedPrice();
+      updateRouteAndPrice();
     });
   }
 
@@ -518,27 +471,99 @@
     driverMarker = L.marker([lat, lng], { icon }).addTo(map).bindPopup('🚗 ' + (name || 'Водитель'));
     currentDriverLat = lat;
     currentDriverLng = lng;
-    // Показываем маршрут от клиента к водителю
+    // Показываем маршрут от клиента к водителю (если есть координаты)
     if (currentClientLat && currentClientLng) {
       if (routeLayer) map.removeLayer(routeLayer);
       routeLayer = L.polyline([[currentClientLat, currentClientLng], [lat, lng]], {
         color: '#007bff', weight: 3, dashArray: '8, 8', opacity: 0.7
       }).addTo(map);
     }
-    // Показываем кнопку Waze
     document.getElementById('waze-btn').style.display = 'inline-block';
   }
 
-  function drawRouteToDestination(fromLat, fromLng, toLat, toLng) {
+  // ==================== ОСРМ МАРШРУТ ====================
+  async function fetchOSRMRoute(fromLat, fromLng, toLat, toLng) {
+    const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Ошибка получения маршрута');
+    const data = await response.json();
+    if (data.code !== 'Ok') throw new Error('Маршрут не найден');
+    return data;
+  }
+
+  async function updateRouteAndPrice() {
+    const fromLat = parseFloat(document.getElementById('from-lat').value);
+    const fromLng = parseFloat(document.getElementById('from-lng').value);
+    const toLat = parseFloat(document.getElementById('to-lat').value);
+    const toLng = parseFloat(document.getElementById('to-lng').value);
+
+    if (isNaN(fromLat) || isNaN(fromLng) || isNaN(toLat) || isNaN(toLng)) {
+      document.getElementById('estimated-distance').textContent = '—';
+      document.getElementById('estimated-price-range').textContent = '—';
+      document.getElementById('estimated-time').textContent = '—';
+      return;
+    }
+
+    // Показываем индикатор загрузки
+    document.getElementById('route-loading').style.display = 'block';
+
+    try {
+      const routeData = await fetchOSRMRoute(fromLat, fromLng, toLat, toLng);
+      const route = routeData.routes[0];
+      const distanceMeters = route.distance; // в метрах
+      const durationSeconds = route.duration; // в секундах
+      const distanceKm = distanceMeters / 1000;
+      const durationMin = Math.round(durationSeconds / 60);
+
+      currentDistanceKm = distanceKm;
+      currentDurationMin = durationMin;
+
+      // Обновляем отображение
+      document.getElementById('estimated-distance').textContent = distanceKm.toFixed(1);
+      document.getElementById('estimated-time').textContent = durationMin;
+      const priceRange = calculatePriceWithRange(distanceKm);
+      document.getElementById('estimated-price-range').textContent = priceRange.display;
+      document.getElementById('tariff-display').textContent = getCurrentTariff().toFixed(2);
+
+      // Рисуем маршрут на карте
+      const geometry = route.geometry;
+      if (geometry && geometry.coordinates) {
+        // OSRM возвращает [lng, lat]
+        const coords = geometry.coordinates.map(coord => [coord[1], coord[0]]);
+        if (routeToDestLayer) map.removeLayer(routeToDestLayer);
+        routeToDestLayer = L.polyline(coords, {
+          color: '#007bff',
+          weight: 4,
+          opacity: 0.8
+        }).addTo(map);
+        // Добавляем маркер назначения, если его нет
+        if (!window.destMarker) {
+          const icon = L.divIcon({ className: 'dest-marker', html: '🏁', iconSize: [28, 28], iconAnchor: [14, 28] });
+          window.destMarker = L.marker([toLat, toLng], { icon }).addTo(map).bindPopup('🏁 Пункт назначения');
+        } else {
+          window.destMarker.setLatLng([toLat, toLng]);
+        }
+        // Центрируем карту по маршруту
+        map.fitBounds(routeToDestLayer.getBounds(), { padding: [30, 30] });
+      }
+    } catch (error) {
+      console.error('Ошибка маршрута:', error);
+      document.getElementById('estimated-distance').textContent = '—';
+      document.getElementById('estimated-price-range').textContent = '—';
+      document.getElementById('estimated-time').textContent = '—';
+      // Показываем прямую линию как запасной вариант
+      drawStraightLine(fromLat, fromLng, toLat, toLng);
+    } finally {
+      document.getElementById('route-loading').style.display = 'none';
+    }
+  }
+
+  // Запасной вариант – прямая линия, если OSRM не работает
+  function drawStraightLine(fromLat, fromLng, toLat, toLng) {
     if (routeToDestLayer) map.removeLayer(routeToDestLayer);
     routeToDestLayer = L.polyline([[fromLat, fromLng], [toLat, toLng]], {
-      color: '#28a745',
-      weight: 2,
-      dashArray: '5, 10',
-      opacity: 0.6
+      color: '#ff6b6b', weight: 2, dashArray: '5, 10', opacity: 0.5
     }).addTo(map);
-
-    // Маркер назначения (флаг)
     if (!window.destMarker) {
       const icon = L.divIcon({ className: 'dest-marker', html: '🏁', iconSize: [28, 28], iconAnchor: [14, 28] });
       window.destMarker = L.marker([toLat, toLng], { icon }).addTo(map).bindPopup('🏁 Пункт назначения');
@@ -547,23 +572,14 @@
     }
   }
 
-  function openWaze() {
-    if (!currentClientLat || !currentClientLng || !currentDriverLat || !currentDriverLng) {
-      alert('⚠️ Нет данных для маршрута');
-      return;
-    }
-    const url = `https://waze.com/ul?ll=${currentDriverLat},${currentDriverLng}&navigate=yes&from=${currentClientLat},${currentClientLng}`;
-    window.open(url, '_blank');
-  }
-
   // ==================== GPS ====================
   function getMyLocation() {
     const statusEl = document.getElementById('location-status');
-    if (!statusEl) return;
     statusEl.textContent = '⏳ Определение...';
     statusEl.className = 'location-status';
     if (!navigator.geolocation) {
       statusEl.textContent = '❌ GPS не поддерживается';
+      statusEl.className = 'location-status location-error';
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -578,44 +594,23 @@
         updateClientMarker(lat, lng);
         map.setView([lat, lng], 15);
         statusEl.textContent = '✅ Местоположение определено!';
-        updateEstimatedPrice();
+        statusEl.className = 'location-status location-found';
+        updateRouteAndPrice();
       },
       err => {
-        statusEl.textContent = '❌ Ошибка GPS: ' + err.message;
+        let msg = '❌ Ошибка GPS: ';
+        if (err.code === 1) msg += 'Разрешите доступ';
+        else if (err.code === 2) msg += 'Не удалось определить';
+        else if (err.code === 3) msg += 'Превышено время';
+        else msg += err.message;
+        statusEl.textContent = msg;
+        statusEl.className = 'location-status location-error';
       },
       { enableHighAccuracy: true, timeout: 15000 }
     );
   }
 
-  // ==================== ОБНОВЛЕНИЕ ЦЕНЫ И МАРШРУТА ====================
-  function updateEstimatedPrice() {
-    const fromLat = parseFloat(document.getElementById('from-lat').value);
-    const fromLng = parseFloat(document.getElementById('from-lng').value);
-    const toLat = parseFloat(document.getElementById('to-lat').value) || 31.7683;
-    const toLng = parseFloat(document.getElementById('to-lng').value) || 35.2137;
-
-    if (isNaN(fromLat) || isNaN(fromLng)) return;
-
-    const dist = getDistance(fromLat, fromLng, toLat, toLng);
-    const priceRange = calculatePriceWithRange(dist);
-    const tariff = getCurrentTariff();
-
-    document.getElementById('estimated-distance').textContent = dist.toFixed(1);
-    document.getElementById('estimated-price-range').textContent = priceRange.display;
-    document.getElementById('tariff-display').textContent = tariff.toFixed(2);
-
-    // Рисуем маршрут до назначения
-    drawRouteToDestination(fromLat, fromLng, toLat, toLng);
-
-    // Обновляем маркер клиента, если координаты изменились
-    if (Math.abs(currentClientLat - fromLat) > 0.0001 || Math.abs(currentClientLng - fromLng) > 0.0001) {
-      updateClientMarker(fromLat, fromLng);
-    }
-    currentToLat = toLat;
-    currentToLng = toLng;
-  }
-
-  // Автодополнение адресов через Nominatim
+  // ==================== ПОИСК АДРЕСОВ (NOMINATIM) ====================
   function setupAutocomplete(inputId, suggestionsId, latInputId, lngInputId, addressInputId) {
     const input = document.getElementById(inputId);
     const suggestions = document.getElementById(suggestionsId);
@@ -626,7 +621,7 @@
       const query = this.value.trim();
       if (query.length < 3) { suggestions.style.display = 'none'; return; }
       timeoutId = setTimeout(() => {
-        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&countrycodes=il`)
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=6&addressdetails=1&countrycodes=il`)
           .then(res => res.json())
           .then(data => {
             suggestions.innerHTML = '';
@@ -639,24 +634,23 @@
                 document.getElementById(latInputId).value = item.lat;
                 document.getElementById(lngInputId).value = item.lon;
                 suggestions.style.display = 'none';
-                // Обновляем карту и цену
+                // Обновляем карту и маршрут
                 if (inputId === 'from-address') {
                   currentClientLat = parseFloat(item.lat);
                   currentClientLng = parseFloat(item.lon);
                   updateClientMarker(currentClientLat, currentClientLng);
                   map.setView([currentClientLat, currentClientLng], 14);
                 }
-                updateEstimatedPrice();
+                updateRouteAndPrice();
               });
               suggestions.appendChild(div);
             });
             suggestions.style.display = 'block';
           })
           .catch(() => { suggestions.style.display = 'none'; });
-      }, 500);
+      }, 400);
     });
 
-    // Скрываем подсказки при потере фокуса
     input.addEventListener('blur', function() {
       setTimeout(() => { suggestions.style.display = 'none'; }, 300);
     });
@@ -668,14 +662,22 @@
     const to = document.getElementById('to-address').value.trim();
     const fromLat = parseFloat(document.getElementById('from-lat').value);
     const fromLng = parseFloat(document.getElementById('from-lng').value);
-    const toLat = parseFloat(document.getElementById('to-lat').value) || 31.7683;
-    const toLng = parseFloat(document.getElementById('to-lng').value) || 35.2137;
+    const toLat = parseFloat(document.getElementById('to-lat').value);
+    const toLng = parseFloat(document.getElementById('to-lng').value);
 
     if (!from || !to) { alert('⚠️ Заполните адреса'); return; }
-    if (isNaN(fromLat) || isNaN(fromLng)) { alert('⚠️ Установите точку на карте'); return; }
+    if (isNaN(fromLat) || isNaN(fromLng) || isNaN(toLat) || isNaN(toLng)) {
+      alert('⚠️ Установите корректные координаты');
+      return;
+    }
 
-    const dist = getDistance(fromLat, fromLng, toLat, toLng);
-    const price = calculatePrice(dist);
+    // Используем реальное расстояние из маршрута (если есть)
+    let distance = currentDistanceKm;
+    if (distance === 0) {
+      // Запасной вариант – рассчитать по прямой
+      distance = getDistance(fromLat, fromLng, toLat, toLng);
+    }
+    const price = calculatePrice(distance);
     const paymentMethod = document.getElementById('payment-method').value;
     let bonusUsed = 0;
     let finalPrice = price;
@@ -706,7 +708,8 @@
       fromLng: fromLng,
       toLat: toLat,
       toLng: toLng,
-      distance: dist,
+      distance: distance,
+      duration: currentDurationMin,
       price: price,
       paymentMethod: paymentMethod,
       bonusUsed: bonusUsed,
@@ -730,6 +733,15 @@
       .catch(error => {
         alert('❌ Ошибка: ' + error.message);
       });
+  }
+
+  // Функция для расчёта расстояния по прямой (запасной вариант)
+  function getDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 
   // ==================== ИИ-ДИСПЕТЧЕР ====================
@@ -884,8 +896,10 @@
     if (data.fromLat && data.fromLng) {
       updateClientMarker(data.fromLat, data.fromLng);
     }
+    // Если есть реальные координаты назначения, обновим маршрут
     if (data.toLat && data.toLng) {
-      drawRouteToDestination(data.fromLat || currentClientLat, data.fromLng || currentClientLng, data.toLat, data.toLng);
+      // Показываем маршрут на карте (можно запросить OSRM)
+      updateRouteAndPrice();
     }
 
     if (data.status === 'completed') {
@@ -907,6 +921,15 @@
     .catch(e => alert('❌ Ошибка: ' + e.message));
   }
 
+  function openWaze() {
+    if (!currentClientLat || !currentClientLng || !currentDriverLat || !currentDriverLng) {
+      alert('⚠️ Нет данных для маршрута');
+      return;
+    }
+    const url = `https://waze.com/ul?ll=${currentDriverLat},${currentDriverLng}&navigate=yes&from=${currentClientLat},${currentClientLng}`;
+    window.open(url, '_blank');
+  }
+
   // ==================== БОНУС ЗА ПОЕЗДКУ ====================
   async function calculateAndAddBonus(orderId, orderData) {
     const clientId = orderData.clientId;
@@ -915,8 +938,8 @@
     const MIN_DISTANCE = 2.0;
     const BONUS_RATE = 0.02;
 
-    let distanceKm = orderData.distance || 2.5;
-    if (orderData.fromLat && orderData.fromLng && orderData.toLat && orderData.toLng) {
+    let distanceKm = orderData.distance || 0;
+    if (distanceKm === 0 && orderData.fromLat && orderData.fromLng && orderData.toLat && orderData.toLng) {
       distanceKm = getDistance(orderData.fromLat, orderData.fromLng, orderData.toLat, orderData.toLng);
     }
 
@@ -972,28 +995,23 @@
   }
 
   // ==================== ИНИЦИАЛИЗАЦИЯ ====================
-  // Настраиваем автодополнение для полей "Откуда" и "Куда"
+  // Настраиваем автодополнение
   setupAutocomplete('from-address', 'from-suggestions', 'from-lat', 'from-lng', 'from-address');
   setupAutocomplete('to-address', 'to-suggestions', 'to-lat', 'to-lng', 'to-address');
 
-  // События для обновления цены при изменении координат
-  document.getElementById('from-lat').addEventListener('change', updateEstimatedPrice);
-  document.getElementById('from-lng').addEventListener('change', updateEstimatedPrice);
-  document.getElementById('to-lat').addEventListener('change', updateEstimatedPrice);
-  document.getElementById('to-lng').addEventListener('change', updateEstimatedPrice);
+  // События для обновления маршрута при изменении координат
+  document.getElementById('from-lat').addEventListener('change', updateRouteAndPrice);
+  document.getElementById('from-lng').addEventListener('change', updateRouteAndPrice);
+  document.getElementById('to-lat').addEventListener('change', updateRouteAndPrice);
+  document.getElementById('to-lng').addEventListener('change', updateRouteAndPrice);
 
   // Показываем/скрываем блок оплаты бонусами
   document.getElementById('payment-method').addEventListener('change', function() {
     const section = document.getElementById('bonus-payment-section');
-    if (this.value === 'bonus') {
-      section.style.display = 'block';
-    } else {
-      section.style.display = 'none';
-    }
+    section.style.display = this.value === 'bonus' ? 'block' : 'none';
   });
 
-  // Инициализация
-  console.log('🚕 Taxi Client v2.2 загружен');
+  console.log('🚕 Taxi Client v2.3 загружен');
 </script>
 </body>
 </html>
