@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🚕 Taxi – Клиент (OpenStreetMap)</title>
-  <!-- Подключаем Leaflet CSS и JS -->
+  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Firebase -->
@@ -179,7 +179,6 @@
         <label>🏁 Куда</label>
         <input type="text" id="to-address" placeholder="Введите адрес назначения" value="">
 
-        <!-- Скрытые координаты -->
         <input type="hidden" id="from-lat" value="">
         <input type="hidden" id="from-lng" value="">
         <input type="hidden" id="to-lat" value="">
@@ -421,14 +420,12 @@
     try {
       // Создаём карту с центром в Израиле
       map = L.map(mapElement).setView([31.5, 34.8], 8);
-
-      // Добавляем тайлы OpenStreetMap
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
 
-      // Кастомные иконки (без картинок – используем эмодзи)
+      // Кастомные иконки (эмодзи)
       const fromIcon = L.divIcon({
         html: '📍',
         className: 'custom-marker',
@@ -448,18 +445,12 @@
         iconAnchor: [15, 30]
       });
 
-      // Маркеры
-      fromMarker = L.marker([31.5, 34.8], { icon: fromIcon, draggable: true })
-        .addTo(map)
-        .bindPopup('Отправление');
-      fromMarker.setVisible(false);
+      // Создаём маркеры без добавления на карту
+      fromMarker = L.marker([31.5, 34.8], { icon: fromIcon, draggable: true });
+      toMarker = L.marker([31.5, 34.8], { icon: toIcon, draggable: false });
+      // Не добавляем на карту, будем добавлять позже
 
-      toMarker = L.marker([31.5, 34.8], { icon: toIcon, draggable: false })
-        .addTo(map)
-        .bindPopup('Назначение');
-      toMarker.setVisible(false);
-
-      // Обработчик клика по карте – ставит "Откуда"
+      // При клике по карте – ставим "Откуда"
       map.on('click', function(e) {
         const lat = e.latlng.lat;
         const lng = e.latlng.lng;
@@ -467,7 +458,7 @@
         document.getElementById('from-lng').value = lng.toFixed(6);
         document.getElementById('from-address').value = '📍 Точка на карте';
         fromMarker.setLatLng([lat, lng]);
-        fromMarker.setVisible(true);
+        if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
         map.panTo([lat, lng]);
         currentFromLat = lat;
         currentFromLng = lng;
@@ -506,7 +497,7 @@
         document.getElementById('from-lat').value = currentFromLat;
         document.getElementById('from-lng').value = currentFromLng;
         fromMarker.setLatLng([currentFromLat, currentFromLng]);
-        fromMarker.setVisible(true);
+        if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
         map.setView([currentFromLat, currentFromLng], 15);
         updateRoute();
       }
@@ -531,7 +522,7 @@
             document.getElementById('from-lat').value = lat;
             document.getElementById('from-lng').value = lng;
             fromMarker.setLatLng([lat, lng]);
-            fromMarker.setVisible(true);
+            if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
             map.setView([lat, lng], 15);
             currentFromLat = lat;
             currentFromLng = lng;
@@ -539,7 +530,7 @@
             document.getElementById('to-lat').value = lat;
             document.getElementById('to-lng').value = lng;
             toMarker.setLatLng([lat, lng]);
-            toMarker.setVisible(true);
+            if (!map.hasLayer(toMarker)) toMarker.addTo(map);
             currentToLat = lat;
             currentToLng = lng;
           }
@@ -557,7 +548,7 @@
       });
   }
 
-  // ==================== ПОСТРОЕНИЕ МАРШРУТА (через OSRM) ====================
+  // ==================== ПОСТРОЕНИЕ МАРШРУТА (OSRM) ====================
   function updateRoute() {
     const fromLat = parseFloat(document.getElementById('from-lat').value);
     const fromLng = parseFloat(document.getElementById('from-lng').value);
@@ -576,7 +567,6 @@
     document.getElementById('route-loading').style.display = 'block';
     document.getElementById('route-error').textContent = '';
 
-    // Используем OSRM для расчёта маршрута
     const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
 
     fetch(url)
@@ -597,7 +587,7 @@
           document.getElementById('estimated-price-range').textContent = priceRange.display;
           document.getElementById('tariff-display').textContent = getCurrentTariff().toFixed(2);
 
-          // Рисуем маршрут на карте
+          // Рисуем маршрут
           if (routeLine) map.removeLayer(routeLine);
           const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
           routeLine = L.polyline(coords, { color: 'blue', weight: 4, opacity: 0.8 }).addTo(map);
@@ -646,11 +636,9 @@
         document.getElementById('from-address').value = '📍 Моё местоположение';
         currentFromLat = lat;
         currentFromLng = lng;
-        if (fromMarker) {
-          fromMarker.setLatLng([lat, lng]);
-          fromMarker.setVisible(true);
-          map.setView([lat, lng], 15);
-        }
+        fromMarker.setLatLng([lat, lng]);
+        if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
+        map.setView([lat, lng], 15);
         statusEl.textContent = '✅ Местоположение определено!';
         statusEl.className = 'location-status location-found';
         console.log('📍 GPS позиция:', lat, lng);
@@ -682,9 +670,8 @@
       iconSize: [30, 30],
       iconAnchor: [15, 30]
     });
-    driverMarker = L.marker([lat, lng], { icon: driverIcon })
-      .addTo(map)
-      .bindPopup('Водитель: ' + (name || 'Водитель'));
+    driverMarker = L.marker([lat, lng], { icon: driverIcon }).addTo(map);
+    driverMarker.bindPopup('Водитель: ' + (name || 'Водитель'));
     currentDriverLat = lat;
     currentDriverLng = lng;
     document.getElementById('waze-btn').style.display = 'inline-block';
@@ -926,16 +913,12 @@
     }
 
     if (data.fromLat && data.fromLng) {
-      if (fromMarker) {
-        fromMarker.setLatLng([data.fromLat, data.fromLng]);
-        fromMarker.setVisible(true);
-      }
+      fromMarker.setLatLng([data.fromLat, data.fromLng]);
+      if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
     }
     if (data.toLat && data.toLng) {
-      if (toMarker) {
-        toMarker.setLatLng([data.toLat, data.toLng]);
-        toMarker.setVisible(true);
-      }
+      toMarker.setLatLng([data.toLat, data.toLng]);
+      if (!map.hasLayer(toMarker)) toMarker.addTo(map);
     }
 
     if (data.status === 'completed') {
@@ -956,9 +939,6 @@
     })
     .catch(e => alert('❌ Ошибка: ' + e.message));
   }
-
-  // ==================== БОНУС ЗА ПОЕЗДКУ (заглушка) ====================
-  // (функция calculateAndAddBonus остаётся без изменений из исходного кода)
 
   // ==================== ИНИЦИАЛИЗАЦИЯ ====================
   document.getElementById('from-lat').addEventListener('change', updateRoute);
