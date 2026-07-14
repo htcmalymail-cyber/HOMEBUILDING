@@ -1190,5 +1190,218 @@
   console.log('🚕 Taxi Client v4.0 — с поддержкой заказов без координат');
   console.log('📌 Зарегистрирован: ' + (isRegistered ? 'ДА' : 'НЕТ (гость)'));
 </script>
+  <!-- ====== МОДАЛЬНОЕ ОКНО РЕГИСТРАЦИИ ====== -->
+<div id="registerModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center; backdrop-filter:blur(4px);">
+  <div style="background:white; max-width:450px; width:90%; padding:30px; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.3); position:relative; animation:modalIn 0.3s ease;">
+    <button onclick="closeRegisterModal()" style="position:absolute; top:12px; right:18px; background:none; border:none; font-size:28px; cursor:pointer; color:#999;">&times;</button>
+    
+    <h2 style="margin:0 0 8px 0; color:#1b2a3a;">🎁 Создайте аккаунт</h2>
+    <p style="color:#666; margin-bottom:20px; font-size:14px;">Зарегистрируйтесь и получайте <strong style="color:#ff6b35;">2% кэшбэк</strong> с каждой поездки!</p>
+    
+    <form id="registerForm" onsubmit="registerUser(event)">
+      <div style="margin-bottom:14px;">
+        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">📧 Email</label>
+        <input type="email" id="regEmail" required placeholder="example@mail.com" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
+      </div>
+      
+      <div style="margin-bottom:14px;">
+        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">👤 Имя</label>
+        <input type="text" id="regName" required placeholder="Иван Иванов" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
+      </div>
+      
+      <div style="margin-bottom:14px;">
+        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">📱 Телефон</label>
+        <input type="tel" id="regPhone" placeholder="+7 999 123-45-67" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
+      </div>
+      
+      <div style="margin-bottom:14px;">
+        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">🔑 Пароль (минимум 6 символов)</label>
+        <input type="password" id="regPassword" required minlength="6" placeholder="••••••" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
+      </div>
+      
+      <button type="submit" style="width:100%; padding:14px; background:linear-gradient(135deg,#ff6b35,#f7931e); color:white; border:none; border-radius:12px; font-size:17px; font-weight:700; cursor:pointer; transition:0.3s;">
+        🚀 Зарегистрироваться и получить 50 ₪ бонус
+      </button>
+      
+      <div id="registerStatus" style="margin-top:12px; font-size:14px; text-align:center; color:#28a745;"></div>
+      
+      <div style="margin-top:14px; text-align:center; font-size:13px; color:#888;">
+        Уже есть аккаунт? <a href="#" onclick="switchToLogin()" style="color:#007bff; text-decoration:none; font-weight:600;">Войти</a>
+      </div>
+    </form>
+    
+    <!-- Форма входа (скрыта по умолчанию) -->
+    <form id="loginForm" onsubmit="loginUser(event)" style="display:none;">
+      <h3 style="margin:0 0 14px 0;">🔐 Вход в аккаунт</h3>
+      <div style="margin-bottom:12px;">
+        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">📧 Email</label>
+        <input type="email" id="loginEmail" required placeholder="example@mail.com" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-weight:600; font-size:13px; display:block; margin-bottom:4px;">🔑 Пароль</label>
+        <input type="password" id="loginPassword" required placeholder="••••••" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:15px;">
+      </div>
+      <button type="submit" style="width:100%; padding:14px; background:#007bff; color:white; border:none; border-radius:12px; font-size:17px; font-weight:700; cursor:pointer; transition:0.3s;">
+        🔓 Войти
+      </button>
+      <div style="margin-top:12px; text-align:center; font-size:13px; color:#888;">
+        Нет аккаунта? <a href="#" onclick="switchToRegister()" style="color:#ff6b35; text-decoration:none; font-weight:600;">Зарегистрироваться</a>
+      </div>
+      <div id="loginStatus" style="margin-top:10px; font-size:14px; text-align:center;"></div>
+    </form>
+  </div>
+</div>
+
+<style>
+@keyframes modalIn {
+  from { opacity:0; transform:scale(0.9) translateY(20px); }
+  to { opacity:1; transform:scale(1) translateY(0); }
+}
+</style>
+
+<script>
+// ========== МОДАЛЬНОЕ ОКНО РЕГИСТРАЦИИ ==========
+function openRegisterModal() {
+  document.getElementById('registerModal').style.display = 'flex';
+  document.getElementById('registerForm').style.display = 'block';
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerStatus').textContent = '';
+  document.getElementById('registerStatus').style.color = '#28a745';
+}
+
+function closeRegisterModal() {
+  document.getElementById('registerModal').style.display = 'none';
+}
+
+function switchToLogin() {
+  document.getElementById('registerForm').style.display = 'none';
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('loginStatus').textContent = '';
+}
+
+function switchToRegister() {
+  document.getElementById('registerForm').style.display = 'block';
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('loginStatus').textContent = '';
+}
+
+// ========== РЕГИСТРАЦИЯ ==========
+async function registerUser(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const name = document.getElementById('regName').value.trim();
+  const phone = document.getElementById('regPhone').value.trim();
+  
+  const statusEl = document.getElementById('registerStatus');
+  statusEl.textContent = '⏳ Создание аккаунта...';
+  statusEl.style.color = '#007bff';
+  
+  try {
+    // 1. Создаём пользователя в Firebase Auth
+    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+    const user = userCredential.user;
+    
+    // 2. Обновляем профиль (имя)
+    await user.updateProfile({ displayName: name });
+    
+    // 3. Сохраняем данные в Firestore
+    await db.collection('users').doc(user.uid).set({
+      email: email,
+      name: name,
+      phone: phone || '',
+      role: 'client',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // 4. Даём бонус за регистрацию (50 ₪)
+    await db.collection('users_bonus').doc(user.uid).set({
+      balance: 50,
+      totalEarned: 50,
+      totalSpent: 0,
+      level: 'Bronze',
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    statusEl.textContent = '✅ Регистрация успешна! Бонус 50 ₪ начислен!';
+    statusEl.style.color = '#28a745';
+    
+    setTimeout(() => {
+      closeRegisterModal();
+      location.reload(); // Обновляем страницу для применения изменений
+    }, 1500);
+    
+  } catch (error) {
+    console.error('❌ Ошибка регистрации:', error);
+    let msg = '❌ ';
+    if (error.code === 'auth/email-already-in-use') {
+      msg += 'Этот email уже используется. Войдите в аккаунт.';
+    } else if (error.code === 'auth/weak-password') {
+      msg += 'Пароль должен содержать минимум 6 символов.';
+    } else if (error.code === 'auth/invalid-email') {
+      msg += 'Неверный формат email.';
+    } else {
+      msg += error.message;
+    }
+    statusEl.textContent = msg;
+    statusEl.style.color = '#dc3545';
+  }
+}
+
+// ========== ВХОД ==========
+async function loginUser(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const statusEl = document.getElementById('loginStatus');
+  
+  statusEl.textContent = '⏳ Вход...';
+  statusEl.style.color = '#007bff';
+  
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    statusEl.textContent = '✅ Вход выполнен!';
+    statusEl.style.color = '#28a745';
+    
+    setTimeout(() => {
+      closeRegisterModal();
+      location.reload();
+    }, 1000);
+    
+  } catch (error) {
+    console.error('❌ Ошибка входа:', error);
+    let msg = '❌ ';
+    if (error.code === 'auth/user-not-found') {
+      msg += 'Пользователь не найден. Зарегистрируйтесь.';
+    } else if (error.code === 'auth/wrong-password') {
+      msg += 'Неверный пароль.';
+    } else {
+      msg += error.message;
+    }
+    statusEl.textContent = msg;
+    statusEl.style.color = '#dc3545';
+  }
+}
+
+// ========== КЛИК ПО БАННЕРУ ==========
+// Переопределяем функцию goToRegister
+function goToRegister() {
+  openRegisterModal();
+}
+
+// Закрытие модалки по клику вне окна
+document.getElementById('registerModal').addEventListener('click', function(e) {
+  if (e.target === this) closeRegisterModal();
+});
+
+// Закрытие по Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeRegisterModal();
+});
+
+console.log('✅ Модальное окно регистрации загружено');
+</script>
 </body>
 </html>
