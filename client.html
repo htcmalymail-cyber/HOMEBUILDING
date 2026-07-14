@@ -7,7 +7,7 @@
   <!-- ============================================================ -->
   <!-- ⚠️ ВСТАВЬТЕ ВАШ API-КЛЮЧ В СТРОКЕ НИЖЕ (ЗАМЕНИТЕ YOUR_API_KEY_HERE) -->
   <!-- ============================================================ -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvhiWw94K3ysl0QIMMhtzd0uAk2cgcGYQ" async defer></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvhiWw94K3ysl0QIMMhtzd0uAk2cgcGYQ&libraries=places&callback=initMap" async defer></script>
   <!-- ============================================================ -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -192,16 +192,18 @@
           <button class="gps-btn" onclick="getMyLocation()">📍 Определить</button>
           <span id="location-status" class="location-status">Не определено</span>
         </div>
-        <input type="text" id="from-address" placeholder="Введите адрес отправления" value="Тель-Авив, ул. Алленби 1">
+        <!-- Поле отправления теперь пустое -->
+        <input type="text" id="from-address" placeholder="Введите адрес отправления" value="">
 
         <label>🏁 Куда</label>
-        <input type="text" id="to-address" placeholder="Введите адрес назначения" value="Иерусалим, Центральный автовокзал">
+        <!-- Поле назначения пустое -->
+        <input type="text" id="to-address" placeholder="Введите адрес назначения" value="">
 
-        <!-- Скрытые поля для координат -->
-        <input type="hidden" id="from-lat" value="32.0853">
-        <input type="hidden" id="from-lng" value="34.7818">
-        <input type="hidden" id="to-lat" value="31.7683">
-        <input type="hidden" id="to-lng" value="35.2137">
+        <!-- Скрытые поля для координат (пустые) -->
+        <input type="hidden" id="from-lat" value="">
+        <input type="hidden" id="from-lng" value="">
+        <input type="hidden" id="to-lat" value="">
+        <input type="hidden" id="to-lng" value="">
 
         <!-- Предварительная стоимость -->
         <div class="price-panel">
@@ -243,10 +245,10 @@
       <div class="flex-col">
         <div id="map"></div>
         <div class="map-hint">
-          💡 Кликните по карте, чтобы изменить точку отправления.<br>
+          💡 Введите адрес отправления и назначения, чтобы построить маршрут.<br>
           🏁 Флаг – пункт назначения.<br>
-          🔵 Синяя линия – реальный маршрут по дорогам.<br>
-          📍 Синяя точка – ваше местоположение.
+          📍 Синяя точка – ваше местоположение (если определено).<br>
+          Кликните по карте, чтобы изменить точку отправления.
         </div>
       </div>
     </div>
@@ -296,10 +298,10 @@
   let driverUnsubscribe = null;
   let currentDriverLat = null;
   let currentDriverLng = null;
-  let currentFromLat = 32.0853;
-  let currentFromLng = 34.7818;
-  let currentToLat = 31.7683;
-  let currentToLng = 35.2137;
+  let currentFromLat = null;    // теперь null до получения
+  let currentFromLng = null;
+  let currentToLat = null;
+  let currentToLng = null;
   let currentDistanceKm = 0;
   let currentDurationMin = 0;
   let autocompleteFrom = null;
@@ -357,8 +359,11 @@
       await loadUserData();
       await loadClientBonusBalance();
       listenClientOrder();
-      setTimeout(getMyLocation, 1500);
       setTimeout(ensureMapInitialized, 500);
+      // Автоматическое определение местоположения через 1.5 сек
+      setTimeout(() => {
+        getMyLocation();
+      }, 1500);
     } else {
       const session = localStorage.getItem('clientSession');
       if (session) {
@@ -368,8 +373,10 @@
           await loadUserData();
           await loadClientBonusBalance();
           listenClientOrder();
-          setTimeout(getMyLocation, 1500);
           setTimeout(ensureMapInitialized, 500);
+          setTimeout(() => {
+            getMyLocation();
+          }, 1500);
         } catch(e) {
           window.location.href = 'index.html';
         }
@@ -442,33 +449,33 @@
     }
 
     try {
-      const defaultLocation = { lat: 32.0853, lng: 34.7818 };
+      // Центр карты – Израиль (без смещения к конкретному адресу)
+      const defaultLocation = { lat: 31.5, lng: 34.8 };
       map = new google.maps.Map(mapElement, {
         center: defaultLocation,
-        zoom: 12,
+        zoom: 8,
         mapId: 'DEMO_MAP_ID'
       });
       console.log('✅ Карта создана');
 
-      // Маркер отправления
+      // Маркер отправления – без позиции, скрыт
       fromMarker = new google.maps.Marker({
-        position: defaultLocation,
         map: map,
+        draggable: true,
         icon: { url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png', scaledSize: new google.maps.Size(40, 40) },
         label: { text: '📍', fontSize: '24px', fontWeight: 'bold' },
-        draggable: true,
         title: 'Точка отправления'
       });
+      fromMarker.setVisible(false);
 
-      // Маркер назначения
-      const toLocation = { lat: 31.7683, lng: 35.2137 };
+      // Маркер назначения – без позиции, скрыт
       toMarker = new google.maps.Marker({
-        position: toLocation,
         map: map,
         icon: { url: 'https://maps.google.com/mapfiles/ms/icons/red-pushpin.png', scaledSize: new google.maps.Size(32, 32) },
         label: { text: '🏁', fontSize: '24px', fontWeight: 'bold' },
         title: 'Пункт назначения'
       });
+      toMarker.setVisible(false);
 
       // Directions Renderer
       directionsRenderer = new google.maps.DirectionsRenderer({
@@ -477,7 +484,7 @@
         polylineOptions: { strokeColor: '#007bff', strokeWeight: 4, strokeOpacity: 0.8 }
       });
 
-      // Клик по карте
+      // Клик по карте – устанавливает "Откуда"
       map.addListener('click', function(e) {
         const lat = e.latLng.lat();
         const lng = e.latLng.lng();
@@ -485,13 +492,14 @@
         document.getElementById('from-lng').value = lng;
         document.getElementById('from-address').value = '📍 Точка на карте';
         fromMarker.setPosition({ lat, lng });
+        fromMarker.setVisible(true);
         map.panTo({ lat, lng });
         currentFromLat = lat;
         currentFromLng = lng;
         updateRoute();
       });
 
-      // Перетаскивание маркера
+      // Перетаскивание маркера отправления
       fromMarker.addListener('dragend', function() {
         const pos = fromMarker.getPosition();
         document.getElementById('from-lat').value = pos.lat();
@@ -517,10 +525,22 @@
             document.getElementById('from-lat').value = lat;
             document.getElementById('from-lng').value = lng;
             fromMarker.setPosition({ lat, lng });
+            fromMarker.setVisible(true);
             map.setCenter({ lat, lng });
             currentFromLat = lat;
             currentFromLng = lng;
             updateRoute();
+          }
+        });
+
+        // Обработка Enter для поля "Откуда"
+        fromInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = this.value.trim();
+            if (val) {
+              geocodeAddress(val, 'from');
+            }
           }
         });
       }
@@ -540,14 +560,26 @@
             document.getElementById('to-lat').value = lat;
             document.getElementById('to-lng').value = lng;
             toMarker.setPosition({ lat, lng });
+            toMarker.setVisible(true);
             currentToLat = lat;
             currentToLng = lng;
             updateRoute();
           }
         });
+
+        // Обработка Enter для поля "Куда"
+        toInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = this.value.trim();
+            if (val) {
+              geocodeAddress(val, 'to');
+            }
+          }
+        });
       }
 
-      // ===== НОВОЕ: Автоматическое обновление маршрута при ручном вводе =====
+      // Событие change для ручного ввода (потеря фокуса)
       fromInput.addEventListener('change', function() {
         const val = this.value.trim();
         if (val.length > 3) {
@@ -563,7 +595,8 @@
       });
 
       mapInitialized = true;
-      setTimeout(updateRoute, 500);
+      // НЕ вызываем updateRoute() автоматически
+
       console.log('🗺️ Google Maps полностью инициализирована');
 
     } catch (error) {
@@ -572,8 +605,12 @@
     }
   };
 
-  // ===== НОВАЯ ФУНКЦИЯ: Геокодирование адреса =====
+  // ==================== ГЕОКОДИРОВАНИЕ ====================
   function geocodeAddress(address, type) {
+    if (!address || address.length < 3) {
+      document.getElementById('route-error').textContent = '⚠️ Введите более точный адрес';
+      return;
+    }
     const geocoder = new google.maps.Geocoder();
     geocoder.geocode({ address: address, componentRestrictions: { country: 'il' } }, function(results, status) {
       if (status === 'OK' && results[0]) {
@@ -585,6 +622,7 @@
           document.getElementById('from-lng').value = lng;
           if (fromMarker) {
             fromMarker.setPosition({ lat, lng });
+            fromMarker.setVisible(true);
             map.setCenter({ lat, lng });
           }
           currentFromLat = lat;
@@ -594,15 +632,18 @@
           document.getElementById('to-lng').value = lng;
           if (toMarker) {
             toMarker.setPosition({ lat, lng });
+            toMarker.setVisible(true);
           }
           currentToLat = lat;
           currentToLng = lng;
         }
-        updateRoute();
         document.getElementById('route-error').textContent = '';
+        updateRoute();
       } else {
-        console.warn('⚠️ Адрес не найден:', address);
-        document.getElementById('route-error').textContent = '⚠️ Адрес не найден. Уточните ввод.';
+        console.warn('⚠️ Адрес не найден:', address, status);
+        document.getElementById('route-error').textContent = `⚠️ Адрес не найден (${status}). Уточните ввод.`;
+        // Сбросить старый маршрут, если был
+        if (directionsRenderer) directionsRenderer.setDirections(null);
       }
     });
   }
@@ -627,29 +668,19 @@
     const toLat = parseFloat(document.getElementById('to-lat').value);
     const toLng = parseFloat(document.getElementById('to-lng').value);
 
+    // Если хотя бы одни координаты отсутствуют – не строим маршрут
     if (isNaN(fromLat) || isNaN(fromLng) || isNaN(toLat) || isNaN(toLng)) {
       document.getElementById('estimated-distance').textContent = '—';
       document.getElementById('estimated-price-range').textContent = '—';
       document.getElementById('estimated-time').textContent = '—';
       document.getElementById('route-error').textContent = '';
+      // Скрываем старый маршрут
+      if (directionsRenderer) directionsRenderer.setDirections(null);
       return;
     }
 
     document.getElementById('route-loading').style.display = 'block';
     document.getElementById('route-error').textContent = '';
-
-    // Если маркер назначения не существует — создаём
-    if (!toMarker) {
-      toMarker = new google.maps.Marker({
-        position: { lat: toLat, lng: toLng },
-        map: map,
-        icon: { url: 'https://maps.google.com/mapfiles/ms/icons/red-pushpin.png', scaledSize: new google.maps.Size(32, 32) },
-        label: { text: '🏁', fontSize: '24px', fontWeight: 'bold' },
-        title: 'Пункт назначения'
-      });
-    } else {
-      toMarker.setPosition({ lat: toLat, lng: toLng });
-    }
 
     const origin = new google.maps.LatLng(fromLat, fromLng);
     const destination = new google.maps.LatLng(toLat, toLng);
@@ -719,11 +750,13 @@
         currentFromLng = lng;
         if (fromMarker) {
           fromMarker.setPosition({ lat, lng });
+          fromMarker.setVisible(true);
           map.setCenter({ lat, lng });
           map.setZoom(15);
         }
         statusEl.textContent = '✅ Местоположение определено!';
         statusEl.className = 'location-status location-found';
+        // Обновляем маршрут, если есть "Куда"
         updateRoute();
       },
       err => {
@@ -990,10 +1023,16 @@
     }
 
     if (data.fromLat && data.fromLng) {
-      if (fromMarker) fromMarker.setPosition({ lat: data.fromLat, lng: data.fromLng });
+      if (fromMarker) {
+        fromMarker.setPosition({ lat: data.fromLat, lng: data.fromLng });
+        fromMarker.setVisible(true);
+      }
     }
     if (data.toLat && data.toLng) {
-      if (toMarker) toMarker.setPosition({ lat: data.toLat, lng: data.toLng });
+      if (toMarker) {
+        toMarker.setPosition({ lat: data.toLat, lng: data.toLng });
+        toMarker.setVisible(true);
+      }
     }
 
     if (data.status === 'completed') {
@@ -1080,7 +1119,7 @@
   }
 
   // ==================== ИНИЦИАЛИЗАЦИЯ ====================
-  // События для обновления маршрута при изменении координат
+  // События для обновления маршрута при изменении координат (если вдруг изменились)
   document.getElementById('from-lat').addEventListener('change', updateRoute);
   document.getElementById('from-lng').addEventListener('change', updateRoute);
   document.getElementById('to-lat').addEventListener('change', updateRoute);
@@ -1092,7 +1131,7 @@
     section.style.display = this.value === 'bonus' ? 'block' : 'none';
   });
 
-  console.log('🚕 Taxi Client v3.0 (Google Maps) загружен');
+  console.log('🚕 Taxi Client v3.0 (Google Maps) загружен – поля пустые, маршрут строится после ввода');
 </script>
 </body>
 </html>
