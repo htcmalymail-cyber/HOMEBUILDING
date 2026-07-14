@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🚕 Клиент – Заказ такси</title>
   
-  <!-- ===== LEAFLET (бесплатная карта) ===== -->
+  <!-- ===== LEAFLET (карта) ===== -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
@@ -33,7 +33,6 @@
     }
     .hidden { display: none !important; }
     
-    /* ===== НАВИГАЦИЯ ===== */
     .nav {
       display: flex;
       flex-wrap: wrap;
@@ -48,7 +47,6 @@
     
     h1 { margin: 0 0 10px 0; font-weight: 600; }
     
-    /* ===== ФОРМА ===== */
     .flex-row { display: flex; gap: 25px; flex-wrap: wrap; }
     .flex-col { flex: 1; min-width: 300px; }
     label { font-weight: 600; display: block; margin-top: 12px; margin-bottom: 4px; }
@@ -87,7 +85,6 @@
     .btn-row { display: flex; gap: 10px; }
     .btn-row .btn { width: auto; flex: 1; }
     
-    /* ===== КАРТА ===== */
     #map {
       height: 450px;
       width: 100%;
@@ -107,7 +104,6 @@
     }
     .map-hint .hint-item { display: flex; align-items: center; gap: 5px; }
     
-    /* ===== СТАТУС ===== */
     .status-badge {
       display: inline-block;
       padding: 4px 12px;
@@ -161,8 +157,11 @@
     .location-error { color: #dc3545; font-weight: 600; }
     
     .route-error { color: #dc3545; font-size: 13px; margin-top: 5px; }
+    .search-status { font-size: 13px; margin-top: 5px; }
+    .search-status.success { color: #28a745; }
+    .search-status.error { color: #dc3545; }
+    .search-status.loading { color: #007bff; }
     
-    /* ===== КАСТОМНЫЕ МАРКЕРЫ ДЛЯ КАРТЫ ===== */
     .custom-marker {
       font-size: 28px;
       text-align: center;
@@ -188,16 +187,22 @@
     <div class="flex-row">
       <!-- Левая колонка: форма -->
       <div class="flex-col">
+        <!-- Определение местоположения -->
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <label style="margin:0;">📍 Моё местоположение</label>
+          <button class="gps-btn" onclick="getMyLocation()">📍 Определить</button>
+          <span id="location-status" class="location-status">Не определено</span>
+        </div>
+
         <!-- Поле ввода адреса -->
         <label>🏁 Куда поедем?</label>
-        <input type="text" id="address" placeholder="Введите адрес назначения (например: Тель-Авив, ул. Алленби 1)" value="">
+        <input type="text" id="address" placeholder="Введите адрес назначения" value="">
+        <div id="search-status" class="search-status"></div>
         
         <!-- Скрытые координаты -->
         <input type="hidden" id="dest-lat" value="">
         <input type="hidden" id="dest-lng" value="">
 
-        <!-- Статус поиска -->
-        <div id="search-status" style="font-size:14px; color:#555; margin:5px 0;"></div>
         <div id="route-error" class="route-error"></div>
 
         <!-- Кнопки -->
@@ -212,7 +217,7 @@
       <div class="flex-col">
         <div id="map"></div>
         <div class="map-hint">
-          <span class="hint-item">📍 <span id="map-hint">Вы здесь (определяется автоматически)</span></span>
+          <span class="hint-item">📍 <span id="map-hint">Ваше местоположение</span></span>
           <span class="hint-item">🚗 Зелёные машины – свободные такси</span>
           <span class="hint-item">🏁 Флаг – ваша точка назначения</span>
         </div>
@@ -268,6 +273,7 @@
   let destLng = null;
   let destAddress = '';
   let mapInitialized = false;
+  let isLocating = false;
 
   // ==================== АУТЕНТИФИКАЦИЯ ====================
   auth.onAuthStateChanged(async function(user) {
@@ -276,8 +282,8 @@
       document.getElementById('user-email').textContent = '👤 ' + user.email;
       await loadUserData();
       listenClientOrder();
-      setTimeout(initMap, 500);
-      setTimeout(() => getMyLocation(), 1000);
+      initMap();
+      setTimeout(() => getMyLocation(), 1500);
       listenTaxiDrivers();
     } else {
       const session = localStorage.getItem('clientSession');
@@ -287,8 +293,8 @@
           document.getElementById('user-email').textContent = '👤 ' + (data.name || 'Клиент');
           await loadUserData();
           listenClientOrder();
-          setTimeout(initMap, 500);
-          setTimeout(() => getMyLocation(), 1000);
+          initMap();
+          setTimeout(() => getMyLocation(), 1500);
           listenTaxiDrivers();
         } catch(e) {
           window.location.href = 'index.html';
@@ -325,20 +331,24 @@
   // ==================== КАРТА (LEAFLET) ====================
   function initMap() {
     if (mapInitialized) return;
+    
     const mapElement = document.getElementById('map');
-    if (!mapElement) return;
+    if (!mapElement) {
+      console.error('❌ Элемент карты не найден');
+      return;
+    }
 
     try {
-      // Создаём карту
+      console.log('🗺️ Инициализация карты...');
+      
       map = L.map(mapElement).setView([31.5, 34.8], 8);
       
-      // Добавляем тайлы OpenStreetMap
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap'
       }).addTo(map);
 
-      // ===== МАРКЕР КЛИЕНТА =====
+      // Маркер клиента
       const clientIcon = L.divIcon({
         html: '📍',
         className: 'custom-marker',
@@ -348,7 +358,7 @@
       clientMarker = L.marker([31.5, 34.8], { icon: clientIcon });
       clientMarker.bindPopup('📍 Вы здесь');
 
-      // ===== МАРКЕР НАЗНАЧЕНИЯ =====
+      // Маркер назначения
       const destIcon = L.divIcon({
         html: '🏁',
         className: 'custom-marker',
@@ -359,35 +369,230 @@
       destMarker.bindPopup('🏁 Пункт назначения');
 
       mapInitialized = true;
-      console.log('🗺️ Карта инициализирована');
-
-      // Если уже есть координаты клиента – показываем
-      if (clientLat && clientLng) {
-        updateClientMarker(clientLat, clientLng);
-      }
+      console.log('✅ Карта инициализирована');
 
     } catch (error) {
       console.error('❌ Ошибка карты:', error);
     }
   }
 
-  // ==================== ОБНОВЛЕНИЕ МАРКЕРА КЛИЕНТА ====================
-  function updateClientMarker(lat, lng) {
-    if (!map || !clientMarker) return;
-    clientMarker.setLatLng([lat, lng]);
-    if (!map.hasLayer(clientMarker)) clientMarker.addTo(map);
-    map.setView([lat, lng], 14);
-    document.getElementById('map-hint').textContent = `📍 Вы здесь (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+  // ==================== ГЕОЛОКАЦИЯ ====================
+  function getMyLocation() {
+    if (isLocating) return;
+    isLocating = true;
+
+    const statusEl = document.getElementById('location-status');
+    statusEl.textContent = '⏳ Определение...';
+    statusEl.className = 'location-status';
+
+    if (!navigator.geolocation) {
+      statusEl.textContent = '❌ GPS не поддерживается';
+      statusEl.className = 'location-status location-error';
+      isLocating = false;
+      // Предлагаем ввести координаты вручную
+      askManualCoordinates();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        clientLat = pos.coords.latitude;
+        clientLng = pos.coords.longitude;
+        
+        // Обновляем маркер
+        if (map && clientMarker) {
+          clientMarker.setLatLng([clientLat, clientLng]);
+          if (!map.hasLayer(clientMarker)) clientMarker.addTo(map);
+          map.setView([clientLat, clientLng], 14);
+        }
+        
+        statusEl.textContent = `✅ ${clientLat.toFixed(4)}, ${clientLng.toFixed(4)}`;
+        statusEl.className = 'location-status location-found';
+        document.getElementById('map-hint').textContent = `📍 Вы здесь (${clientLat.toFixed(4)}, ${clientLng.toFixed(4)})`;
+        
+        // Если есть точка назначения – строим маршрут
+        if (destLat && destLng) {
+          buildRoute();
+        }
+        
+        isLocating = false;
+        console.log('✅ Геолокация определена:', clientLat, clientLng);
+      },
+      err => {
+        let msg = '❌ ';
+        switch(err.code) {
+          case 1: msg += 'Доступ запрещён. Разрешите в настройках браузера.'; break;
+          case 2: msg += 'Не удалось определить местоположение.'; break;
+          case 3: msg += 'Превышено время ожидания.'; break;
+          default: msg += err.message;
+        }
+        statusEl.textContent = msg;
+        statusEl.className = 'location-status location-error';
+        isLocating = false;
+        
+        // Предлагаем ввести координаты вручную
+        askManualCoordinates();
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   }
 
-  // ==================== ОБНОВЛЕНИЕ МАРКЕРА НАЗНАЧЕНИЯ ====================
-  function updateDestMarker(lat, lng) {
-    if (!map || !destMarker) return;
-    destMarker.setLatLng([lat, lng]);
-    if (!map.hasLayer(destMarker)) destMarker.addTo(map);
+  function askManualCoordinates() {
+    if (confirm('⚠️ Не удалось определить местоположение автоматически.\nХотите ввести координаты вручную?')) {
+      const coords = prompt('Введите координаты (широта, долгота):\nНапример: 32.0853, 34.7818');
+      if (coords) {
+        const parts = coords.split(',').map(s => parseFloat(s.trim()));
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          clientLat = parts[0];
+          clientLng = parts[1];
+          
+          if (map && clientMarker) {
+            clientMarker.setLatLng([clientLat, clientLng]);
+            if (!map.hasLayer(clientMarker)) clientMarker.addTo(map);
+            map.setView([clientLat, clientLng], 14);
+          }
+          
+          document.getElementById('location-status').textContent = '✅ Координаты введены вручную';
+          document.getElementById('location-status').className = 'location-status location-found';
+          document.getElementById('map-hint').textContent = `📍 Вы здесь (${clientLat.toFixed(4)}, ${clientLng.toFixed(4)})`;
+          
+          if (destLat && destLng) {
+            buildRoute();
+          }
+        } else {
+          alert('❌ Неверный формат. Используйте: широта, долгота');
+        }
+      }
+    }
   }
 
-  // ==================== ПОКАЗАТЬ СВОБОДНЫЕ ТАКСИ ====================
+  // ==================== ПОИСК АДРЕСА (NOMINATIM) ====================
+  function searchAddress() {
+    const address = document.getElementById('address').value.trim();
+    const statusEl = document.getElementById('search-status');
+    
+    if (!address) {
+      statusEl.textContent = '⚠️ Введите адрес';
+      statusEl.className = 'search-status error';
+      return;
+    }
+
+    statusEl.textContent = '⏳ Поиск...';
+    statusEl.className = 'search-status loading';
+
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1&countrycodes=il`;
+
+    console.log('🔍 Поиск адреса:', address);
+
+    fetch(url)
+      .then(response => {
+        if (!response.ok) throw new Error('Ошибка сервера');
+        return response.json();
+      })
+      .then(data => {
+        if (data && data.length > 0) {
+          destLat = parseFloat(data[0].lat);
+          destLng = parseFloat(data[0].lon);
+          destAddress = data[0].display_name;
+
+          document.getElementById('dest-lat').value = destLat;
+          document.getElementById('dest-lng').value = destLng;
+          
+          statusEl.textContent = `✅ Найдено: ${destAddress}`;
+          statusEl.className = 'search-status success';
+          
+          // Обновляем маркер на карте
+          if (map && destMarker) {
+            destMarker.setLatLng([destLat, destLng]);
+            if (!map.hasLayer(destMarker)) destMarker.addTo(map);
+          }
+          
+          console.log('✅ Адрес найден:', destAddress, destLat, destLng);
+          
+          // Строим маршрут
+          if (clientLat && clientLng) {
+            buildRoute();
+          } else {
+            document.getElementById('route-error').textContent = '⏳ Определите ваше местоположение для построения маршрута';
+          }
+        } else {
+          statusEl.textContent = '❌ Адрес не найден. Попробуйте уточнить ввод.';
+          statusEl.className = 'search-status error';
+          console.warn('⚠️ Адрес не найден:', address);
+        }
+      })
+      .catch(error => {
+        statusEl.textContent = '❌ Ошибка поиска: ' + error.message;
+        statusEl.className = 'search-status error';
+        console.error('❌ Ошибка геокодирования:', error);
+      });
+  }
+
+  // ==================== ПОСТРОЕНИЕ МАРШРУТА ====================
+  function buildRoute() {
+    if (!clientLat || !clientLng || !destLat || !destLng) {
+      console.log('⏳ Недостаточно координат для маршрута');
+      return;
+    }
+
+    console.log('🛣️ Построение маршрута...');
+
+    const url = `https://router.project-osrm.org/route/v1/driving/${clientLng},${clientLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        // Удаляем старый маршрут
+        if (routeLine && map) {
+          map.removeLayer(routeLine);
+          routeLine = null;
+        }
+
+        if (data && data.routes && data.routes.length > 0) {
+          const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+          routeLine = L.polyline(coords, { 
+            color: 'blue', 
+            weight: 4, 
+            opacity: 0.8 
+          });
+          
+          if (map) {
+            routeLine.addTo(map);
+            map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+          }
+          
+          document.getElementById('route-error').textContent = '';
+          console.log('✅ Маршрут построен');
+        } else {
+          document.getElementById('route-error').textContent = '⚠️ Не удалось построить маршрут';
+          console.warn('⚠️ OSRM не вернул маршрут');
+        }
+      })
+      .catch(error => {
+        document.getElementById('route-error').textContent = '❌ Ошибка маршрута: ' + error.message;
+        console.error('❌ Ошибка OSRM:', error);
+      });
+  }
+
+  // ==================== СЛУШАЕМ СВОБОДНЫЕ ТАКСИ ====================
+  function listenTaxiDrivers() {
+    if (taxiUnsubscribe) taxiUnsubscribe();
+
+    taxiUnsubscribe = db.collection('drivers')
+      .where('role', '==', 'driver')
+      .where('available', '==', true)
+      .onSnapshot(snapshot => {
+        const drivers = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.lat && data.lng) {
+            drivers.push(data);
+          }
+        });
+        updateTaxiMarkers(drivers);
+      }, error => console.error('❌ Ошибка прослушки такси:', error));
+  }
+
   function updateTaxiMarkers(drivers) {
     // Удаляем старые маркеры
     taxiMarkers.forEach(m => {
@@ -416,143 +621,6 @@
     console.log(`🚗 Показано ${taxiMarkers.length} свободных такси`);
   }
 
-  // ==================== СЛУШАЕМ СВОБОДНЫЕ ТАКСИ ====================
-  function listenTaxiDrivers() {
-    if (taxiUnsubscribe) taxiUnsubscribe();
-
-    taxiUnsubscribe = db.collection('drivers')
-      .where('role', '==', 'driver')
-      .where('available', '==', true)
-      .onSnapshot(snapshot => {
-        const drivers = [];
-        snapshot.forEach(doc => {
-          drivers.push(doc.data());
-        });
-        updateTaxiMarkers(drivers);
-      }, error => console.error('Ошибка прослушки такси:', error));
-  }
-
-  // ==================== GPS ====================
-  function getMyLocation() {
-    const statusEl = document.getElementById('location-status');
-    if (!statusEl) return;
-    
-    statusEl.textContent = '⏳ Определение...';
-    statusEl.className = 'location-status';
-    
-    if (!navigator.geolocation) {
-      statusEl.textContent = '❌ GPS не поддерживается';
-      statusEl.className = 'location-status location-error';
-      return;
-    }
-    
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        clientLat = pos.coords.latitude;
-        clientLng = pos.coords.longitude;
-        updateClientMarker(clientLat, clientLng);
-        
-        statusEl.textContent = `✅ ${clientLat.toFixed(4)}, ${clientLng.toFixed(4)}`;
-        statusEl.className = 'location-status location-found';
-        
-        // Если есть адрес назначения – строим маршрут
-        if (destLat && destLng) {
-          buildRoute();
-        }
-      },
-      err => {
-        let msg = '❌ Ошибка GPS: ';
-        if (err.code === 1) msg += 'Разрешите доступ';
-        else if (err.code === 2) msg += 'Не удалось определить';
-        else if (err.code === 3) msg += 'Превышено время';
-        else msg += err.message;
-        statusEl.textContent = msg;
-        statusEl.className = 'location-status location-error';
-      },
-      { enableHighAccuracy: true, timeout: 15000 }
-    );
-  }
-
-  // ==================== ПОИСК АДРЕСА (NOMINATIM) ====================
-  function searchAddress() {
-    const address = document.getElementById('address').value.trim();
-    if (!address) {
-      document.getElementById('search-status').textContent = '⚠️ Введите адрес';
-      document.getElementById('search-status').style.color = '#dc3545';
-      return;
-    }
-
-    document.getElementById('search-status').textContent = '⏳ Поиск...';
-    document.getElementById('search-status').style.color = '#555';
-
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1`;
-
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        if (data && data.length > 0) {
-          destLat = parseFloat(data[0].lat);
-          destLng = parseFloat(data[0].lon);
-          destAddress = data[0].display_name;
-
-          document.getElementById('dest-lat').value = destLat;
-          document.getElementById('dest-lng').value = destLng;
-          document.getElementById('search-status').textContent = `✅ Найдено: ${destAddress}`;
-          document.getElementById('search-status').style.color = '#28a745';
-          
-          updateDestMarker(destLat, destLng);
-          
-          // Если есть координаты клиента – строим маршрут
-          if (clientLat && clientLng) {
-            buildRoute();
-          } else {
-            document.getElementById('route-error').textContent = '⏳ Ожидание определения вашего местоположения...';
-          }
-        } else {
-          document.getElementById('search-status').textContent = '❌ Адрес не найден';
-          document.getElementById('search-status').style.color = '#dc3545';
-        }
-      })
-      .catch(error => {
-        document.getElementById('search-status').textContent = '❌ Ошибка: ' + error.message;
-        document.getElementById('search-status').style.color = '#dc3545';
-        console.error('❌ Ошибка геокодирования:', error);
-      });
-  }
-
-  // ==================== ПОСТРОЕНИЕ МАРШРУТА (OSRM) ====================
-  function buildRoute() {
-    if (!clientLat || !clientLng || !destLat || !destLng) {
-      return;
-    }
-
-    const url = `https://router.project-osrm.org/route/v1/driving/${clientLng},${clientLat};${destLng},${destLat}?overview=full&geometries=geojson`;
-
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        if (routeLine && map) map.removeLayer(routeLine);
-        routeLine = null;
-
-        if (data && data.routes && data.routes.length > 0) {
-          const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-          routeLine = L.polyline(coords, { color: 'blue', weight: 4, opacity: 0.8 });
-          if (map) {
-            routeLine.addTo(map);
-            map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
-          }
-          document.getElementById('route-error').textContent = '';
-          console.log('✅ Маршрут построен');
-        } else {
-          document.getElementById('route-error').textContent = '⚠️ Не удалось построить маршрут';
-        }
-      })
-      .catch(error => {
-        document.getElementById('route-error').textContent = '❌ Ошибка маршрута: ' + error.message;
-        console.error('❌ Ошибка OSRM:', error);
-      });
-  }
-
   // ==================== СОЗДАНИЕ ЗАКАЗА ====================
   function createOrder() {
     const address = document.getElementById('address').value.trim();
@@ -568,17 +636,17 @@
       return;
     }
     if (!clientLat || !clientLng) {
-      alert('⚠️ Не удалось определить ваше местоположение');
+      alert('⚠️ Сначала определите ваше местоположение (кнопка "Определить")');
       return;
     }
 
-    // Расчёт расстояния
     const distance = getDistance(clientLat, clientLng, destLat, destLng);
     const price = calculatePrice(distance);
 
     let clientName = 'Клиент';
     const session = localStorage.getItem('clientSession');
     if (session) { try { clientName = JSON.parse(session).name || 'Клиент'; } catch(e) {} }
+    if (currentUser?.email) clientName = currentUser.email;
 
     const orderData = {
       clientId: currentUser ? currentUser.uid : 'guest-' + Date.now(),
@@ -594,6 +662,8 @@
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       aiNote: 'Поиск ближайших водителей...'
     };
+
+    console.log('📝 Создание заказа:', orderData);
 
     db.collection('orders').add(orderData)
       .then(docRef => {
@@ -762,7 +832,7 @@
   // ==================== ОТКРЫТИЕ WAZE ====================
   function openWaze() {
     if (!clientLat || !clientLng) {
-      alert('⚠️ Нет координат');
+      alert('⚠️ Нет координат вашего местоположения');
       return;
     }
     const url = `https://waze.com/ul?ll=${clientLat},${clientLng}&navigate=yes`;
@@ -793,6 +863,7 @@
   });
 
   console.log('🚕 Клиент с картой загружен');
+  console.log('💡 Для работы: 1) Определите местоположение, 2) Введите адрес, 3) Закажите такси');
 </script>
 </body>
 </html>
