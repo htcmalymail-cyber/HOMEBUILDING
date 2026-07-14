@@ -39,10 +39,38 @@
     .nav a { text-decoration: none; color: #007bff; font-weight: 600; }
     .nav .logout-btn { background: #dc3545; color: white; border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; }
     .nav .logout-btn:hover { background: #c82333; }
-    .nav .login-btn { background: #28a745; color: white; border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-    .nav .login-btn:hover { background: #218838; }
-    #user-info { margin-left: auto; color: #555; font-size: 14px; }
+    #user-email { margin-left: auto; color: #555; font-size: 14px; }
     h1 { margin: 0 0 10px 0; font-weight: 600; }
+    
+    /* БАННЕР РЕГИСТРАЦИИ — НОВЫЙ ДИЗАЙН */
+    .reg-banner {
+      background: linear-gradient(135deg, #ff6b35, #f7931e);
+      padding: 16px 24px;
+      border-radius: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      color: white;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+    }
+    .reg-banner .title { font-size: 20px; font-weight: 700; }
+    .reg-banner .sub { font-size: 14px; opacity: 0.9; }
+    .reg-banner .btn-reg {
+      background: white;
+      color: #ff6b35;
+      border: none;
+      padding: 10px 30px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .reg-banner .btn-reg:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .reg-banner .bonus-amount { font-size: 28px; font-weight: 800; margin-right: 8px; }
+
     .bonus-panel {
       background: linear-gradient(135deg, #f9d976, #f39b7b);
       padding: 12px 20px;
@@ -81,6 +109,7 @@
     }
     .btn-primary { background: #007bff; color: white; }
     .btn-primary:hover { background: #0056b3; }
+    .btn-primary:disabled { background: #6c757d; cursor: not-allowed; opacity: 0.6; }
     .btn-success { background: #28a745; color: white; }
     .btn-success:hover { background: #218838; }
     .btn-danger { background: #dc3545; color: white; }
@@ -121,7 +150,6 @@
     .status-cancelled { color: #dc3545; }
     .status-offering { color: #17a2b8; }
     .status-searching { color: #ffc107; }
-    .status-waiting { color: #ffc107; }
     .driver-info { background: #d4edda; padding: 12px; border-radius: 10px; margin-top: 10px; }
     .action-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
     .gps-btn {
@@ -143,115 +171,34 @@
     .route-error { color: #dc3545; font-size: 13px; margin-top: 5px; }
     .btn-row { display: flex; gap: 10px; }
     .btn-row .btn { width: auto; flex: 1; }
-    .custom-marker {
-      font-size: 28px;
-      text-align: center;
-      line-height: 30px;
-    }
-    .taxi-marker {
-      font-size: 22px;
-      text-align: center;
-      line-height: 24px;
-    }
-    .search-status { font-size: 13px; margin-top: 5px; }
-    .search-status.success { color: #28a745; }
-    .search-status.error { color: #dc3545; }
-    .search-status.loading { color: #007bff; }
-
-    /* Модальное окно для регистрации */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.6);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-    .modal-overlay.hidden { display: none; }
-    .modal {
-      background: white;
-      padding: 30px;
-      border-radius: 20px;
-      max-width: 420px;
-      width: 90%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    .modal h2 { margin-top: 0; text-align: center; }
-    .modal p { text-align: center; color: #666; }
-    .modal input { margin-bottom: 12px; }
-    .modal .btn { width: 100%; }
-    .modal .btn-secondary { background: #6c757d; margin-top: 6px; }
-    .modal .btn-secondary:hover { background: #5a6268; }
-    .modal .divider {
-      text-align: center;
-      padding: 10px 0;
-      color: #999;
-      font-size: 13px;
-    }
-    .modal .divider::before,
-    .modal .divider::after {
-      content: '';
-      display: inline-block;
-      width: 30%;
-      height: 1px;
-      background: #ddd;
-      vertical-align: middle;
-      margin: 0 10px;
-    }
-    .auth-error {
-      color: #dc3545;
-      font-size: 13px;
-      text-align: center;
-      margin-top: 8px;
-      display: none;
-    }
-    .auth-success {
-      color: #28a745;
-      font-size: 13px;
-      text-align: center;
-      margin-top: 8px;
-      display: none;
-    }
+    .coords-info { font-size: 12px; color: #888; margin-top: 4px; }
+    .coords-info .found { color: #28a745; }
+    .coords-info .missing { color: #dc3545; }
   </style>
 </head>
 <body>
-
-<!-- Модальное окно для авторизации -->
-<div id="auth-modal" class="modal-overlay">
-  <div class="modal">
-    <h2>🔐 Авторизация</h2>
-    <p>Введите данные для входа или регистрации</p>
-    
-    <div id="auth-error" class="auth-error"></div>
-    <div id="auth-success" class="auth-success"></div>
-    
-    <input type="text" id="auth-passport" placeholder="🪪 ID паспорта (обязательно)" required>
-    <input type="tel" id="auth-phone" placeholder="📞 Телефон (обязательно)" required>
-    <input type="text" id="auth-name" placeholder="👤 Ваше имя (обязательно)" required>
-    
-    <button class="btn btn-primary" onclick="loginOrRegister()">🔑 Войти / Зарегистрироваться</button>
-  </div>
-</div>
 
 <div class="container">
   <!-- Навигация -->
   <div class="nav">
     <a href="index.html">🏠 Главная</a>
     <a href="client.html">🚕 Клиент</a>
-    <button class="login-btn" id="login-btn" onclick="showAuthModal()" style="display:none;">🔑 Войти</button>
-    <button class="logout-btn" id="logout-btn" onclick="signOut()" style="display:none;">🚪 Выйти</button>
-    <span id="user-info"></span>
+    <button class="logout-btn" onclick="signOut()">🚪 Выйти</button>
+    <span id="user-email"></span>
   </div>
 
   <h1>🚕 Заказ такси</h1>
 
-  <!-- Бонусный баланс -->
+  <!-- ====== БАННЕР РЕГИСТРАЦИИ (показывается ТОЛЬКО для гостей) ====== -->
+  <div id="regBanner" class="reg-banner hidden">
+    <div>
+      <div class="title">🎁 Получи <span class="bonus-amount">50 ₪</span> бонусов</div>
+      <div class="sub">Зарегистрируйтесь сейчас и получайте 2% кэшбэк с каждой поездки</div>
+    </div>
+    <button class="btn-reg" onclick="goToRegister()">🚀 Зарегистрироваться</button>
+  </div>
+
+  <!-- Бонусный баланс (только для зарегистрированных) -->
   <div id="bonus-panel" class="bonus-panel hidden">
     <div>
       <span>🎁 Бонусный баланс</span>
@@ -263,6 +210,7 @@
   <!-- Основная карточка -->
   <div class="card">
     <div class="flex-row">
+      <!-- Левая колонка: форма -->
       <div class="flex-col">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
           <label style="margin:0;">📍 Откуда</label>
@@ -273,13 +221,19 @@
 
         <label>🏁 Куда</label>
         <input type="text" id="to-address" placeholder="Введите адрес назначения" value="">
-        <div id="search-status" class="search-status"></div>
 
+        <!-- Скрытые поля для координат (могут быть пустыми!) -->
         <input type="hidden" id="from-lat" value="">
         <input type="hidden" id="from-lng" value="">
         <input type="hidden" id="to-lat" value="">
         <input type="hidden" id="to-lng" value="">
 
+        <!-- Статус координат -->
+        <div class="coords-info" id="coords-status">
+          <span class="missing">⚠️ Координаты не найдены — будет использован текстовый адрес</span>
+        </div>
+
+        <!-- Предварительная стоимость -->
         <div class="price-panel">
           <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
             <div>
@@ -297,6 +251,7 @@
           <div id="route-error" class="route-error"></div>
         </div>
 
+        <!-- Способ оплаты -->
         <label>💳 Способ оплаты</label>
         <select id="payment-method">
           <option value="cash">💰 Наличные</option>
@@ -312,18 +267,18 @@
 
         <div class="btn-row">
           <button class="btn btn-secondary" onclick="refreshRoute()" style="flex:1;">🔄 Обновить маршрут</button>
-          <button class="btn btn-primary" onclick="createOrder()" style="flex:2;">🚖 Заказать такси</button>
+          <button class="btn btn-primary" id="orderBtn" onclick="createOrder()" style="flex:2;">🚖 Заказать такси</button>
         </div>
         <div id="order-status-message" style="margin-top:10px; font-weight:600;"></div>
       </div>
 
+      <!-- Правая колонка: карта -->
       <div class="flex-col">
         <div id="map"></div>
         <div class="map-hint">
-          💡 Введите адрес и нажмите Enter.<br>
+          💡 Введите адрес и нажмите Enter или кнопку "Обновить маршрут".<br>
           🏁 Флаг – пункт назначения. 📍 Синяя точка – ваше местоположение.<br>
-          🚗 Зелёные машинки – свободные такси.<br>
-          🔑 Войдите в аккаунт, чтобы получать бонусы!
+          ⚠️ Если координаты не найдены — заказ всё равно создастся по текстовому адресу!
         </div>
       </div>
     </div>
@@ -362,17 +317,15 @@
 
   // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
   let currentUser = null;
-  let currentClientData = null;
+  let currentUserData = null;
   let map = null;
   let fromMarker = null;
   let toMarker = null;
   let driverMarker = null;
-  let taxiMarkers = [];
   let routeLine = null;
   let currentOrderId = null;
   let orderUnsubscribe = null;
   let driverUnsubscribe = null;
-  let taxiUnsubscribe = null;
   let currentDriverLat = null;
   let currentDriverLng = null;
   let currentFromLat = null;
@@ -382,7 +335,7 @@
   let currentDistanceKm = 0;
   let currentDurationMin = 0;
   let mapInitialized = false;
-  let isLocating = false;
+  let isRegistered = false;
 
   // ==================== ТАРИФЫ ====================
   const TARIFF = {
@@ -420,6 +373,7 @@
   }
 
   function getDistance(lat1, lng1, lat2, lng2) {
+    if (!lat1 || !lng1 || !lat2 || !lng2) return 0;
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
@@ -427,200 +381,124 @@
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 
-  // ==================== АВТОРИЗАЦИЯ ====================
-  function showAuthModal() {
-    document.getElementById('auth-modal').classList.remove('hidden');
-    document.getElementById('auth-error').style.display = 'none';
-    document.getElementById('auth-success').style.display = 'none';
-  }
-
-  function hideAuthModal() {
-    document.getElementById('auth-modal').classList.add('hidden');
-  }
-
-  function showError(msg) {
-    const el = document.getElementById('auth-error');
-    el.textContent = msg;
-    el.style.display = 'block';
-    document.getElementById('auth-success').style.display = 'none';
-  }
-
-  function showSuccess(msg) {
-    const el = document.getElementById('auth-success');
-    el.textContent = msg;
-    el.style.display = 'block';
-    document.getElementById('auth-error').style.display = 'none';
-  }
-
-  async function loginOrRegister() {
-    const passportId = document.getElementById('auth-passport').value.trim();
-    const phone = document.getElementById('auth-phone').value.trim();
-    const name = document.getElementById('auth-name').value.trim();
-
-    if (!passportId) { showError('⚠️ Введите ID паспорта'); return; }
-    if (!phone) { showError('⚠️ Введите номер телефона'); return; }
-    if (!name) { showError('⚠️ Введите ваше имя'); return; }
-
-    showError('');
-    showSuccess('⏳ Проверка данных...');
-
-    try {
-      // 1. Проверяем, существует ли пользователь с такой связкой
-      const snapshot = await db.collection('clients')
-        .where('passportId', '==', passportId)
-        .where('phone', '==', phone)
-        .get();
-
-      if (!snapshot.empty) {
-        // Пользователь найден → вход
-        const doc = snapshot.docs[0];
-        currentClientData = doc.data();
-        currentUser = { uid: doc.id };
-        
-        // Сохраняем сессию
-        localStorage.setItem('clientSession', JSON.stringify({
-          passportId: passportId,
-          phone: phone,
-          name: currentClientData.name
-        }));
-        
-        showSuccess('✅ Вход выполнен успешно!');
-        setTimeout(() => {
-          hideAuthModal();
-          updateUIAfterAuth();
-        }, 1000);
-        return;
-      }
-
-      // 2. Проверяем, не занят ли ID паспорта
-      const checkId = await db.collection('clients')
-        .where('passportId', '==', passportId)
-        .get();
+  // ==================== АУТЕНТИФИКАЦИЯ ====================
+  auth.onAuthStateChanged(async function(user) {
+    if (user) {
+      currentUser = user;
+      isRegistered = true;
+      document.getElementById('user-email').textContent = '👤 ' + user.email;
       
-      if (!checkId.empty) {
-        showError('❌ Этот ID паспорта уже зарегистрирован с другим телефоном');
-        return;
-      }
-
-      // 3. Проверяем, не занят ли телефон
-      const checkPhone = await db.collection('clients')
-        .where('phone', '==', phone)
-        .get();
+      // Скрываем баннер регистрации
+      document.getElementById('regBanner').classList.add('hidden');
       
-      if (!checkPhone.empty) {
-        showError('❌ Этот телефон уже зарегистрирован с другим ID паспорта');
-        return;
-      }
-
-      // 4. Регистрация нового пользователя
-      const docRef = db.collection('clients').doc();
-      const newClient = {
-        passportId: passportId,
-        phone: phone,
-        name: name,
-        role: 'client',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        bonusBalance: 0,
-        totalEarned: 0,
-        totalSpent: 0,
-        level: 'Bronze'
-      };
-
-      await docRef.set(newClient);
+      // Показываем бонус-панель
+      document.getElementById('bonus-panel').classList.remove('hidden');
       
-      currentClientData = newClient;
-      currentUser = { uid: docRef.id };
-
-      // Сохраняем сессию
-      localStorage.setItem('clientSession', JSON.stringify({
-        passportId: passportId,
-        phone: phone,
-        name: name
-      }));
-
-      showSuccess('✅ Регистрация успешна!');
-      setTimeout(() => {
-        hideAuthModal();
-        updateUIAfterAuth();
-      }, 1000);
-
-    } catch (error) {
-      console.error('❌ Ошибка авторизации:', error);
-      showError('❌ Ошибка: ' + error.message);
+      await loadUserData();
+      await loadClientBonusBalance();
+      listenClientOrder();
+      setTimeout(initMap, 500);
+      setTimeout(() => getMyLocation(), 1500);
+    } else {
+      // === ГОСТЬ (НЕ ЗАРЕГИСТРИРОВАН) ===
+      isRegistered = false;
+      currentUser = null;
+      
+      // ПОКАЗЫВАЕМ БАННЕР РЕГИСТРАЦИИ
+      document.getElementById('regBanner').classList.remove('hidden');
+      
+      // Скрываем бонус-панель
+      document.getElementById('bonus-panel').classList.add('hidden');
+      
+      // Проверяем сессию гостя
+      const session = localStorage.getItem('clientSession');
+      if (session) {
+        try {
+          const data = JSON.parse(session);
+          document.getElementById('user-email').textContent = '👤 ' + (data.name || 'Гость');
+        } catch(e) {}
+      } else {
+        document.getElementById('user-email').textContent = '👤 Гость (не зарегистрирован)';
+      }
+      
+      // Загружаем карту для гостя
+      setTimeout(initMap, 500);
+      setTimeout(() => getMyLocation(), 1500);
+      
+      // Слушаем заказы гостя
+      listenClientOrder();
     }
-  }
+    
+    // Обновляем кнопку заказа (активна только для зарегистрированных)
+    updateOrderButton();
+  });
 
-  function updateUIAfterAuth() {
-    if (currentClientData) {
-      document.getElementById('user-info').textContent = `👤 ${currentClientData.name} (${currentClientData.phone})`;
-      document.getElementById('login-btn').style.display = 'none';
-      document.getElementById('logout-btn').style.display = 'inline-block';
-      loadClientBonusBalance();
-    }
+  function loadUserData() {
+    if (!currentUser) return Promise.resolve();
+    return db.collection('users').doc(currentUser.uid).get()
+      .then(doc => {
+        if (doc.exists) {
+          currentUserData = doc.data();
+        } else {
+          return db.collection('users').doc(currentUser.uid).set({
+            email: currentUser.email,
+            name: 'Клиент',
+            role: 'client',
+            phone: '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          }).then(() => { currentUserData = { role: 'client' }; });
+        }
+      })
+      .catch(e => console.error('Ошибка загрузки данных пользователя:', e));
   }
 
   function signOut() {
-    if (confirm('Выйти из аккаунта?')) {
+    auth.signOut().then(() => {
       localStorage.removeItem('clientSession');
-      currentUser = null;
-      currentClientData = null;
-      document.getElementById('user-info').textContent = '';
-      document.getElementById('login-btn').style.display = 'inline-block';
-      document.getElementById('logout-btn').style.display = 'none';
-      document.getElementById('bonus-panel').classList.add('hidden');
-      location.reload();
-    }
+      window.location.href = 'index.html';
+    });
   }
 
-  // ==================== ЗАГРУЗКА СЕССИИ ====================
-  function loadSession() {
-    try {
-      const data = localStorage.getItem('clientSession');
-      if (data) {
-        const session = JSON.parse(data);
-        if (session.passportId && session.phone && session.name) {
-          // Проверяем существование пользователя в Firebase
-          db.collection('clients')
-            .where('passportId', '==', session.passportId)
-            .where('phone', '==', session.phone)
-            .get()
-            .then(snapshot => {
-              if (!snapshot.empty) {
-                currentClientData = snapshot.docs[0].data();
-                currentUser = { uid: snapshot.docs[0].id };
-                updateUIAfterAuth();
-                initMap();
-                setTimeout(() => getMyLocation(), 1000);
-                listenTaxiDrivers();
-                listenClientOrder();
-              } else {
-                // Сессия недействительна
-                localStorage.removeItem('clientSession');
-                showAuthModal();
-              }
-            })
-            .catch(() => {
-              showAuthModal();
-            });
-          return true;
-        }
-      }
-    } catch(e) {}
-    return false;
+  // ==================== РЕГИСТРАЦИЯ ====================
+  function goToRegister() {
+    // Перенаправляем на страницу регистрации
+    window.location.href = 'index.html?action=register';
+  }
+
+  // ==================== ОБНОВЛЕНИЕ КНОПКИ ЗАКАЗА ====================
+  function updateOrderButton() {
+    const btn = document.getElementById('orderBtn');
+    if (isRegistered) {
+      btn.disabled = false;
+      btn.textContent = '🚖 Заказать такси';
+      btn.title = '';
+    } else {
+      btn.disabled = true;
+      btn.textContent = '🔒 Зарегистрируйтесь для заказа';
+      btn.title = 'Только зарегистрированные пользователи могут заказывать такси';
+    }
   }
 
   // ==================== БОНУСЫ ====================
   async function loadClientBonusBalance() {
-    if (!currentClientData) return;
+    const clientId = currentUser ? currentUser.uid : null;
+    if (!clientId) return;
     try {
-      const doc = await db.collection('clients').doc(currentUser.uid).get();
-      if (doc.exists) {
-        const data = doc.data();
-        const balance = data.bonusBalance || 0;
-        document.getElementById('client-bonus-balance').textContent = balance.toFixed(2) + ' ₪';
-        document.getElementById('bonus-balance-display').textContent = balance.toFixed(2);
-        document.getElementById('bonus-panel').classList.remove('hidden');
+      const doc = await db.collection('users_bonus').doc(clientId).get();
+      let balance = 0;
+      if (doc.exists) balance = doc.data().balance || 0;
+      else {
+        await db.collection('users_bonus').doc(clientId).set({
+          balance: 0,
+          totalEarned: 0,
+          totalSpent: 0,
+          level: 'Bronze',
+          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        });
       }
+      document.getElementById('client-bonus-balance').textContent = balance.toFixed(2) + ' ₪';
+      document.getElementById('bonus-balance-display').textContent = balance.toFixed(2);
+      document.getElementById('bonus-panel').classList.remove('hidden');
     } catch (e) {
       console.error('Ошибка загрузки бонусов:', e);
     }
@@ -666,6 +544,7 @@
         map.panTo([lat, lng]);
         currentFromLat = lat;
         currentFromLng = lng;
+        updateCoordsStatus();
         updateRoute();
       });
 
@@ -676,6 +555,7 @@
         document.getElementById('from-address').value = '📍 Перемещено на карте';
         currentFromLat = pos.lat;
         currentFromLng = pos.lng;
+        updateCoordsStatus();
         updateRoute();
       });
 
@@ -687,58 +567,32 @@
     }
   }
 
-  // ==================== СЛУШАЕМ СВОБОДНЫЕ ТАКСИ ====================
-  function listenTaxiDrivers() {
-    if (taxiUnsubscribe) taxiUnsubscribe();
-
-    taxiUnsubscribe = db.collection('drivers')
-      .where('role', '==', 'driver')
-      .where('available', '==', true)
-      .onSnapshot(snapshot => {
-        const drivers = [];
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.lat && data.lng) {
-            drivers.push(data);
-          }
-        });
-        updateTaxiMarkers(drivers);
-      }, error => console.error('❌ Ошибка прослушки такси:', error));
-  }
-
-  function updateTaxiMarkers(drivers) {
-    taxiMarkers.forEach(m => {
-      if (map && map.hasLayer(m)) map.removeLayer(m);
-    });
-    taxiMarkers = [];
-
-    if (!map) return;
-
-    const taxiIcon = L.divIcon({
-      html: '🚗',
-      className: 'taxi-marker',
-      iconSize: [25, 25],
-      iconAnchor: [12, 25]
-    });
-
-    drivers.forEach(driver => {
-      if (driver.lat && driver.lng) {
-        const marker = L.marker([driver.lat, driver.lng], { icon: taxiIcon });
-        marker.bindPopup(`🚗 Свободное такси<br>👤 ${driver.fullName || 'Водитель'}`);
-        marker.addTo(map);
-        taxiMarkers.push(marker);
-      }
-    });
+  // ==================== СТАТУС КООРДИНАТ ====================
+  function updateCoordsStatus() {
+    const fromLat = document.getElementById('from-lat').value;
+    const fromLng = document.getElementById('from-lng').value;
+    const toLat = document.getElementById('to-lat').value;
+    const toLng = document.getElementById('to-lng').value;
+    
+    const statusEl = document.getElementById('coords-status');
+    const hasFrom = fromLat && fromLng;
+    const hasTo = toLat && toLng;
+    
+    if (hasFrom && hasTo) {
+      statusEl.innerHTML = '<span class="found">✅ Координаты найдены для обоих адресов</span>';
+    } else if (hasFrom || hasTo) {
+      statusEl.innerHTML = '<span class="found">⚠️ Координаты найдены только для одного адреса</span>';
+    } else {
+      statusEl.innerHTML = '<span class="missing">⚠️ Координаты не найдены — будет использован текстовый адрес</span>';
+    }
   }
 
   // ==================== ГЕОКОДИРОВАНИЕ (Nominatim) ====================
   function geocodeAddress(address, type) {
-    if (!address || address.length < 3) {
+    if (!address || address.length < 2) {
       document.getElementById('route-error').textContent = '⚠️ Введите более точный адрес';
       return;
     }
-
-    const statusEl = document.getElementById('search-status');
 
     if (address === '📍 Моё местоположение' && currentFromLat && currentFromLng) {
       if (type === 'from') {
@@ -747,17 +601,16 @@
         fromMarker.setLatLng([currentFromLat, currentFromLng]);
         if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
         map.setView([currentFromLat, currentFromLng], 15);
+        updateCoordsStatus();
         updateRoute();
       }
       return;
     }
 
-    statusEl.textContent = '⏳ Поиск адреса...';
-    statusEl.className = 'search-status loading';
     document.getElementById('route-loading').style.display = 'block';
     document.getElementById('route-error').textContent = '';
 
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1&countrycodes=il`;
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1`;
 
     fetch(url)
       .then(response => response.json())
@@ -766,48 +619,62 @@
         if (data && data.length > 0) {
           const lat = parseFloat(data[0].lat);
           const lng = parseFloat(data[0].lon);
-          const fullAddress = data[0].display_name;
           console.log(`✅ Найдены координаты для ${type}:`, lat, lng);
 
           if (type === 'from') {
             document.getElementById('from-lat').value = lat;
             document.getElementById('from-lng').value = lng;
-            document.getElementById('from-address').value = fullAddress;
             fromMarker.setLatLng([lat, lng]);
             if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
             map.setView([lat, lng], 15);
             currentFromLat = lat;
             currentFromLng = lng;
-            statusEl.textContent = '✅ Адрес отправления найден';
-            statusEl.className = 'search-status success';
           } else {
             document.getElementById('to-lat').value = lat;
             document.getElementById('to-lng').value = lng;
-            document.getElementById('to-address').value = fullAddress;
             toMarker.setLatLng([lat, lng]);
             if (!map.hasLayer(toMarker)) toMarker.addTo(map);
             currentToLat = lat;
             currentToLng = lng;
-            statusEl.textContent = '✅ Адрес назначения найден';
-            statusEl.className = 'search-status success';
           }
           document.getElementById('route-error').textContent = '';
+          updateCoordsStatus();
           updateRoute();
         } else {
-          statusEl.textContent = '⚠️ Адрес не найден на карте, но будет передан водителю';
-          statusEl.className = 'search-status error';
-          document.getElementById('route-error').textContent = '⚠️ Адрес не найден на карте, но будет передан водителю.';
-          if (type === 'to') {
-            console.log('📝 Адрес назначения сохранён как текст:', address);
+          // ⚠️ Адрес не найден — очищаем координаты, но оставляем текст
+          document.getElementById('route-error').textContent = '⚠️ Адрес не найден на карте. Будет использован текстовый адрес.';
+          if (type === 'from') {
+            document.getElementById('from-lat').value = '';
+            document.getElementById('from-lng').value = '';
+            currentFromLat = null;
+            currentFromLng = null;
+          } else {
+            document.getElementById('to-lat').value = '';
+            document.getElementById('to-lng').value = '';
+            currentToLat = null;
+            currentToLng = null;
           }
+          updateCoordsStatus();
+          updateRoute();
         }
       })
       .catch(error => {
         document.getElementById('route-loading').style.display = 'none';
-        document.getElementById('route-error').textContent = '❌ Ошибка геокодирования: ' + error.message;
-        statusEl.textContent = '⚠️ Ошибка поиска, адрес будет передан водителю';
-        statusEl.className = 'search-status error';
+        document.getElementById('route-error').textContent = '⚠️ Ошибка геокодирования. Будет использован текстовый адрес.';
         console.error('❌ Ошибка геокодирования:', error);
+        // Очищаем координаты при ошибке
+        if (type === 'from') {
+          document.getElementById('from-lat').value = '';
+          document.getElementById('from-lng').value = '';
+          currentFromLat = null;
+          currentFromLng = null;
+        } else {
+          document.getElementById('to-lat').value = '';
+          document.getElementById('to-lng').value = '';
+          currentToLat = null;
+          currentToLng = null;
+        }
+        updateCoordsStatus();
       });
   }
 
@@ -818,6 +685,7 @@
     const toLat = parseFloat(document.getElementById('to-lat').value);
     const toLng = parseFloat(document.getElementById('to-lng').value);
 
+    // Если нет координат — показываем заглушку
     if (isNaN(fromLat) || isNaN(fromLng) || isNaN(toLat) || isNaN(toLng)) {
       document.getElementById('estimated-distance').textContent = '—';
       document.getElementById('estimated-price-range').textContent = '—';
@@ -862,7 +730,7 @@
       })
       .catch(error => {
         document.getElementById('route-loading').style.display = 'none';
-        document.getElementById('route-error').textContent = '❌ Ошибка построения маршрута: ' + error.message;
+        document.getElementById('route-error').textContent = '⚠️ Ошибка построения маршрута';
         console.error('❌ Ошибка OSRM:', error);
       });
   }
@@ -879,20 +747,14 @@
 
   // ==================== GPS ====================
   function getMyLocation() {
-    if (isLocating) return;
-    isLocating = true;
-
     const statusEl = document.getElementById('location-status');
     statusEl.textContent = '⏳ Определение...';
     statusEl.className = 'location-status';
-
     if (!navigator.geolocation) {
       statusEl.textContent = '❌ GPS не поддерживается';
       statusEl.className = 'location-status location-error';
-      isLocating = false;
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       pos => {
         const lat = pos.coords.latitude;
@@ -905,23 +767,23 @@
         fromMarker.setLatLng([lat, lng]);
         if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
         map.setView([lat, lng], 15);
-        statusEl.textContent = `✅ ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        statusEl.textContent = '✅ Местоположение определено!';
         statusEl.className = 'location-status location-found';
         console.log('📍 GPS позиция:', lat, lng);
-        isLocating = false;
+        updateCoordsStatus();
         updateRoute();
       },
       err => {
-        let msg = '❌ ';
-        if (err.code === 1) msg += 'Разрешите доступ к геолокации';
+        let msg = '❌ Ошибка GPS: ';
+        if (err.code === 1) msg += 'Разрешите доступ';
         else if (err.code === 2) msg += 'Не удалось определить';
         else if (err.code === 3) msg += 'Превышено время';
         else msg += err.message;
         statusEl.textContent = msg;
         statusEl.className = 'location-status location-error';
-        isLocating = false;
+        console.warn('⚠️ Ошибка GPS:', err);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000 }
     );
   }
 
@@ -956,38 +818,36 @@
 
   // ==================== СОЗДАНИЕ ЗАКАЗА ====================
   function createOrder() {
-    // Проверяем авторизацию
-    if (!currentUser || !currentClientData) {
-      alert('⚠️ Пожалуйста, войдите в аккаунт для заказа такси');
-      showAuthModal();
+    // Проверка регистрации
+    if (!isRegistered) {
+      alert('⚠️ Только зарегистрированные пользователи могут заказывать такси!');
+      document.getElementById('regBanner').scrollIntoView({ behavior: 'smooth' });
       return;
     }
 
-    const fromText = document.getElementById('from-address').value.trim() || '📍 Моё местоположение';
-    const toText = document.getElementById('to-address').value.trim();
-    
+    const from = document.getElementById('from-address').value.trim();
+    const to = document.getElementById('to-address').value.trim();
     const fromLat = parseFloat(document.getElementById('from-lat').value);
     const fromLng = parseFloat(document.getElementById('from-lng').value);
     const toLat = parseFloat(document.getElementById('to-lat').value);
     const toLng = parseFloat(document.getElementById('to-lng').value);
 
-    if (!fromText || !toText) { 
-      alert('⚠️ Заполните адреса или установите точки на карте'); 
+    if (!from || !to) { 
+      alert('⚠️ Заполните адреса отправления и назначения'); 
       return; 
     }
-    
-    const finalFromLat = isNaN(fromLat) ? 0 : fromLat;
-    const finalFromLng = isNaN(fromLng) ? 0 : fromLng;
-    const finalToLat = isNaN(toLat) ? 0 : toLat;
-    const finalToLng = isNaN(toLng) ? 0 : toLng;
+
+    // 💡 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: координаты НЕ ОБЯЗАТЕЛЬНЫ
+    // Если координат нет — используем null, но адрес всё равно сохраняется
+    const hasFromCoords = !isNaN(fromLat) && !isNaN(fromLng) && fromLat && fromLng;
+    const hasToCoords = !isNaN(toLat) && !isNaN(toLng) && toLat && toLng;
 
     let distance = 0;
-    let price = 0;
-    if (finalFromLat !== 0 && finalFromLng !== 0 && finalToLat !== 0 && finalToLng !== 0) {
-      distance = getDistance(finalFromLat, finalFromLng, finalToLat, finalToLng);
-      price = calculatePrice(distance);
+    if (hasFromCoords && hasToCoords) {
+      distance = currentDistanceKm || getDistance(fromLat, fromLng, toLat, toLng);
     }
 
+    const price = calculatePrice(distance || 5); // если нет координат — базовая цена
     const paymentMethod = document.getElementById('payment-method').value;
     let bonusUsed = 0;
     let finalPrice = price;
@@ -1003,19 +863,28 @@
       finalPrice = price - bonusUsed;
     }
 
+    let clientName = 'Клиент';
+    const session = localStorage.getItem('clientSession');
+    if (session) { try { clientName = JSON.parse(session).name || 'Клиент'; } catch(e) {} }
+    if (currentUserData?.name) clientName = currentUserData.name;
+    if (currentUser) clientName = currentUser.displayName || currentUser.email || clientName;
+
+    // 📦 ФОРМИРУЕМ ЗАКАЗ ДЛЯ БД — ВСЕГДА ЕСТЬ АДРЕС, КООРДИНАТЫ — ОПЦИОНАЛЬНО
     const orderData = {
-      clientId: currentUser.uid,
-      clientName: currentClientData.name,
-      clientPhone: currentClientData.phone,
-      passportId: currentClientData.passportId,
-      from: fromText,
-      to: toText,
-      fromLat: finalFromLat,
-      fromLng: finalFromLng,
-      toLat: finalToLat,
-      toLng: finalToLng,
+      clientId: currentUser ? currentUser.uid : 'guest-' + Date.now(),
+      clientEmail: currentUser ? currentUser.email : 'guest@taxi.com',
+      clientName: clientName,
+      from: from,
+      to: to,
+      // Координаты могут быть null — это НОРМАЛЬНО для БД
+      fromLat: hasFromCoords ? fromLat : null,
+      fromLng: hasFromCoords ? fromLng : null,
+      toLat: hasToCoords ? toLat : null,
+      toLng: hasToCoords ? toLng : null,
+      // Флаг: есть ли координаты (для водителя)
+      hasCoords: hasFromCoords && hasToCoords,
       distance: distance,
-      duration: currentDurationMin,
+      duration: currentDurationMin || 0,
       price: price,
       paymentMethod: paymentMethod,
       bonusUsed: bonusUsed,
@@ -1023,12 +892,17 @@
       paymentStatus: 'pending',
       status: 'searching',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      aiNote: 'Поиск ближайших водителей...'
+      aiNote: hasFromCoords && hasToCoords ? 'Поиск ближайших водителей...' : 'Водителю передан текстовый адрес (координаты не найдены)',
+      // Доп. поле для водителя
+      driverInstructions: hasFromCoords && hasToCoords ? '' : '⚠️ Точные координаты не определены, используйте текстовый адрес'
     };
 
-    console.log('📝 Создание заказа:', orderData);
-
-    document.getElementById('order-status-message').innerHTML = '⏳ Создание заказа...';
+    // Показываем пользователю предупреждение, если нет координат
+    if (!hasFromCoords || !hasToCoords) {
+      if (!confirm('⚠️ Для одного из адресов не найдены координаты.\nЗаказ будет передан водителю с текстовым адресом.\nПродолжить?')) {
+        return;
+      }
+    }
 
     db.collection('orders').add(orderData)
       .then(docRef => {
@@ -1036,26 +910,25 @@
         document.getElementById('order-status-message').innerHTML = '✅ Заказ создан! Ищем водителей...';
         document.getElementById('order-status-card').classList.remove('hidden');
         
-        if (finalFromLat !== 0 && finalFromLng !== 0) {
-          return findAndOfferDrivers(docRef.id, finalFromLat, finalFromLng);
+        // Если есть координаты — ищем водителей рядом
+        if (hasFromCoords && hasToCoords) {
+          return findAndOfferDrivers(docRef.id, fromLat, fromLng);
         } else {
+          // Если координат нет — просто назначаем статус "waiting"
           return db.collection('orders').doc(docRef.id).update({
             status: 'waiting',
-            aiNote: 'Ожидание координат клиента'
+            aiNote: 'Ожидание водителя (адрес без координат)'
           });
         }
       })
       .then(() => {
-        document.getElementById('order-status-message').innerHTML = '📨 Заказ передан водителям';
+        document.getElementById('order-status-message').innerHTML = hasFromCoords && hasToCoords 
+          ? '📨 Предложение отправлено водителям' 
+          : '⏳ Заказ передан водителям (по текстовому адресу)';
       })
       .catch(error => {
+        alert('❌ Ошибка: ' + error.message);
         console.error('❌ Ошибка создания заказа:', error);
-        let errorMessage = error.message;
-        if (error.code === 'permission-denied') {
-          errorMessage = '❌ Нет прав на запись. Проверьте правила Firebase.';
-        }
-        alert('❌ Ошибка: ' + errorMessage);
-        document.getElementById('order-status-message').innerHTML = '❌ Ошибка создания заказа';
       });
   }
 
@@ -1089,6 +962,14 @@
           });
         }
       });
+
+      if (drivers.length === 0) {
+        await db.collection('orders').doc(orderId).update({
+          status: 'waiting',
+          aiNote: 'Нет водителей с координатами'
+        });
+        return;
+      }
 
       drivers.sort((a, b) => a.distance - b.distance);
       const nearest = drivers.slice(0, MAX_DRIVERS);
@@ -1134,12 +1015,11 @@
   function listenClientOrder() {
     if (orderUnsubscribe) orderUnsubscribe();
 
-    if (!currentUser) return;
+    const clientId = currentUser ? currentUser.uid : 'guest-' + Date.now();
 
+    // Используем простой запрос без orderBy для избежания ошибок индексов
     orderUnsubscribe = db.collection('orders')
-      .where('clientId', '==', currentUser.uid)
-      .orderBy('createdAt', 'desc')
-      .limit(1)
+      .where('clientId', '==', clientId)
       .onSnapshot(snapshot => {
         snapshot.docChanges().forEach(change => {
           if (change.type === 'added' || change.type === 'modified') {
@@ -1155,9 +1035,14 @@
         });
       }, error => {
         console.error('❌ Ошибка прослушки заказа:', error);
+        // Если ошибка связана с индексом — пробуем без фильтра
         if (error.message && error.message.includes('index')) {
-          document.getElementById('order-status-message').innerHTML = 
-            '⚠️ Требуется создать индекс в Firebase. Следуйте инструкции в консоли.';
+          // Временно отключаем прослушку
+          if (orderUnsubscribe) {
+            orderUnsubscribe();
+            orderUnsubscribe = null;
+          }
+          console.warn('⚠️ Прослушка отключена из-за ошибки индекса');
         }
       });
   }
@@ -1191,16 +1076,21 @@
       }
     }
 
+    // Показываем, есть ли координаты
+    const coordsInfo = data.hasCoords 
+      ? '✅ Координаты определены' 
+      : '⚠️ Только текстовый адрес (координаты не найдены)';
+
     let html = `
       <div class="order-status-card">
-        <div><strong>Откуда:</strong> ${data.from || '—'}</div>
-        <div><strong>Куда:</strong> ${data.to || '—'}</div>
+        <div><strong>Откуда:</strong> ${data.from}</div>
+        <div><strong>Куда:</strong> ${data.to}</div>
         <div><strong>Статус:</strong> <span class="status status-${data.status}">${statusMap[data.status] || data.status}</span></div>
         <div><strong>Цена:</strong> ${priceDisplay}</div>
         <div><strong>Дистанция:</strong> ${(data.distance || 0).toFixed(1)} км</div>
         <div><strong>🧠 ИИ:</strong> ${data.aiNote || '—'}</div>
+        <div><strong>📌 Координаты:</strong> ${coordsInfo}</div>
         <div><strong>🆔 Заказ:</strong> ${orderId.slice(0, 8)}...</div>
-        <div style="font-size:12px; color:#888; margin-top:4px;">🪪 ${data.passportId || ''} | 📞 ${data.clientPhone || ''}</div>
         ${bonusInfo}
       </div>
     `;
@@ -1237,6 +1127,7 @@
       document.getElementById('waze-btn').style.display = 'none';
     }
 
+    // Показываем маршрут если есть координаты
     if (data.fromLat && data.fromLng && data.toLat && data.toLng) {
       fromMarker.setLatLng([data.fromLat, data.fromLng]);
       if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
@@ -1252,10 +1143,6 @@
       currentToLat = data.toLat;
       currentToLng = data.toLng;
       setTimeout(updateRoute, 500);
-    }
-
-    if (data.status === 'completed') {
-      loadClientBonusBalance();
     }
   }
 
@@ -1300,16 +1187,8 @@
     }
   });
 
-  // ==================== ЗАПУСК ====================
-  console.log('🚕 Taxi Client v4.0 (с авторизацией) загружен');
-
-  // Пытаемся загрузить сессию, иначе показываем модалку
-  const hasSession = loadSession();
-  if (!hasSession) {
-    setTimeout(() => {
-      showAuthModal();
-    }, 300);
-  }
+  console.log('🚕 Taxi Client v4.0 — с поддержкой заказов без координат');
+  console.log('📌 Зарегистрирован: ' + (isRegistered ? 'ДА' : 'НЕТ (гость)'));
 </script>
 </body>
 </html>
