@@ -49,6 +49,7 @@
     .badge-completed { background:#6c757d; color:white; }
     .badge-cancelled { background:#dc3545; color:white; }
     .badge-waiting { background:#fd7e14; color:white; }
+    .badge-offering { background:#17a2b8; color:white; }
     .click-hint { background:#e8f4f8; padding:8px 12px; border-radius:6px; font-size:13px; color:#0056b3; margin-bottom:10px; }
     .gps-btn { background:#28a745; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; }
     .gps-btn:hover { background:#218838; }
@@ -60,15 +61,15 @@
     .driver-marker { background:none; border:none; font-size:36px; line-height:1; }
     
     /* Бонусная панель */
-    .bonus-panel { background:linear-gradient(135deg, #f9d976, #f39b7b); padding:15px 20px; border-radius:12px; margin-bottom:15px; color:#1b2a3a; }
-    .bonus-panel h3 { margin-bottom:8px; font-size:18px; }
-    .bonus-panel .balance { font-size:28px; font-weight:700; }
-    .bonus-panel .level { display:inline-block; padding:2px 14px; border-radius:20px; background:rgba(255,255,255,0.3); font-weight:600; font-size:13px; }
-    .bonus-panel .stats { display:flex; gap:20px; flex-wrap:wrap; font-size:14px; margin-top:5px; }
-    .bonus-history { max-height:200px; overflow-y:auto; font-size:13px; }
-    .bonus-history .item { padding:5px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between; }
-    .bonus-earned { color:#28a745; }
-    .bonus-spent { color:#dc3545; }
+    .bonus-panel { background:linear-gradient(135deg, #f9d976, #f39b7b); padding:12px 18px; border-radius:12px; margin-bottom:15px; color:#1b2a3a; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; }
+    .bonus-panel .balance { font-size:22px; font-weight:700; }
+    .bonus-panel .label { font-size:14px; font-weight:600; }
+    .bonus-panel .hint { font-size:11px; opacity:0.7; }
+    
+    /* Цена */
+    .price-panel { background:#e8f4f8; padding:12px 16px; border-radius:10px; margin:10px 0; }
+    .price-panel .price { font-size:22px; font-weight:700; color:#007bff; }
+    .price-panel .small { font-size:11px; color:#666; }
   </style>
 </head>
 <body>
@@ -81,27 +82,16 @@
   </div>
   <h1>🚕 Taxi – Клиент</h1>
 
-  <!-- БОНУСНАЯ ПАНЕЛЬ -->
-  <div id="bonus-panel" class="card bonus-panel hidden">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-      <div>
-        <h3>🎁 Мои бонусы</h3>
-        <div class="balance" id="bonus-balance">0 ₽</div>
-        <div style="margin-top:5px;">
-          <span class="level" id="bonus-level">Bronze</span>
-          <span style="margin-left:15px;font-size:13px;">Всего заработано: <strong id="bonus-total-earned">0</strong> ₽</span>
-        </div>
-      </div>
-      <div>
-        <button class="warning" onclick="toggleBonusHistory()" style="font-size:13px;padding:6px 16px;">📜 История</button>
-      </div>
+  <!-- БОНУСНЫЙ БАЛАНС -->
+  <div id="bonus-panel" class="bonus-panel hidden">
+    <div>
+      <span class="label">🎁 Ваш бонусный баланс</span>
+      <span class="balance" id="client-bonus-balance">0.00 ₪</span>
     </div>
-    <div id="bonus-history-container" class="bonus-history hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,0.1);">
-      <div id="bonus-history-list"></div>
-    </div>
+    <span class="hint">💡 2% от каждой поездки</span>
   </div>
 
-  <!-- Форма заказа -->
+  <!-- ФОРМА ЗАКАЗА -->
   <div class="card">
     <h3>📍 Создать заказ</h3>
     <div class="click-hint">
@@ -110,16 +100,52 @@
     </div>
     <div class="flex-row">
       <div class="flex-col">
-        <input id="from-address" placeholder="Откуда (адрес)" value="Красная площадь, Москва">
-        <input id="to-address" placeholder="Куда (адрес)" value="Вокзал">
+        <input id="from-address" placeholder="Откуда (адрес)" value="Тель-Авив, ул. Алленби 1">
+        <input id="to-address" placeholder="Куда (адрес)" value="Иерусалим, Центральный автовокзал">
         <div style="display:flex; gap:10px;">
-          <input id="from-lat" placeholder="Широта" value="55.7539" style="width:50%;">
-          <input id="from-lng" placeholder="Долгота" value="37.6208" style="width:50%;">
+          <input id="from-lat" placeholder="Широта" value="32.0853" style="width:50%;">
+          <input id="from-lng" placeholder="Долгота" value="34.7818" style="width:50%;">
         </div>
-        <div style="display:flex; gap:10px; align-items:center; margin:10px 0;">
-          <input type="checkbox" id="use-bonus" style="width:20px; margin:0;">
-          <label for="use-bonus" style="font-size:14px; color:#333;">Использовать бонусы (до 50% от стоимости)</label>
+        <div style="display:flex; gap:10px;">
+          <input id="to-lat" placeholder="Широта назначения" value="31.7683" style="width:50%;">
+          <input id="to-lng" placeholder="Долгота назначения" value="35.2137" style="width:50%;">
         </div>
+
+        <!-- ЦЕНА -->
+        <div class="price-panel">
+          <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+            <div>
+              <strong>💰 Предварительная стоимость:</strong>
+              <span class="price" id="estimated-price-range">—</span>
+            </div>
+            <div style="font-size:12px; color:#666;">
+              📍 Расстояние: <span id="estimated-distance">—</span> км
+            </div>
+          </div>
+          <div class="small" style="margin-top:5px;">
+            Тариф: 12.46 ₪ посадка + <span id="tariff-display">1.95</span> ₪/км 
+            (дневной тариф) • ±5% колебание
+          </div>
+        </div>
+
+        <!-- СПОСОБ ОПЛАТЫ -->
+        <div style="margin:10px 0;">
+          <label style="font-weight:600; display:block; margin-bottom:5px;">💳 Способ оплаты:</label>
+          <select id="payment-method" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+            <option value="cash">💰 Наличные</option>
+            <option value="card">💳 Карта</option>
+            <option value="bonus">🎁 Бонусы (шекели)</option>
+          </select>
+        </div>
+
+        <div id="bonus-payment-section" style="display:none; margin:10px 0;">
+          <label style="font-weight:600; display:block; margin-bottom:5px;">🎁 Сколько бонусов использовать (шекелей):</label>
+          <input type="number" id="bonus-amount" placeholder="Максимум 50% от стоимости" min="0" value="0">
+          <div style="font-size:12px; color:#666; margin-top:5px;">
+            Доступно: <span id="bonus-balance-display">0.00</span> ₪
+          </div>
+        </div>
+
         <button class="primary" onclick="createOrder()" style="width:100%;">🚖 Заказать такси</button>
         <div id="order-status-message" style="margin-top:10px;font-weight:600;"></div>
       </div>
@@ -130,7 +156,7 @@
     </div>
   </div>
 
-  <!-- Статус заказа -->
+  <!-- СТАТУС ЗАКАЗА -->
   <div id="order-status-card" class="card hidden">
     <h3>📋 Ваш заказ</h3>
     <div id="order-details"></div>
@@ -160,6 +186,9 @@
   const db = firebase.firestore();
   const auth = firebase.auth();
 
+  // ============================================================
+  // 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+  // ============================================================
   let currentUser = null;
   let currentUserData = null;
   let map = null;
@@ -171,20 +200,79 @@
   let driverUnsubscribe = null;
   let currentDriverLat = null;
   let currentDriverLng = null;
-  let currentClientLat = null;
-  let currentClientLng = null;
-  let bonusHistoryVisible = false;
+  let currentClientLat = 32.0853;
+  let currentClientLng = 34.7818;
+  let currentToLat = 31.7683;
+  let currentToLng = 35.2137;
 
-  // ===== АУТЕНТИФИКАЦИЯ =====
+  // ============================================================
+  // 2. ТАРИФЫ ИЗРАИЛЯ
+  // ============================================================
+  const TARIFF_ISRAEL = {
+    BASE_PRICE: 12.46,
+    DAY_RATE: 1.95,
+    NIGHT_RATE: 2.34,
+    SHABBAT_RATE: 2.73,
+    LONG_DISTANCE_RATE: 1.84,
+    LONG_DISTANCE_THRESHOLD: 10,
+    CURRENCY: '₪'
+  };
+
+  function getCurrentTariff() {
+    const now = new Date();
+    const day = now.getDay();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const time = hours + minutes / 60;
+
+    const isShabbat = (day === 6) || (day === 5 && hours >= 16);
+
+    if (isShabbat) return TARIFF_ISRAEL.SHABBAT_RATE;
+    if (time >= 21 || time < 5.5) return TARIFF_ISRAEL.NIGHT_RATE;
+    return TARIFF_ISRAEL.DAY_RATE;
+  }
+
+  function calculatePrice(distanceKm) {
+    let rate = getCurrentTariff();
+    if (distanceKm > TARIFF_ISRAEL.LONG_DISTANCE_THRESHOLD && rate === TARIFF_ISRAEL.DAY_RATE) {
+      rate = TARIFF_ISRAEL.LONG_DISTANCE_RATE;
+    }
+    let price = TARIFF_ISRAEL.BASE_PRICE + (distanceKm * rate);
+    return Math.round(price * 100) / 100;
+  }
+
+  function calculatePriceWithRange(distanceKm) {
+    const basePrice = calculatePrice(distanceKm);
+    const variance = basePrice * 0.05;
+    return {
+      min: Math.round((basePrice - variance) * 100) / 100,
+      max: Math.round((basePrice + variance) * 100) / 100,
+      average: basePrice,
+      display: `${(basePrice - variance).toFixed(2)} – ${(basePrice + variance).toFixed(2)} ₪`
+    };
+  }
+
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  // ============================================================
+  // 3. АУТЕНТИФИКАЦИЯ
+  // ============================================================
   auth.onAuthStateChanged(async function(user) {
     if (user) {
       currentUser = user;
       document.getElementById('user-email').textContent = '👤 ' + user.email;
       await loadUserData();
-      await loadBonusData();
+      await loadClientBonusBalance();
       initMap();
       listenClientOrder();
       setTimeout(getMyLocation, 500);
+      updateEstimatedPrice();
     } else {
       const session = localStorage.getItem('clientSession');
       if (session) {
@@ -192,10 +280,11 @@
           const data = JSON.parse(session);
           document.getElementById('user-email').textContent = '👤 ' + (data.name || 'Клиент');
           await loadUserData();
-          await loadBonusData();
+          await loadClientBonusBalance();
           initMap();
           listenClientOrder();
           setTimeout(getMyLocation, 500);
+          updateEstimatedPrice();
         } catch(e) {
           window.location.href = 'index.html';
         }
@@ -231,21 +320,19 @@
     });
   }
 
-  // ===== БОНУСНАЯ СИСТЕМА =====
-  async function loadBonusData() {
+  // ============================================================
+  // 4. БОНУСЫ КЛИЕНТА
+  // ============================================================
+  async function loadClientBonusBalance() {
     const clientId = currentUser ? currentUser.uid : null;
     if (!clientId) return;
 
     try {
       const doc = await db.collection('users_bonus').doc(clientId).get();
+      let balance = 0;
       if (doc.exists) {
-        const data = doc.data();
-        document.getElementById('bonus-balance').textContent = data.balance?.toFixed(2) + ' ₽' || '0 ₽';
-        document.getElementById('bonus-level').textContent = data.level || 'Bronze';
-        document.getElementById('bonus-total-earned').textContent = data.totalEarned?.toFixed(2) || '0';
-        document.getElementById('bonus-panel').classList.remove('hidden');
+        balance = doc.data().balance || 0;
       } else {
-        // Создаём документ для нового клиента
         await db.collection('users_bonus').doc(clientId).set({
           balance: 0,
           totalEarned: 0,
@@ -253,116 +340,21 @@
           level: 'Bronze',
           lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
         });
-        document.getElementById('bonus-panel').classList.remove('hidden');
-        document.getElementById('bonus-balance').textContent = '0 ₽';
-        document.getElementById('bonus-level').textContent = 'Bronze';
-        document.getElementById('bonus-total-earned').textContent = '0';
       }
+      document.getElementById('client-bonus-balance').textContent = balance.toFixed(2) + ' ₪';
+      document.getElementById('bonus-balance-display').textContent = balance.toFixed(2);
+      document.getElementById('bonus-panel').classList.remove('hidden');
     } catch (e) {
       console.error('Ошибка загрузки бонусов:', e);
     }
   }
 
-  function toggleBonusHistory() {
-    bonusHistoryVisible = !bonusHistoryVisible;
-    const container = document.getElementById('bonus-history-container');
-    if (bonusHistoryVisible) {
-      container.classList.remove('hidden');
-      loadBonusHistory();
-    } else {
-      container.classList.add('hidden');
-    }
-  }
-
-  async function loadBonusHistory() {
-    const clientId = currentUser ? currentUser.uid : null;
-    if (!clientId) return;
-
-    try {
-      const snapshot = await db.collection('bonus_transactions')
-        .where('clientId', '==', clientId)
-        .orderBy('timestamp', 'desc')
-        .limit(20)
-        .get();
-
-      const list = document.getElementById('bonus-history-list');
-      let html = '';
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const amount = data.amount || 0;
-        const type = data.type || 'earned';
-        const sign = type === 'earned' ? '+' : '-';
-        const cls = type === 'earned' ? 'bonus-earned' : 'bonus-spent';
-        const desc = data.description || '—';
-        const date = data.timestamp?.toDate?.()?.toLocaleString() || '—';
-        html += `<div class="item">
-          <span>${desc}</span>
-          <span class="${cls}">${sign} ${amount.toFixed(2)} ₽</span>
-        </div>`;
-      });
-      list.innerHTML = html || 'Нет транзакций';
-    } catch (e) {
-      console.error('Ошибка загрузки истории:', e);
-    }
-  }
-
-  // ===== ОПРЕДЕЛЕНИЕ МЕСТОПОЛОЖЕНИЯ =====
-  function getMyLocation() {
-    const statusEl = document.getElementById('location-status');
-    statusEl.textContent = '⏳ Определение местоположения...';
-    statusEl.className = 'location-status';
-
-    if (!navigator.geolocation) {
-      statusEl.textContent = '❌ Ваш браузер не поддерживает GPS';
-      statusEl.className = 'location-status location-error';
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      function(position) {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        
-        document.getElementById('from-lat').value = lat.toFixed(6);
-        document.getElementById('from-lng').value = lng.toFixed(6);
-        document.getElementById('from-address').value = '📍 Моё местоположение';
-        
-        currentClientLat = lat;
-        currentClientLng = lng;
-
-        updateClientMarker(lat, lng);
-        map.setView([lat, lng], 16);
-
-        statusEl.textContent = '✅ Местоположение определено!';
-        statusEl.className = 'location-status location-found';
-      },
-      function(error) {
-        let msg = '❌ Ошибка GPS: ';
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            msg += 'Разрешите доступ к геолокации';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            msg += 'Не удалось определить местоположение';
-            break;
-          case error.TIMEOUT:
-            msg += 'Превышено время ожидания';
-            break;
-          default:
-            msg += error.message;
-        }
-        statusEl.textContent = msg;
-        statusEl.className = 'location-status location-error';
-        alert('⚠️ ' + msg + '\n\nВы можете кликнуть на карту, чтобы указать точку отправления.');
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-    );
-  }
-
-  // ===== КАРТА =====
+  // ============================================================
+  // 5. КАРТА (центр — Израиль)
+  // ============================================================
   function initMap() {
     if (map) return;
-    map = L.map('map').setView([55.7558, 37.6173], 13);
+    map = L.map('map').setView([32.0853, 34.7818], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
     }).addTo(map);
@@ -373,45 +365,30 @@
       document.getElementById('from-lat').value = lat;
       document.getElementById('from-lng').value = lng;
       document.getElementById('from-address').value = '📍 Точка на карте';
-      
       currentClientLat = parseFloat(lat);
       currentClientLng = parseFloat(lng);
-      
       updateClientMarker(currentClientLat, currentClientLng);
+      updateEstimatedPrice();
     });
   }
 
   function updateClientMarker(lat, lng) {
     if (clientMarker) map.removeLayer(clientMarker);
-    const clientIcon = L.divIcon({
-      className: 'client-marker',
-      html: '📍',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32]
-    });
-    clientMarker = L.marker([lat, lng], { icon: clientIcon })
-      .addTo(map)
-      .bindPopup('📍 <b>Вы здесь</b>');
+    const icon = L.divIcon({ className: 'client-marker', html: '📍', iconSize: [32, 32], iconAnchor: [16, 32] });
+    clientMarker = L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('📍 Вы здесь');
     currentClientLat = lat;
     currentClientLng = lng;
   }
 
-  function updateDriverMarker(lat, lng, driverName) {
+  function updateDriverMarker(lat, lng, name) {
     if (driverMarker) map.removeLayer(driverMarker);
-    const driverIcon = L.divIcon({
-      className: 'driver-marker',
-      html: '🚗',
-      iconSize: [40, 40],
-      iconAnchor: [20, 40]
-    });
-    driverMarker = L.marker([lat, lng], { icon: driverIcon })
-      .addTo(map)
-      .bindPopup('🚗 <b>' + (driverName || 'Водитель') + '</b>');
+    const icon = L.divIcon({ className: 'driver-marker', html: '🚗', iconSize: [40, 40], iconAnchor: [20, 40] });
+    driverMarker = L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('🚗 ' + (name || 'Водитель'));
     currentDriverLat = lat;
     currentDriverLng = lng;
-    const wazeBtn = document.getElementById('waze-btn');
+    const btn = document.getElementById('waze-btn');
     if (currentClientLat && currentClientLng && currentDriverLat && currentDriverLng) {
-      wazeBtn.style.display = 'inline-block';
+      btn.style.display = 'inline-block';
     }
     showRoute(currentClientLat, currentClientLng, lat, lng);
   }
@@ -419,10 +396,7 @@
   function showRoute(lat1, lng1, lat2, lng2) {
     if (routeLayer) map.removeLayer(routeLayer);
     routeLayer = L.polyline([[lat1, lng1], [lat2, lng2]], {
-      color: '#007bff',
-      weight: 3,
-      dashArray: '8, 8',
-      opacity: 0.7
+      color: '#007bff', weight: 3, dashArray: '8, 8', opacity: 0.7
     }).addTo(map);
   }
 
@@ -431,38 +405,114 @@
       alert('⚠️ Нет данных для построения маршрута');
       return;
     }
-    const fromLat = currentClientLat;
-    const fromLng = currentClientLng;
-    const toLat = currentDriverLat;
-    const toLng = currentDriverLng;
-    const wazeUrl = `https://waze.com/ul?ll=${toLat},${toLng}&navigate=yes&from=${fromLat},${fromLng}`;
-    window.open(wazeUrl, '_blank');
+    const url = `https://waze.com/ul?ll=${currentDriverLat},${currentDriverLng}&navigate=yes&from=${currentClientLat},${currentClientLng}`;
+    window.open(url, '_blank');
   }
 
-  // ===== СОЗДАНИЕ ЗАКАЗА =====
-  function createOrder() {
-    if (!currentUser && !localStorage.getItem('clientSession')) {
-      alert('⚠️ Сначала войдите или укажите имя и телефон на главной странице');
+  // ============================================================
+  // 6. GPS
+  // ============================================================
+  function getMyLocation() {
+    const statusEl = document.getElementById('location-status');
+    statusEl.textContent = '⏳ Определение...';
+    statusEl.className = 'location-status';
+
+    if (!navigator.geolocation) {
+      statusEl.textContent = '❌ GPS не поддерживается';
+      statusEl.className = 'location-status location-error';
       return;
     }
 
-    const from = document.getElementById('from-address').value.trim();
-    const to = document.getElementById('to-address').value.trim();
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        document.getElementById('from-lat').value = lat.toFixed(6);
+        document.getElementById('from-lng').value = lng.toFixed(6);
+        document.getElementById('from-address').value = '📍 Моё местоположение';
+        currentClientLat = lat;
+        currentClientLng = lng;
+        updateClientMarker(lat, lng);
+        map.setView([lat, lng], 16);
+        statusEl.textContent = '✅ Местоположение определено!';
+        statusEl.className = 'location-status location-found';
+        updateEstimatedPrice();
+      },
+      err => {
+        let msg = '❌ Ошибка GPS: ';
+        if (err.code === 1) msg += 'Разрешите доступ к геолокации';
+        else if (err.code === 2) msg += 'Не удалось определить местоположение';
+        else if (err.code === 3) msg += 'Превышено время ожидания';
+        else msg += err.message;
+        statusEl.textContent = msg;
+        statusEl.className = 'location-status location-error';
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  }
+
+  // ============================================================
+  // 7. ОБНОВЛЕНИЕ ЦЕНЫ
+  // ============================================================
+  function updateEstimatedPrice() {
     const lat = parseFloat(document.getElementById('from-lat').value);
     const lng = parseFloat(document.getElementById('from-lng').value);
+    const toLat = parseFloat(document.getElementById('to-lat').value) || 31.7683;
+    const toLng = parseFloat(document.getElementById('to-lng').value) || 35.2137;
+
+    if (!isNaN(lat) && !isNaN(lng)) {
+      const dist = getDistance(lat, lng, toLat, toLng);
+      const priceRange = calculatePriceWithRange(dist);
+      const tariff = getCurrentTariff();
+
+      document.getElementById('estimated-distance').textContent = dist.toFixed(1);
+      document.getElementById('estimated-price-range').textContent = priceRange.display;
+      document.getElementById('tariff-display').textContent = tariff.toFixed(2);
+    }
+  }
+
+  // События для обновления цены
+  document.getElementById('from-lat').addEventListener('change', updateEstimatedPrice);
+  document.getElementById('from-lng').addEventListener('change', updateEstimatedPrice);
+  document.getElementById('to-lat').addEventListener('change', updateEstimatedPrice);
+  document.getElementById('to-lng').addEventListener('change', updateEstimatedPrice);
+
+  // ============================================================
+  // 8. СОЗДАНИЕ ЗАКАЗА
+  // ============================================================
+  function createOrder() {
+    const from = document.getElementById('from-address').value.trim();
+    const to = document.getElementById('to-address').value.trim();
+    const fromLat = parseFloat(document.getElementById('from-lat').value);
+    const fromLng = parseFloat(document.getElementById('from-lng').value);
+    const toLat = parseFloat(document.getElementById('to-lat').value) || 31.7683;
+    const toLng = parseFloat(document.getElementById('to-lng').value) || 35.2137;
 
     if (!from || !to) { alert('⚠️ Заполните адреса'); return; }
-    if (isNaN(lat) || isNaN(lng)) { alert('⚠️ Установите точку на карте или введите координаты'); return; }
+    if (isNaN(fromLat) || isNaN(fromLng)) { alert('⚠️ Установите точку на карте'); return; }
+
+    const dist = getDistance(fromLat, fromLng, toLat, toLng);
+    const price = calculatePrice(dist);
+    const paymentMethod = document.getElementById('payment-method').value;
+
+    let bonusUsed = 0;
+    let finalPrice = price;
+
+    if (paymentMethod === 'bonus') {
+      const bonusInput = parseFloat(document.getElementById('bonus-amount').value) || 0;
+      const maxBonus = price * 0.5;
+      if (bonusInput > maxBonus) {
+        alert(`⚠️ Максимум можно использовать ${maxBonus.toFixed(2)} ₪ (50% от стоимости)`);
+        return;
+      }
+      bonusUsed = bonusInput;
+      finalPrice = price - bonusUsed;
+    }
 
     let clientName = 'Клиент';
     const session = localStorage.getItem('clientSession');
-    if (session) {
-      try { clientName = JSON.parse(session).name || 'Клиент'; } catch(e) {}
-    }
-    if (currentUserData && currentUserData.name) clientName = currentUserData.name;
-
-    const useBonus = document.getElementById('use-bonus').checked;
-    const orderPrice = Math.round(Math.random() * 300 + 100);
+    if (session) { try { clientName = JSON.parse(session).name || 'Клиент'; } catch(e) {} }
+    if (currentUserData?.name) clientName = currentUserData.name;
 
     const orderData = {
       clientId: currentUser ? currentUser.uid : 'guest-' + Date.now(),
@@ -470,130 +520,104 @@
       clientName: clientName,
       from: from,
       to: to,
-      fromLat: lat,
-      fromLng: lng,
-      status: 'created',
-      price: orderPrice,
-      useBonus: useBonus,
-      bonusDiscount: 0,
-      finalPrice: orderPrice,
+      fromLat: fromLat,
+      fromLng: fromLng,
+      toLat: toLat,
+      toLng: toLng,
+      distance: dist,
+      price: price,
+      paymentMethod: paymentMethod,
+      bonusUsed: bonusUsed,
+      finalPrice: finalPrice,
+      paymentStatus: 'pending',
+      status: 'searching',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      aiNote: 'Поиск ближайшего водителя...'
+      aiNote: 'Поиск ближайших водителей...'
     };
 
-    // Если используем бонусы, применяем скидку
-    if (useBonus) {
-      applyBonusDiscount(orderData).then(updatedData => {
-        return saveOrder(updatedData);
-      });
-    } else {
-      saveOrder(orderData);
-    }
-  }
-
-  async function applyBonusDiscount(orderData) {
-    const clientId = currentUser ? currentUser.uid : null;
-    if (!clientId) return orderData;
-
-    try {
-      const bonusDoc = await db.collection('users_bonus').doc(clientId).get();
-      if (bonusDoc.exists) {
-        const bonusData = bonusDoc.data();
-        const balance = bonusData.balance || 0;
-        const maxDiscount = orderData.price * 0.5; // максимум 50%
-        const discount = Math.min(balance, maxDiscount);
-        
-        if (discount > 0) {
-          orderData.bonusDiscount = discount;
-          orderData.finalPrice = orderData.price - discount;
-          orderData.aiNote += ` (бонус: -${discount}₽)`;
-        }
-      }
-    } catch (e) {
-      console.error('Ошибка применения бонуса:', e);
-    }
-    return orderData;
-  }
-
-  function saveOrder(orderData) {
     db.collection('orders').add(orderData)
       .then(docRef => {
         currentOrderId = docRef.id;
-        document.getElementById('order-status-message').innerHTML = '✅ Заказ создан! Ищем водителя...';
+        document.getElementById('order-status-message').innerHTML = '✅ Заказ создан! Ищем водителей...';
         document.getElementById('order-status-card').classList.remove('hidden');
-        return assignNearestDriver(docRef.id, orderData.fromLat, orderData.fromLng);
+        return findAndOfferDrivers(docRef.id, fromLat, fromLng);
       })
       .then(() => {
-        document.getElementById('order-status-message').innerHTML = '✅ Водитель назначен! Ожидайте подтверждения.';
+        document.getElementById('order-status-message').innerHTML = '📨 Предложение отправлено водителям';
       })
       .catch(error => {
         alert('❌ Ошибка: ' + error.message);
       });
   }
 
-  // ===== ИИ-НАЗНАЧЕНИЕ =====
-  function assignNearestDriver(orderId, fromLat, fromLng) {
-    return db.collection('drivers')
+  // ============================================================
+  // 9. ИИ-ДИСПЕТЧЕР (ПОИСК И ПРЕДЛОЖЕНИЕ ВОДИТЕЛЯМ)
+  // ============================================================
+  async function findAndOfferDrivers(orderId, fromLat, fromLng) {
+    const MAX_DRIVERS = 5;
+    const OFFER_TIMEOUT = 60;
+
+    const snapshot = await db.collection('drivers')
       .where('role', '==', 'driver')
       .where('available', '==', true)
-      .get()
-      .then(snapshot => {
-        if (snapshot.empty) {
-          return db.collection('orders').doc(orderId).update({
-            status: 'waiting',
-            aiNote: 'Нет свободных водителей'
-          });
-        }
+      .get();
 
-        let nearest = null;
-        let minDist = Infinity;
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.lat && data.lng) {
-            const dist = getDistance(fromLat, fromLng, data.lat, data.lng);
-            if (dist < minDist) {
-              minDist = dist;
-              nearest = { id: doc.id, data: data, dist: dist };
-            }
-          }
-        });
-
-        if (!nearest) {
-          return db.collection('orders').doc(orderId).update({
-            status: 'error',
-            aiNote: 'У водителей нет координат'
-          });
-        }
-
-        const driverId = nearest.id;
-        const driverData = nearest.data;
-
-        return db.collection('orders').doc(orderId).update({
-          driverId: driverId,
-          driverEmail: driverData.email,
-          driverName: driverData.fullName || 'Водитель',
-          driverPhone: driverData.phone || '—',
-          driverCar: driverData.carModel + ' ' + (driverData.carNumber || ''),
-          status: 'assigned',
-          aiNote: 'Назначен водитель ' + (driverData.fullName || driverData.email) + ' (расст. ' + nearest.dist.toFixed(2) + ' км)'
-        })
-        .then(() => {
-          return db.collection('drivers').doc(driverId).update({
-            available: false
-          });
-        });
+    if (snapshot.empty) {
+      await db.collection('orders').doc(orderId).update({
+        status: 'waiting',
+        aiNote: 'Нет свободных водителей'
       });
+      return;
+    }
+
+    const drivers = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.lat && data.lng) {
+        drivers.push({
+          id: doc.id,
+          data: data,
+          distance: getDistance(fromLat, fromLng, data.lat, data.lng)
+        });
+      }
+    });
+
+    drivers.sort((a, b) => a.distance - b.distance);
+    const nearest = drivers.slice(0, MAX_DRIVERS);
+    const offeredIds = nearest.map(d => d.id);
+
+    await db.collection('orders').doc(orderId).update({
+      status: 'offering',
+      offeredTo: offeredIds,
+      offerExpiresAt: new Date(Date.now() + OFFER_TIMEOUT * 1000),
+      aiNote: `Предложено ${offeredIds.length} водителям`
+    });
+
+    await db.collection('ai_logs').add({
+      orderId: orderId,
+      decision: `Предложено ${offeredIds.length} водителям (дистанция: ${nearest.map(d => d.distance.toFixed(1)).join(', ')} км)`,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    setTimeout(() => checkOfferExpired(orderId), OFFER_TIMEOUT * 1000);
   }
 
-  function getDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  async function checkOfferExpired(orderId) {
+    const doc = await db.collection('orders').doc(orderId).get();
+    if (!doc.exists) return;
+    const data = doc.data();
+    if (data.status !== 'offering') return;
+    if (new Date() > data.offerExpiresAt.toDate()) {
+      await db.collection('orders').doc(orderId).update({
+        status: 'waiting',
+        aiNote: 'Время на принятие истекло'
+      });
+    }
   }
 
-  // ===== СЛУШАЕМ ЗАКАЗ =====
+  // ============================================================
+  // 10. СЛУШАЕМ ЗАКАЗЫ КЛИЕНТА
+  // ============================================================
   function listenClientOrder() {
     if (orderUnsubscribe) orderUnsubscribe();
 
@@ -612,15 +636,15 @@
             updateOrderUI(orderId, data);
           }
         });
-      }, error => {
-        console.error('Ошибка прослушки заказа:', error);
-      });
+      }, error => console.error('Ошибка прослушки заказа:', error));
   }
 
   function updateOrderUI(orderId, data) {
     document.getElementById('order-status-card').classList.remove('hidden');
 
     const statusMap = {
+      'searching': '🔍 Поиск водителей...',
+      'offering': '📨 Предложение водителям',
       'created': '🟡 Создан',
       'assigned': '🔵 Водитель назначен',
       'accepted': '🟢 Заказ принят',
@@ -630,19 +654,16 @@
       'waiting': '⏳ Ожидание водителя'
     };
 
-    const statusText = statusMap[data.status] || data.status;
-    const statusClass = 'status-' + data.status;
-
-    let priceDisplay = `${data.price} ₽`;
-    if (data.bonusDiscount && data.bonusDiscount > 0) {
-      priceDisplay = `<s>${data.price} ₽</s> → <strong>${data.finalPrice} ₽</strong> (скидка ${data.bonusDiscount} ₽ бонусами)`;
+    let priceDisplay = `${data.price} ₪`;
+    if (data.bonusUsed && data.bonusUsed > 0) {
+      priceDisplay = `<s>${data.price} ₪</s> → <strong>${data.finalPrice} ₪</strong> (скидка ${data.bonusUsed} ₪)`;
     }
 
     let html = `
       <div class="order-status-card">
         <div><strong>Откуда:</strong> ${data.from}</div>
         <div><strong>Куда:</strong> ${data.to}</div>
-        <div><strong>Статус:</strong> <span class="status ${statusClass}">${statusText}</span></div>
+        <div><strong>Статус:</strong> <span class="status status-${data.status}">${statusMap[data.status] || data.status}</span></div>
         <div><strong>Цена:</strong> ${priceDisplay}</div>
         <div><strong>🧠 ИИ:</strong> ${data.aiNote || '—'}</div>
         <div><strong>🆔 Заказ:</strong> ${orderId.slice(0, 8)}...</div>
@@ -652,7 +673,7 @@
     document.getElementById('order-details').innerHTML = html;
 
     const cancelBtn = document.getElementById('cancel-btn');
-    if (['created', 'assigned', 'waiting'].includes(data.status)) {
+    if (['searching', 'offering', 'created', 'assigned', 'waiting'].includes(data.status)) {
       cancelBtn.style.display = 'inline-block';
     } else {
       cancelBtn.style.display = 'none';
@@ -669,12 +690,12 @@
       driverUnsubscribe = db.collection('drivers').doc(data.driverId)
         .onSnapshot(doc => {
           if (doc.exists) {
-            const driverData = doc.data();
-            if (driverData.lat && driverData.lng) {
-              updateDriverMarker(driverData.lat, driverData.lng, driverData.fullName || driverData.email);
+            const d = doc.data();
+            if (d.lat && d.lng) {
+              updateDriverMarker(d.lat, d.lng, d.fullName || d.email);
             }
           }
-        }, error => console.error('Ошибка прослушки водителя:', error));
+        });
     } else {
       driverInfo.classList.add('hidden');
       if (driverMarker) { map.removeLayer(driverMarker); driverMarker = null; }
@@ -685,11 +706,16 @@
     if (data.fromLat && data.fromLng) {
       updateClientMarker(data.fromLat, data.fromLng);
     }
+
+    // Если заказ завершён — обновляем баланс бонусов
+    if (data.status === 'completed') {
+      loadClientBonusBalance();
+    }
   }
 
   function cancelOrder() {
     if (!currentOrderId) { alert('Нет активного заказа'); return; }
-    if (!confirm('⚠️ Вы уверены, что хотите отменить заказ?')) return;
+    if (!confirm('⚠️ Отменить заказ?')) return;
     db.collection('orders').doc(currentOrderId).update({
       status: 'cancelled',
       aiNote: 'Отменён клиентом'
@@ -700,6 +726,77 @@
     })
     .catch(e => alert('❌ Ошибка: ' + e.message));
   }
+
+  // ============================================================
+  // 11. БОНУС ЗА ПОЕЗДКУ (2%)
+  // ============================================================
+  async function calculateAndAddBonus(orderId, orderData) {
+    const clientId = orderData.clientId;
+    if (!clientId || clientId.startsWith('guest-')) return;
+
+    const MIN_DISTANCE = 2.0;
+    const BONUS_RATE = 0.02;
+
+    let distanceKm = orderData.distance || 2.5;
+    if (orderData.fromLat && orderData.fromLng && orderData.toLat && orderData.toLng) {
+      distanceKm = getDistance(orderData.fromLat, orderData.fromLng, orderData.toLat, orderData.toLng);
+    }
+
+    if (distanceKm < MIN_DISTANCE) {
+      await db.collection('ai_logs').add({
+        orderId: orderId,
+        decision: `Бонус не начислен (дистанция ${distanceKm.toFixed(2)} км < ${MIN_DISTANCE} км)`,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      return;
+    }
+
+    const bonusAmount = Math.round((orderData.price || 0) * BONUS_RATE * 100) / 100;
+    if (bonusAmount <= 0) return;
+
+    try {
+      const clientRef = db.collection('users_bonus').doc(clientId);
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(clientRef);
+        const currentBalance = doc.exists ? (doc.data().balance || 0) : 0;
+        const currentTotalEarned = doc.exists ? (doc.data().totalEarned || 0) : 0;
+
+        transaction.set(clientRef, {
+          balance: currentBalance + bonusAmount,
+          totalEarned: currentTotalEarned + bonusAmount,
+          totalSpent: doc.exists ? (doc.data().totalSpent || 0) : 0,
+          level: currentTotalEarned + bonusAmount > 500 ? 'Silver' : 'Bronze',
+          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        const transRef = db.collection('bonus_transactions').doc();
+        transaction.set(transRef, {
+          clientId: clientId,
+          orderId: orderId,
+          type: 'earned',
+          amount: bonusAmount,
+          description: `2% бонус за поездку (${distanceKm.toFixed(1)} км, ${orderData.price}₪)`,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          status: 'completed'
+        });
+      });
+
+      await db.collection('ai_logs').add({
+        orderId: orderId,
+        decision: `Начислен бонус ${bonusAmount}₪ клиенту (2% от ${orderData.price}₪)`,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log(`✅ Бонус ${bonusAmount}₪ начислен клиенту ${clientId}`);
+    } catch (error) {
+      console.error('❌ Ошибка начисления бонуса:', error);
+    }
+  }
+
+  // ============================================================
+  // 12. ИНИЦИАЛИЗАЦИЯ
+  // ============================================================
+  console.log('🚕 Taxi Client v2.0 загружен');
 </script>
 </body>
 </html>
