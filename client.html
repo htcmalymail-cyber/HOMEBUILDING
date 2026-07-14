@@ -141,7 +141,6 @@
     .route-error { color: #dc3545; font-size: 13px; margin-top: 5px; }
     .btn-row { display: flex; gap: 10px; }
     .btn-row .btn { width: auto; flex: 1; }
-    /* Кастомные маркеры для карты */
     .custom-marker {
       font-size: 28px;
       text-align: center;
@@ -245,7 +244,7 @@
       <div class="flex-col">
         <div id="map"></div>
         <div class="map-hint">
-          💡 Введите адрес и нажмите Enter или кнопку "Обновить маршрут".<br>
+          💡 Введите адрес и нажмите Enter.<br>
           🏁 Флаг – пункт назначения. 📍 Синяя точка – ваше местоположение.<br>
           🚗 Зелёные машинки – свободные такси.<br>
           Кликните по карте, чтобы изменить отправление.
@@ -448,7 +447,6 @@
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
 
-      // Кастомные иконки
       const fromIcon = L.divIcon({
         html: '📍',
         className: 'custom-marker',
@@ -465,7 +463,6 @@
       fromMarker = L.marker([31.5, 34.8], { icon: fromIcon, draggable: true });
       toMarker = L.marker([31.5, 34.8], { icon: toIcon, draggable: false });
 
-      // Клик по карте
       map.on('click', function(e) {
         const lat = e.latlng.lat;
         const lng = e.latlng.lng;
@@ -480,7 +477,6 @@
         updateRoute();
       });
 
-      // Перетаскивание маркера
       fromMarker.on('dragend', function() {
         const pos = fromMarker.getLatLng();
         document.getElementById('from-lat').value = pos.lat.toFixed(6);
@@ -519,7 +515,6 @@
   }
 
   function updateTaxiMarkers(drivers) {
-    // Удаляем старые маркеры
     taxiMarkers.forEach(m => {
       if (map && map.hasLayer(m)) map.removeLayer(m);
     });
@@ -608,36 +603,23 @@
           document.getElementById('route-error').textContent = '';
           updateRoute();
         } else {
-          // Адрес не найден – предлагаем ввести координаты вручную
-          statusEl.textContent = '⚠️ Адрес не найден';
+          // Адрес не найден – но мы сохраняем ТЕКСТОВЫЙ адрес
+          statusEl.textContent = '⚠️ Адрес не найден, но он будет передан водителю';
           statusEl.className = 'search-status error';
-          document.getElementById('route-error').textContent = '⚠️ Адрес не найден. Попробуйте уточнить или введите координаты вручную.';
+          document.getElementById('route-error').textContent = '⚠️ Точный адрес не найден на карте, но он будет передан водителю.';
           
+          // Если это адрес назначения – сохраняем его как текст
           if (type === 'to') {
-            const coords = prompt(`Адрес "${address}" не найден.\nВведите координаты вручную (широта, долгота):\nНапример: 32.0853, 34.7818`);
-            if (coords) {
-              const parts = coords.split(',').map(s => parseFloat(s.trim()));
-              if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-                document.getElementById('to-lat').value = parts[0];
-                document.getElementById('to-lng').value = parts[1];
-                document.getElementById('to-address').value = address + ' (координаты вручную)';
-                toMarker.setLatLng([parts[0], parts[1]]);
-                if (!map.hasLayer(toMarker)) toMarker.addTo(map);
-                currentToLat = parts[0];
-                currentToLng = parts[1];
-                document.getElementById('route-error').textContent = '';
-                statusEl.textContent = '✅ Координаты введены вручную';
-                statusEl.className = 'search-status success';
-                updateRoute();
-              }
-            }
+            // Убеждаемся, что в поле to-address остался введённый текст
+            // Он уже есть в поле, ничего не меняем
+            console.log('📝 Адрес сохранён как текст:', address);
           }
         }
       })
       .catch(error => {
         document.getElementById('route-loading').style.display = 'none';
         document.getElementById('route-error').textContent = '❌ Ошибка геокодирования: ' + error.message;
-        statusEl.textContent = '❌ Ошибка поиска';
+        statusEl.textContent = '⚠️ Ошибка поиска, адрес будет передан водителю';
         statusEl.className = 'search-status error';
         console.error('❌ Ошибка геокодирования:', error);
       });
@@ -722,7 +704,6 @@
       statusEl.textContent = '❌ GPS не поддерживается';
       statusEl.className = 'location-status location-error';
       isLocating = false;
-      askManualCoordinates();
       return;
     }
 
@@ -753,34 +734,9 @@
         statusEl.textContent = msg;
         statusEl.className = 'location-status location-error';
         isLocating = false;
-        askManualCoordinates();
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }
-
-  function askManualCoordinates() {
-    if (confirm('⚠️ Не удалось определить местоположение автоматически.\nХотите ввести координаты вручную?')) {
-      const coords = prompt('Введите координаты (широта, долгота):\nНапример: 32.0853, 34.7818');
-      if (coords) {
-        const parts = coords.split(',').map(s => parseFloat(s.trim()));
-        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-          document.getElementById('from-lat').value = parts[0];
-          document.getElementById('from-lng').value = parts[1];
-          document.getElementById('from-address').value = '📍 Координаты вручную';
-          currentFromLat = parts[0];
-          currentFromLng = parts[1];
-          fromMarker.setLatLng([parts[0], parts[1]]);
-          if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
-          map.setView([parts[0], parts[1]], 15);
-          document.getElementById('location-status').textContent = '✅ Координаты введены вручную';
-          document.getElementById('location-status').className = 'location-status location-found';
-          updateRoute();
-        } else {
-          alert('❌ Неверный формат. Используйте: широта, долгота');
-        }
-      }
-    }
   }
 
   // ==================== МАРКЕР ВОДИТЕЛЯ ====================
@@ -814,7 +770,7 @@
 
   // ==================== СОЗДАНИЕ ЗАКАЗА ====================
   function createOrder() {
-    // Берём адреса из полей ввода (сохраняем даже если геокодирование не сработало)
+    // Берём адреса из полей ввода (сохраняем ТЕКСТОВЫЙ адрес всегда)
     const from = document.getElementById('from-address').value.trim() || '📍 Моё местоположение';
     const to = document.getElementById('to-address').value.trim();
     
@@ -828,16 +784,21 @@
       return; 
     }
     
-    if (isNaN(fromLat) || isNaN(fromLng) || isNaN(toLat) || isNaN(toLng)) {
-      alert('⚠️ Установите корректные координаты (используйте карту или введите адрес)');
-      return;
+    // Даже если координаты не найдены – заказ всё равно создаётся
+    // В этом случае используем координаты по умолчанию (0,0)
+    const finalFromLat = isNaN(fromLat) ? 0 : fromLat;
+    const finalFromLng = isNaN(fromLng) ? 0 : fromLng;
+    const finalToLat = isNaN(toLat) ? 0 : toLat;
+    const finalToLng = isNaN(toLng) ? 0 : toLng;
+
+    // Расчёт расстояния и цены только если есть координаты
+    let distance = 0;
+    let price = 0;
+    if (finalFromLat !== 0 && finalFromLng !== 0 && finalToLat !== 0 && finalToLng !== 0) {
+      distance = getDistance(finalFromLat, finalFromLng, finalToLat, finalToLng);
+      price = calculatePrice(distance);
     }
 
-    let distance = currentDistanceKm;
-    if (distance === 0) {
-      distance = getDistance(fromLat, fromLng, toLat, toLng);
-    }
-    const price = calculatePrice(distance);
     const paymentMethod = document.getElementById('payment-method').value;
     let bonusUsed = 0;
     let finalPrice = price;
@@ -862,12 +823,12 @@
       clientId: currentUser ? currentUser.uid : 'guest-' + Date.now(),
       clientEmail: currentUser ? currentUser.email : 'guest@taxi.com',
       clientName: clientName,
-      from: from,          // ← Сохраняем адрес отправления как текст
-      to: to,              // ← Сохраняем адрес назначения как текст
-      fromLat: fromLat,
-      fromLng: fromLng,
-      toLat: toLat,
-      toLng: toLng,
+      from: from,          // ← Текстовый адрес отправления
+      to: to,              // ← Текстовый адрес назначения (всегда сохраняется!)
+      fromLat: finalFromLat,
+      fromLng: finalFromLng,
+      toLat: finalToLat,
+      toLng: finalToLng,
       distance: distance,
       duration: currentDurationMin,
       price: price,
@@ -887,10 +848,18 @@
         currentOrderId = docRef.id;
         document.getElementById('order-status-message').innerHTML = '✅ Заказ создан! Ищем водителей...';
         document.getElementById('order-status-card').classList.remove('hidden');
-        return findAndOfferDrivers(docRef.id, fromLat, fromLng);
+        // Если есть координаты – ищем водителей, иначе просто ждём
+        if (finalFromLat !== 0 && finalFromLng !== 0) {
+          return findAndOfferDrivers(docRef.id, finalFromLat, finalFromLng);
+        } else {
+          return db.collection('orders').doc(docRef.id).update({
+            status: 'waiting',
+            aiNote: 'Ожидание подтверждения адреса'
+          });
+        }
       })
       .then(() => {
-        document.getElementById('order-status-message').innerHTML = '📨 Предложение отправлено водителям';
+        document.getElementById('order-status-message').innerHTML = '📨 Заказ передан водителям';
       })
       .catch(error => {
         alert('❌ Ошибка: ' + error.message);
@@ -987,7 +956,6 @@
             currentOrderId = orderId;
             updateOrderUI(orderId, data);
 
-            // Если заказ завершён – обновляем бонусы
             if (data.status === 'completed') {
               loadClientBonusBalance();
             }
@@ -1046,7 +1014,6 @@
 
     document.getElementById('order-details').innerHTML = html;
 
-    // Кнопка отмены
     const cancelBtn = document.getElementById('cancel-btn');
     if (['searching', 'offering', 'created', 'assigned', 'waiting'].includes(data.status)) {
       cancelBtn.style.display = 'inline-block';
@@ -1054,7 +1021,6 @@
       cancelBtn.style.display = 'none';
     }
 
-    // Информация о водителе
     const driverInfo = document.getElementById('driver-info');
     if (data.driverId && data.status !== 'cancelled' && data.status !== 'completed') {
       driverInfo.classList.remove('hidden');
@@ -1078,7 +1044,6 @@
       document.getElementById('waze-btn').style.display = 'none';
     }
 
-    // Показываем маршрут из заказа на карте
     if (data.fromLat && data.fromLng && data.toLat && data.toLng) {
       fromMarker.setLatLng([data.fromLat, data.fromLng]);
       if (!map.hasLayer(fromMarker)) fromMarker.addTo(map);
@@ -1127,7 +1092,6 @@
     section.style.display = this.value === 'bonus' ? 'block' : 'none';
   });
 
-  // Обработка Enter для полей
   document.getElementById('from-address').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
