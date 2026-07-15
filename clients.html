@@ -5,47 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>WHEEL — Заказ такси</title>
     
-    <!-- Leaflet CSS (карта) -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, onSnapshot, addDoc, doc, getDoc, updateDoc, GeoPoint, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
-            authDomain: "taxi-ai-app-69628.firebaseapp.com",
-            projectId: "taxi-ai-app-69628",
-            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
-            messagingSenderId: "952357992434",
-            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
-            measurementId: "G-Z9NJFSSXH6"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        window.db = db;
-        window.auth = auth;
-        window.onAuthStateChanged = onAuthStateChanged;
-        window.collection = collection;
-        window.query = query;
-        window.where = where;
-        window.getDocs = getDocs;
-        window.onSnapshot = onSnapshot;
-        window.addDoc = addDoc;
-        window.doc = doc;
-        window.getDoc = getDoc;
-        window.updateDoc = updateDoc;
-        window.GeoPoint = GeoPoint;
-        window.serverTimestamp = serverTimestamp;
-
-        console.log("✅ Firebase ready");
-    </script>
-
     <style>
         * {
             margin: 0;
@@ -62,6 +24,7 @@
                 radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.08) 0%, transparent 40%),
                 radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.06) 0%, transparent 40%);
             background-attachment: fixed;
+            overflow: hidden;
         }
 
         /* ===== ХЕДЕР ===== */
@@ -97,7 +60,6 @@
 
         .back-btn:active {
             transform: scale(0.95);
-            background: rgba(255,255,255,0.15);
         }
 
         .logo-text {
@@ -113,10 +75,10 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            font-size: 12px;
         }
 
         .client-status {
-            font-size: 12px;
             color: #4ade80;
             background: rgba(74, 222, 128, 0.12);
             padding: 4px 12px;
@@ -131,31 +93,21 @@
         }
 
         .cashback-badge {
-            font-size: 12px;
             color: #ffb000;
             background: rgba(255, 180, 0, 0.15);
             padding: 4px 12px;
             border-radius: 20px;
             border: 1px solid rgba(255, 180, 0, 0.2);
+            cursor: pointer;
         }
 
         /* ===== КАРТА ===== */
         #map {
             width: 100%;
-            height: 55vh;
+            height: 50vh;
             background: #1a1e26;
             position: relative;
-        }
-
-        .leaflet-control-zoom {
-            border: none !important;
-        }
-
-        .leaflet-control-zoom a {
-            background: rgba(18, 22, 28, 0.9) !important;
-            color: white !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-            backdrop-filter: blur(10px);
+            z-index: 1;
         }
 
         /* ===== ФОРМА ЗАКАЗА ===== */
@@ -175,7 +127,6 @@
             font-weight: 600;
             color: #8899aa;
             margin-bottom: 16px;
-            letter-spacing: 0.5px;
         }
 
         .input-group {
@@ -249,10 +200,6 @@
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 8px 20px rgba(255, 140, 0, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
         }
 
         .order-btn:active {
@@ -262,28 +209,6 @@
         .order-btn:disabled {
             opacity: 0.5;
             transform: none;
-        }
-
-        .order-btn .spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top: 3px solid #0a0c10;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        .order-btn.loading .spinner {
-            display: block;
-        }
-
-        .order-btn.loading .btn-text {
-            display: none;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
         }
 
         /* ===== СТАТУС ЗАКАЗА ===== */
@@ -337,7 +262,7 @@
             transition: width 0.5s ease;
         }
 
-        /* ===== МАРКЕРЫ НА КАРТЕ ===== */
+        /* ===== МАРКЕРЫ ===== */
         .driver-marker {
             width: 32px;
             height: 32px;
@@ -349,18 +274,11 @@
             align-items: center;
             justify-content: center;
             font-size: 14px;
-            transition: all 0.3s ease;
-            animation: pulse-marker 2s infinite;
         }
 
         .driver-marker.online {
             background: linear-gradient(135deg, #4ade80, #22c55e);
             box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
-        }
-
-        @keyframes pulse-marker {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
         }
 
         .client-marker {
@@ -452,28 +370,12 @@
             margin-top: 16px;
         }
 
-        .modal-content .modal-btn.secondary {
-            background: rgba(255,255,255,0.06);
-            color: #8899aa;
-        }
-
-        /* ===== АДАПТИВ ===== */
         @media (max-width: 420px) {
             #map {
-                height: 45vh;
+                height: 40vh;
             }
             .order-panel {
                 padding: 16px 16px 24px;
-            }
-            .header {
-                padding: 12px 16px;
-            }
-            .logo-text {
-                font-size: 18px;
-            }
-            .cashback-badge {
-                font-size: 10px;
-                padding: 2px 10px;
             }
         }
     </style>
@@ -501,7 +403,7 @@
 
         <div class="input-group">
             <label>📍 Откуда</label>
-            <input type="text" id="pickupInput" placeholder="Ваш адрес или выберите на карте" />
+            <input type="text" id="pickupInput" placeholder="Адрес или нажмите на карте" />
         </div>
 
         <div class="input-group">
@@ -514,12 +416,8 @@
             <span class="value"><span id="estimatedPrice">0</span> <span class="currency">₪</span></span>
         </div>
 
-        <button class="order-btn" id="orderBtn">
-            <span class="spinner"></span>
-            <span class="btn-text">🚀 Заказать такси</span>
-        </button>
+        <button class="order-btn" id="orderBtn">🚀 Заказать такси</button>
 
-        <!-- Статус заказа -->
         <div class="order-status" id="orderStatus">
             <div class="status-row">
                 <span class="status-icon" id="statusIcon">⏳</span>
@@ -534,7 +432,7 @@
         </div>
     </div>
 
-    <!-- ===== МОДАЛЬНОЕ ОКНО ===== -->
+    <!-- ===== МОДАЛКА ===== -->
     <div class="modal" id="resultModal">
         <div class="modal-content">
             <div class="icon" id="modalIcon">✅</div>
@@ -545,12 +443,49 @@
     </div>
 
     <!-- ===== LEAFLET JS ===== -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
 
-    <script>
+    <!-- ===== FIREBASE ===== -->
+    <script type="module">
+        // Импорт Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            query, 
+            where, 
+            getDocs, 
+            onSnapshot, 
+            addDoc, 
+            doc, 
+            getDoc, 
+            updateDoc, 
+            GeoPoint, 
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+            authDomain: "taxi-ai-app-69628.firebaseapp.com",
+            projectId: "taxi-ai-app-69628",
+            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+            messagingSenderId: "952357992434",
+            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+            measurementId: "G-Z9NJFSSXH6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
         // ============================================================
-        // 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+        // ВСЯ ЛОГИКА ВНУТРИ MODULE
         // ============================================================
+        console.log("✅ Firebase готов");
+
+        // Глобальные переменные
         let map;
         let clientMarker;
         let pickupMarker = null;
@@ -558,32 +493,32 @@
         let driverMarkers = {};
         let currentOrderId = null;
         let isOrdering = false;
-        let clientPhone = localStorage.getItem('wheel_client_phone') || null;
         let clientId = localStorage.getItem('wheel_client_id') || null;
         let cashbackAmount = 0;
         let isRegistered = false;
 
-        // Константы
-        const BASE_PRICE = 12;      // Подача
-        const PRICE_PER_KM = 6.5;   // ₪ за км
-        const CASHBACK_RATE = 0.015; // 1.5%
+        const BASE_PRICE = 12;
+        const PRICE_PER_KM = 6.5;
+        const CASHBACK_RATE = 0.015;
         const MIN_MONTHS_FOR_CASHBACK = 8;
 
         // ============================================================
         // 2. ИНИЦИАЛИЗАЦИЯ КАРТЫ
         // ============================================================
         function initMap(lat = 32.0667922, lng = 34.765956) {
+            console.log("🗺️ Инициализация карты...");
+            
             map = L.map('map', {
                 center: [lat, lng],
                 zoom: 15,
-                zoomControl: false
+                zoomControl: true
             });
-
-            L.control.zoom({ position: 'topright' }).addTo(map);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap'
             }).addTo(map);
+
+            console.log("✅ Карта создана");
 
             // Маркер клиента
             const clientIcon = L.divIcon({
@@ -597,14 +532,14 @@
                 .addTo(map)
                 .bindPopup('📍 Вы здесь');
 
-            // Клик по карте — установка точки подачи
+            // Клик по карте
             map.on('click', function(e) {
                 const { lat, lng } = e.latlng;
                 setPickupPoint(lat, lng);
                 reverseGeocode(lat, lng, 'pickupInput');
             });
 
-            // Определяем геолокацию клиента
+            // Геолокация
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
@@ -614,25 +549,21 @@
                         setPickupPoint(latitude, longitude);
                         reverseGeocode(latitude, longitude, 'pickupInput');
                     },
-                    () => { console.log('Геолокация не разрешена'); },
+                    () => { console.log('❌ Геолокация не разрешена'); },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
             }
 
             // Загружаем водителей
             loadDrivers();
-
-            // Подписка на обновления водителей
             subscribeToDrivers();
         }
 
         // ============================================================
-        // 3. УСТАНОВКА ТОЧЕК
+        // 3. ТОЧКИ
         // ============================================================
         function setPickupPoint(lat, lng) {
-            if (pickupMarker) {
-                map.removeLayer(pickupMarker);
-            }
+            if (pickupMarker) map.removeLayer(pickupMarker);
             const icon = L.divIcon({
                 className: '',
                 html: '<div class="pickup-marker"></div>',
@@ -646,9 +577,7 @@
         }
 
         function setDropoffPoint(lat, lng) {
-            if (dropoffMarker) {
-                map.removeLayer(dropoffMarker);
-            }
+            if (dropoffMarker) map.removeLayer(dropoffMarker);
             const icon = L.divIcon({
                 className: '',
                 html: '<div class="dropoff-marker"></div>',
@@ -665,17 +594,17 @@
         // 4. РАСЧЁТ ЦЕНЫ
         // ============================================================
         function calculatePrice() {
-            const pickupLat = window.pickupLat;
-            const pickupLng = window.pickupLng;
-            const dropoffLat = window.dropoffLat;
-            const dropoffLng = window.dropoffLng;
+            const pLat = window.pickupLat;
+            const pLng = window.pickupLng;
+            const dLat = window.dropoffLat;
+            const dLng = window.dropoffLng;
 
-            if (!pickupLat || !pickupLng || !dropoffLat || !dropoffLng) {
+            if (!pLat || !pLng || !dLat || !dLng) {
                 document.getElementById('estimatedPrice').textContent = '0';
                 return;
             }
 
-            const distance = getDistance(pickupLat, pickupLng, dropoffLat, dropoffLng);
+            const distance = getDistance(pLat, pLng, dLat, dLng);
             const price = BASE_PRICE + (distance * PRICE_PER_KM);
             const rounded = Math.round(price * 10) / 10;
 
@@ -696,59 +625,36 @@
         }
 
         // ============================================================
-        // 5. ОБРАТНЫЙ ГЕОКОДИНГ (через Nominatim)
+        // 5. ГЕОКОДИНГ
         // ============================================================
         function reverseGeocode(lat, lng, inputId) {
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`)
                 .then(res => res.json())
                 .then(data => {
                     const address = data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
                     document.getElementById(inputId).value = address;
-                    if (inputId === 'pickupInput') {
-                        window.pickupAddress = address;
-                    } else {
-                        window.dropoffAddress = address;
-                    }
                 })
                 .catch(() => {});
         }
 
         // ============================================================
-        // 6. ЗАГРУЗКА ВОДИТЕЛЕЙ
+        // 6. ВОДИТЕЛИ
         // ============================================================
         function loadDrivers() {
-            const db = window.db;
-            const collection = window.collection;
-            const query = window.query;
-            const where = window.where;
-            const getDocs = window.getDocs;
-
             const q = query(collection(db, 'drivers'), where('status', '==', 'online'));
             getDocs(q).then(snapshot => {
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.location) {
-                        const lat = data.location.latitude;
-                        const lng = data.location.longitude;
-                        addDriverMarker(doc.id, lat, lng, data);
+                        addDriverMarker(doc.id, data.location.latitude, data.location.longitude, data);
                     }
                 });
             });
         }
 
-        // ============================================================
-        // 7. ПОДПИСКА НА ОБНОВЛЕНИЯ ВОДИТЕЛЕЙ
-        // ============================================================
         function subscribeToDrivers() {
-            const db = window.db;
-            const collection = window.collection;
-            const query = window.query;
-            const where = window.where;
-            const onSnapshot = window.onSnapshot;
-
             const q = query(collection(db, 'drivers'), where('status', '==', 'online'));
             onSnapshot(q, (snapshot) => {
-                // Удаляем старые маркеры
                 Object.keys(driverMarkers).forEach(id => {
                     if (!snapshot.docs.find(d => d.id === id)) {
                         map.removeLayer(driverMarkers[id]);
@@ -774,7 +680,7 @@
         function addDriverMarker(id, lat, lng, data) {
             const icon = L.divIcon({
                 className: '',
-                html: `<div class="driver-marker online">🚕</div>`,
+                html: '<div class="driver-marker online">🚕</div>',
                 iconSize: [32, 32],
                 iconAnchor: [16, 16]
             });
@@ -789,7 +695,7 @@
         }
 
         // ============================================================
-        // 8. СОЗДАНИЕ ЗАКАЗА
+        // 7. ЗАКАЗ
         // ============================================================
         async function createOrder() {
             if (isOrdering) return;
@@ -802,34 +708,27 @@
             const dropoffAddress = document.getElementById('dropoffInput').value;
 
             if (!pickupLat || !pickupLng) {
-                showModal('⚠️', 'Укажите точку подачи', 'Нажмите на карте или введите адрес');
+                showModal('⚠️', 'Укажите точку подачи', 'Нажмите на карте');
                 return;
             }
 
             if (!dropoffLat || !dropoffLng) {
-                showModal('⚠️', 'Укажите точку назначения', 'Введите адрес в поле "Куда"');
+                showModal('⚠️', 'Укажите точку назначения', 'Введите адрес');
                 return;
             }
 
             const price = parseFloat(document.getElementById('estimatedPrice').textContent);
             if (!price || price < 5) {
-                showModal('⚠️', 'Рассчитайте стоимость', 'Выберите маршрут на карте');
+                showModal('⚠️', 'Рассчитайте стоимость', 'Выберите маршрут');
                 return;
             }
 
             isOrdering = true;
             const btn = document.getElementById('orderBtn');
-            btn.classList.add('loading');
             btn.disabled = true;
+            btn.textContent = '⏳ Загрузка...';
 
             try {
-                const db = window.db;
-                const addDoc = window.addDoc;
-                const collection = window.collection;
-                const GeoPoint = window.GeoPoint;
-                const serverTimestamp = window.serverTimestamp;
-
-                // Проверяем или регистрируем клиента
                 let clientId = await getOrCreateClient();
 
                 const orderData = {
@@ -854,42 +753,31 @@
                 const docRef = await addDoc(collection(db, 'orders'), orderData);
                 currentOrderId = docRef.id;
 
-                // Показываем статус
-                showOrderStatus('⏳', 'Поиск водителя...', 'Ищем ближайшего водителя', 25);
+                showOrderStatus('⏳', 'Поиск водителя...', 'Ищем ближайшего', 25);
 
-                // Имитация поиска водителя (в реальном проекте — через Cloud Function)
                 setTimeout(() => {
                     assignDriver(docRef.id);
                 }, 3000);
 
-                showModal('✅', 'Заказ создан!', 'Ищем ближайшего водителя...');
+                showModal('✅', 'Заказ создан!', 'Ищем водителя...');
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                showModal('❌', 'Ошибка', 'Не удалось создать заказ. Попробуйте снова.');
+                showModal('❌', 'Ошибка', 'Попробуйте снова');
             } finally {
                 isOrdering = false;
-                btn.classList.remove('loading');
                 btn.disabled = false;
+                btn.textContent = '🚀 Заказать такси';
             }
         }
 
         // ============================================================
-        // 9. РЕГИСТРАЦИЯ КЛИЕНТА
+        // 8. КЛИЕНТ
         // ============================================================
         async function getOrCreateClient() {
-            const db = window.db;
-            const collection = window.collection;
-            const query = window.query;
-            const where = window.where;
-            const getDocs = window.getDocs;
-            const addDoc = window.addDoc;
-            const serverTimestamp = window.serverTimestamp;
-
             if (clientId) {
-                // Проверяем, существует ли клиент
-                const docRef = window.doc(db, 'clients', clientId);
-                const docSnap = await window.getDoc(docRef);
+                const docRef = doc(db, 'clients', clientId);
+                const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     isRegistered = true;
@@ -899,8 +787,7 @@
                 }
             }
 
-            // Если клиент не зарегистрирован — создаём нового
-            const phone = prompt('📱 Введите номер телефона для регистрации:', clientPhone || '+7');
+            const phone = prompt('📱 Введите номер телефона:', '+7');
             if (!phone) return 'guest_' + Date.now();
 
             const clientData = {
@@ -914,33 +801,20 @@
 
             const docRef = await addDoc(collection(db, 'clients'), clientData);
             clientId = docRef.id;
-            clientPhone = phone;
             isRegistered = true;
 
             localStorage.setItem('wheel_client_id', clientId);
-            localStorage.setItem('wheel_client_phone', phone);
-
             updateClientStatus();
-            showModal('🎉', 'Добро пожаловать!', 'Вы зарегистрированы. Кэшбэк 1.5% будет начисляться после 8 месяцев использования.');
+            showModal('🎉', 'Добро пожаловать!', 'Кэшбэк 1.5% после 8 месяцев');
 
             return clientId;
         }
 
         // ============================================================
-        // 10. НАЗНАЧЕНИЕ ВОДИТЕЛЯ (ИМИТАЦИЯ)
+        // 9. НАЗНАЧЕНИЕ ВОДИТЕЛЯ
         // ============================================================
         async function assignDriver(orderId) {
-            const db = window.db;
-            const doc = window.doc;
-            const updateDoc = window.updateDoc;
-
-            // В реальном проекте — поиск ближайшего водителя через Cloud Function
-            // Сейчас назначаем первого попавшегося
-            const driversSnapshot = await window.getDocs(window.query(
-                window.collection(db, 'drivers'),
-                window.where('status', '==', 'online')
-            ));
-
+            const driversSnapshot = await getDocs(query(collection(db, 'drivers'), where('status', '==', 'online')));
             let driverId = '';
             if (!driversSnapshot.empty) {
                 driverId = driversSnapshot.docs[0].id;
@@ -952,20 +826,20 @@
             });
 
             if (driverId) {
-                showOrderStatus('🚗', 'Водитель найден!', 'Машина уже едет к вам', 60);
+                showOrderStatus('🚗', 'Водитель найден!', 'Едет к вам', 60);
                 setTimeout(() => {
-                    showOrderStatus('🚕', 'Водитель в пути', 'Прибудет через 3-5 минут', 85);
+                    showOrderStatus('🚕', 'Водитель в пути', 'Прибудет через 3-5 мин', 85);
                 }, 4000);
                 setTimeout(() => {
                     showOrderStatus('📍', 'Водитель прибыл', 'Машина ждёт вас', 100);
                 }, 8000);
             } else {
-                showOrderStatus('😔', 'Водителей рядом нет', 'Попробуйте позже', 0);
+                showOrderStatus('😔', 'Нет водителей', 'Попробуйте позже', 0);
             }
         }
 
         // ============================================================
-        // 11. ОТОБРАЖЕНИЕ СТАТУСА ЗАКАЗА
+        // 10. UI
         // ============================================================
         function showOrderStatus(icon, text, detail, progress) {
             const el = document.getElementById('orderStatus');
@@ -976,32 +850,22 @@
             document.getElementById('statusBar').style.width = progress + '%';
         }
 
-        // ============================================================
-        // 12. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
-        // ============================================================
         function updateClientStatus() {
-            const statusEl = document.getElementById('clientStatus');
+            const el = document.getElementById('clientStatus');
             if (clientId && isRegistered) {
-                statusEl.textContent = '👤 Клиент';
-                statusEl.className = 'client-status';
+                el.textContent = '👤 Клиент';
+                el.className = 'client-status';
             } else {
-                statusEl.textContent = '👤 Гость';
-                statusEl.className = 'client-status guest';
+                el.textContent = '👤 Гость';
+                el.className = 'client-status guest';
             }
         }
 
         function updateCashbackDisplay() {
             const el = document.getElementById('cashbackDisplay');
-            if (cashbackAmount > 0) {
-                el.textContent = `💰 ${cashbackAmount.toFixed(2)} ₪`;
-            } else {
-                el.textContent = '💰 0 ₪';
-            }
+            el.textContent = `💰 ${cashbackAmount > 0 ? cashbackAmount.toFixed(2) : '0'} ₪`;
         }
 
-        // ============================================================
-        // 13. МОДАЛЬНОЕ ОКНО
-        // ============================================================
         function showModal(icon, title, desc) {
             document.getElementById('modalIcon').textContent = icon;
             document.getElementById('modalTitle').textContent = title;
@@ -1009,31 +873,9 @@
             document.getElementById('resultModal').classList.add('active');
         }
 
-        document.getElementById('modalBtn').addEventListener('click', () => {
-            document.getElementById('resultModal').classList.remove('active');
-        });
-
-        document.getElementById('resultModal').addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) {
-                document.getElementById('resultModal').classList.remove('active');
-            }
-        });
-
         // ============================================================
-        // 14. ПОИСК АДРЕСА (через Nominatim)
+        // 11. ПОИСК АДРЕСА
         // ============================================================
-        document.getElementById('dropoffInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                searchAddress(document.getElementById('dropoffInput').value, 'dropoff');
-            }
-        });
-
-        document.getElementById('pickupInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                searchAddress(document.getElementById('pickupInput').value, 'pickup');
-            }
-        });
-
         function searchAddress(query, type) {
             if (!query || query.length < 3) return;
             fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`)
@@ -1054,36 +896,60 @@
         }
 
         // ============================================================
-        // 15. ПРОВЕРКА АВТОРИЗАЦИИ
-        // ============================================================
-        window.onAuthStateChanged(window.auth, async (user) => {
-            if (user) {
-                // Если авторизован как водитель — перенаправляем
-                const driverDoc = await window.getDoc(window.doc(window.db, 'drivers', user.uid));
-                if (driverDoc.exists()) {
-                    window.location.href = 'driver.html';
-                }
-            }
-        });
-
-        // ============================================================
-        // 16. ЗАПУСК
+        // 12. ЗАПУСК
         // ============================================================
         document.addEventListener('DOMContentLoaded', () => {
+            console.log("🚀 DOM загружен");
             initMap();
             updateClientStatus();
             updateCashbackDisplay();
 
             document.getElementById('orderBtn').addEventListener('click', createOrder);
 
-            // Клик по кэшбэку — показать условия
+            document.getElementById('dropoffInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    searchAddress(e.target.value, 'dropoff');
+                }
+            });
+
+            document.getElementById('pickupInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    searchAddress(e.target.value, 'pickup');
+                }
+            });
+
+            document.getElementById('modalBtn').addEventListener('click', () => {
+                document.getElementById('resultModal').classList.remove('active');
+            });
+
+            document.getElementById('resultModal').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) {
+                    document.getElementById('resultModal').classList.remove('active');
+                }
+            });
+
             document.getElementById('cashbackDisplay').addEventListener('click', () => {
                 showModal('💰', 'Кэшбэк 1.5%', 
-                    `Начисляется после ${MIN_MONTHS_FOR_CASHBACK} месяцев использования.\n` +
-                    (isRegistered ? '✅ Вы зарегистрированы' : '❌ Зарегистрируйтесь для получения')
+                    `Начисляется после ${MIN_MONTHS_FOR_CASHBACK} месяцев\n` +
+                    (isRegistered ? '✅ Вы зарегистрированы' : '❌ Зарегистрируйтесь')
                 );
             });
+
+            // Проверка авторизации
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    const driverDoc = await getDoc(doc(db, 'drivers', user.uid));
+                    if (driverDoc.exists()) {
+                        window.location.href = 'driver.html';
+                    }
+                }
+            });
         });
+
+        // Экспорт в глобальный объект для отладки
+        window.initMap = initMap;
+        window.setPickupPoint = setPickupPoint;
+        window.setDropoffPoint = setDropoffPoint;
     </script>
 </body>
 </html>
