@@ -5,14 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>WHEEL — Заказ такси</title>
     
-    <!-- Google Maps -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9zQWJnhGuEOv07JAd-Fq_SsaHy8JFx58&libraries=places,geometry"></script>
+    <!-- Google Maps (загружается асинхронно, не блокирует страницу) -->
+    <script>
+        window.GMAPS_LOADED = false;
+        window.GMAPS_KEY = "AIzaSyC9zQWJnhGuEOv07JAd-Fq_SsaHy8JFx58";
+    </script>
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9zQWJnhGuEOv07JAd-Fq_SsaHy8JFx58&libraries=places,geometry&loading=async"
+        onload="window.GMAPS_LOADED=true; if(window.initMap) window.initMap();"
+        onerror="console.warn('⚠️ Google Maps не загрузился, работаем без карты');">
+    </script>
     
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, orderBy, limit, getDocs, serverTimestamp, GeoPoint } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, limit, getDocs, serverTimestamp, GeoPoint } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
@@ -31,44 +39,24 @@
         window.firebaseApp = app;
         window.firebaseAuth = auth;
         window.firebaseDb = db;
-        window.authFunctions = {
-            signInWithEmailAndPassword,
-            createUserWithEmailAndPassword,
-            onAuthStateChanged,
-            signOut
-        };
-        window.firestoreFunctions = {
-            doc, setDoc, getDoc, updateDoc, collection, addDoc,
-            query, where, orderBy, limit, getDocs, serverTimestamp, GeoPoint
-        };
-
-        console.log("✅ Firebase + Google Maps ready");
+        window.authFunctions = { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut };
+        window.firestoreFunctions = { doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, limit, getDocs, serverTimestamp, GeoPoint };
+        console.log("✅ Firebase ready");
     </script>
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'SF Pro Display', 'Inter', -apple-system, sans-serif;
             background: #0a0c10;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            overflow: hidden;
+            margin: 0; padding: 0;
+            height: 100vh; overflow: hidden;
             color: white;
         }
+        body[dir="rtl"] { direction: rtl; }
 
-        body[dir="rtl"] {
-            direction: rtl;
-        }
-
-        /* Шапка */
         .header {
-            background: rgba(18, 22, 28, 0.95);
+            background: rgba(18,22,28,0.95);
             backdrop-filter: blur(20px);
             padding: 12px 16px;
             display: flex;
@@ -78,453 +66,181 @@
             z-index: 100;
             position: relative;
         }
-
-        .logo-small {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .logo-small svg {
-            width: 32px;
-            height: 32px;
-            fill: #ffb000;
-        }
-
-        .logo-text {
-            font-weight: 800;
-            font-size: 20px;
-            letter-spacing: 1px;
-            color: #ffb000;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
+        .logo { color: #ffb000; font-weight: 800; font-size: 20px; letter-spacing: 1px; }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
         .icon-btn {
-            background: rgba(255,255,255,0.06);
-            border: none;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
+            background: rgba(255,255,255,0.06); border: none; color: white;
+            width: 38px; height: 38px; border-radius: 10px; cursor: pointer;
+            font-size: 16px; display: flex; align-items: center; justify-content: center;
         }
-
-        .icon-btn:active {
-            background: rgba(255,180,0,0.2);
-        }
-
-        .profile-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+        .avatar {
+            width: 36px; height: 36px; border-radius: 50%;
             background: linear-gradient(135deg, #ffb000, #ff6a00);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 16px;
-            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 15px; cursor: pointer;
         }
+        .lang-switcher { display: flex; gap: 3px; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 2px; }
+        .lang-btn { background: transparent; border: none; color: #8899aa; font-size: 10px; font-weight: 600; padding: 4px 7px; border-radius: 6px; cursor: pointer; }
+        .lang-btn.active { background: #ffb000; color: #0a0c10; }
 
-        /* Карта */
         #map {
             width: 100%;
             height: calc(100vh - 180px);
             z-index: 1;
+            background: #1a1d25;
+        }
+        .map-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #667788;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
         }
 
-        /* Панель заказа */
         .order-panel {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(18, 22, 28, 0.98);
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: rgba(18,22,28,0.98);
             backdrop-filter: blur(20px);
             border-radius: 24px 24px 0 0;
             padding: 20px 16px 32px;
             z-index: 50;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
-
         .input-group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            display: flex; align-items: center; gap: 10px;
             background: rgba(255,255,255,0.05);
-            border-radius: 16px;
-            padding: 14px 16px;
-            margin-bottom: 10px;
+            border-radius: 14px; padding: 12px 14px;
+            margin-bottom: 8px;
             border: 1px solid rgba(255,255,255,0.1);
         }
-
-        .input-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .pickup-dot {
-            background: #4ade80;
-            box-shadow: 0 0 10px rgba(74,222,128,0.5);
-        }
-
-        .dropoff-dot {
-            background: #ef4444;
-            box-shadow: 0 0 10px rgba(239,68,68,0.5);
-        }
-
+        .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .dot-green { background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.5); }
+        .dot-red { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.5); }
         .input-group input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 16px;
-            outline: none;
+            flex: 1; background: transparent; border: none;
+            color: white; font-size: 15px; outline: none;
         }
+        .input-group input::placeholder { color: #667788; }
 
-        .input-group input::placeholder {
-            color: #667788;
+        .price-box {
+            display: flex; justify-content: space-between; align-items: center;
+            margin: 10px 0; padding: 12px 14px;
+            background: rgba(255,180,0,0.08); border-radius: 12px;
         }
+        .price-label { font-size: 12px; color: #8899aa; }
+        .price-value { font-size: 22px; font-weight: 800; color: #ffb000; }
+        .cashback-badge { font-size: 10px; color: #4ade80; background: rgba(74,222,128,0.1); padding: 3px 8px; border-radius: 6px; }
 
-        .price-estimate {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 12px 0;
-            padding: 12px 16px;
-            background: rgba(255,180,0,0.08);
-            border-radius: 12px;
+        .btn {
+            width: 100%; padding: 16px; border-radius: 14px;
+            border: none; font-weight: 700; font-size: 16px; cursor: pointer; margin-top: 6px;
         }
+        .btn-primary { background: linear-gradient(135deg, #ffb000, #ff6a00); color: #0a0c10; box-shadow: 0 8px 25px rgba(255,160,0,0.3); }
+        .btn-primary:disabled { opacity: 0.5; }
+        .btn-secondary { background: rgba(255,255,255,0.06); color: white; }
 
-        .price-label {
-            font-size: 13px;
-            color: #8899aa;
-        }
-
-        .price-value {
-            font-size: 24px;
-            font-weight: 800;
-            color: #ffb000;
-        }
-
-        .cashback-badge {
-            font-size: 11px;
-            color: #4ade80;
-            background: rgba(74,222,128,0.1);
-            padding: 4px 10px;
-            border-radius: 8px;
-        }
-
-        .order-btn {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, #ffb000, #ff6a00);
-            border: none;
-            border-radius: 16px;
-            color: #0a0c10;
-            font-weight: 700;
-            font-size: 18px;
-            cursor: pointer;
-            margin-top: 8px;
-            box-shadow: 0 8px 25px rgba(255,160,0,0.3);
-        }
-
-        .order-btn:disabled {
-            opacity: 0.5;
-        }
-
-        /* Модалки */
         .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(10px);
-            z-index: 200;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            z-index: 200; align-items: center; justify-content: center; padding: 20px;
         }
-
-        .modal.active {
-            display: flex;
-        }
-
+        .modal.active { display: flex; }
         .modal-content {
-            background: #12161c;
-            border-radius: 24px;
-            padding: 28px 20px;
-            width: 100%;
-            max-width: 380px;
-            border: 1px solid rgba(255,255,255,0.1);
-            max-height: 80vh;
-            overflow-y: auto;
+            background: #12161c; border-radius: 22px; padding: 24px 18px;
+            width: 100%; max-width: 370px; border: 1px solid rgba(255,255,255,0.1);
+            max-height: 80vh; overflow-y: auto;
         }
-
-        .modal-content h3 {
-            font-size: 20px;
-            margin-bottom: 16px;
-        }
-
+        .modal-content h3 { font-size: 18px; margin-bottom: 14px; }
         .modal-input {
-            width: 100%;
-            padding: 14px 16px;
-            margin-bottom: 12px;
-            border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.15);
-            background: rgba(255,255,255,0.05);
-            color: white;
-            font-size: 16px;
-            outline: none;
+            width: 100%; padding: 13px 14px; margin-bottom: 10px;
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05); color: white; font-size: 15px; outline: none;
         }
+        .modal-input:focus { border-color: #ffb000; }
+        .tab-row { display: flex; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 3px; margin-bottom: 14px; }
+        .tab-btn { flex: 1; padding: 9px; border: none; background: transparent; color: #8899aa; border-radius: 8px; font-size: 13px; cursor: pointer; }
+        .tab-btn.active { background: #ffb000; color: #0a0c10; font-weight: 600; }
 
-        .modal-input:focus {
-            border-color: #ffb000;
-        }
-
-        .modal-btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 14px;
-            border: none;
-            background: linear-gradient(135deg, #ffb000, #ff6a00);
-            color: #0a0c10;
-            font-weight: 700;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-
-        .modal-close {
-            background: transparent;
-            color: #8899aa;
-            border: none;
-            margin-top: 12px;
-            cursor: pointer;
-            font-size: 14px;
-            width: 100%;
-            text-align: center;
-        }
-
-        .tab-switch {
-            display: flex;
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 4px;
-            margin-bottom: 16px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: transparent;
-            color: #8899aa;
-            border-radius: 10px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .tab-btn.active {
-            background: #ffb000;
-            color: #0a0c10;
-            font-weight: 600;
-        }
-
-        /* История */
         .ride-item {
-            background: rgba(255,255,255,0.04);
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.04); border-radius: 12px;
+            padding: 12px; margin-bottom: 8px; font-size: 13px;
         }
-
-        .ride-route {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .ride-details {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 8px;
-            font-size: 12px;
-            color: #8899aa;
-        }
-
-        .ride-price {
-            color: #ffb000;
-            font-weight: 600;
-        }
-
-        /* Отслеживание */
-        .driver-tracker {
-            display: none;
-            position: absolute;
-            top: 100px;
-            left: 16px;
-            right: 16px;
-            background: rgba(18,22,28,0.95);
-            border-radius: 18px;
-            padding: 16px;
-            z-index: 60;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .driver-tracker.active {
-            display: block;
-        }
-
-        .driver-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .driver-photo {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #ffb000;
-        }
-
-        .driver-name {
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .driver-car {
-            font-size: 13px;
-            color: #8899aa;
-        }
-
-        .eta {
-            font-size: 20px;
-            font-weight: 700;
-            color: #4ade80;
-            margin-top: 8px;
-        }
-
-        /* Языки */
-        .lang-switcher {
-            display: flex;
-            gap: 4px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            padding: 2px;
-        }
-
-        .lang-btn {
-            background: transparent;
-            border: none;
-            color: #8899aa;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 5px 8px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        .lang-btn.active {
-            background: #ffb000;
-            color: #0a0c10;
-        }
+        .error-msg { color: #ef4444; font-size: 12px; margin-top: 4px; display: none; }
+        .error-msg.active { display: block; }
     </style>
 </head>
 <body>
     <!-- Шапка -->
     <div class="header">
-        <div class="logo-small">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-            <span class="logo-text">WHEEL</span>
-        </div>
+        <div class="logo">⚡ WHEEL</div>
         <div class="header-actions">
             <div class="lang-switcher">
                 <button class="lang-btn" data-lang="he">עב</button>
                 <button class="lang-btn" data-lang="ar">عرب</button>
                 <button class="lang-btn active" data-lang="en">EN</button>
             </div>
-            <button class="icon-btn" id="historyBtn" title="История">📋</button>
-            <button class="profile-avatar" id="profileBtn">👤</button>
+            <button class="icon-btn" id="historyBtn">📋</button>
+            <button class="avatar" id="profileBtn">👤</button>
         </div>
     </div>
 
-    <!-- Карта -->
-    <div id="map"></div>
-
-    <!-- Отслеживание -->
-    <div class="driver-tracker" id="driverTracker">
-        <div class="driver-info">
-            <div class="driver-photo"></div>
-            <div>
-                <div class="driver-name" id="trackingDriverName">Водитель едет...</div>
-                <div class="driver-car" id="trackingDriverCar"></div>
-            </div>
-        </div>
-        <div class="eta" id="trackingETA">Прибудет через ~3 мин</div>
-    </div>
+    <!-- Карта (с фолбэком) -->
+    <div id="map"><div class="map-fallback">🗺️ Карта загружается...<br><small>Если карта не появилась — используйте ручной ввод адреса</small></div></div>
 
     <!-- Панель заказа -->
-    <div class="order-panel" id="orderPanel">
+    <div class="order-panel">
         <div class="input-group">
-            <div class="input-dot pickup-dot"></div>
-            <input type="text" id="pickupInput" placeholder="Откуда?" autocomplete="off">
-            <button class="icon-btn" id="locateBtn" style="width:32px;height:32px;font-size:14px;">📍</button>
+            <div class="dot dot-green"></div>
+            <input type="text" id="pickupInput" placeholder="Откуда?">
+            <button class="icon-btn" id="locateBtn" style="width:30px;height:30px;font-size:12px;">📍</button>
         </div>
         <div class="input-group">
-            <div class="input-dot dropoff-dot"></div>
-            <input type="text" id="dropoffInput" placeholder="Куда?" autocomplete="off">
+            <div class="dot dot-red"></div>
+            <input type="text" id="dropoffInput" placeholder="Куда?">
         </div>
-        <div class="price-estimate" id="priceEstimate" style="display:none;">
+        <div class="price-box" id="priceBox" style="display:none;">
             <div>
-                <div class="price-label">Примерная стоимость</div>
-                <div style="font-size:11px;color:#8899aa;" id="distanceText"></div>
+                <div class="price-label">Стоимость</div>
+                <div style="font-size:10px;color:#667788;" id="distanceText"></div>
             </div>
             <div style="text-align:right;">
                 <div class="price-value" id="priceValue">₪0</div>
-                <div class="cashback-badge" id="cashbackBadge">+₪0 кэшбэк</div>
+                <div class="cashback-badge">+<span id="cashbackVal">0</span> кэшбэк</div>
             </div>
         </div>
-        <button class="order-btn" id="orderBtn" disabled>Заказать WHEEL</button>
+        <div class="input-group" id="manualPriceGroup" style="display:none;">
+            <input type="number" id="manualPrice" placeholder="Цена вручную (₪)">
+        </div>
+        <div class="error-msg" id="orderError"></div>
+        <button class="btn btn-primary" id="orderBtn" disabled>Заказать WHEEL</button>
     </div>
 
     <!-- Модалка: Профиль -->
     <div class="modal" id="profileModal">
         <div class="modal-content">
-            <div class="tab-switch">
+            <div class="tab-row">
                 <button class="tab-btn active" data-tab="login">Вход</button>
                 <button class="tab-btn" data-tab="register">Регистрация</button>
             </div>
             <div id="loginTab">
                 <input class="modal-input" type="email" id="loginEmail" placeholder="Email">
                 <input class="modal-input" type="password" id="loginPassword" placeholder="Пароль">
-                <button class="modal-btn" id="loginSubmit">Войти</button>
+                <div class="error-msg" id="loginError"></div>
+                <button class="btn btn-primary" id="loginSubmit">Войти</button>
             </div>
             <div id="registerTab" style="display:none;">
                 <input class="modal-input" type="text" id="regName" placeholder="Имя">
                 <input class="modal-input" type="email" id="regEmail" placeholder="Email">
-                <input class="modal-input" type="tel" id="regPhone" placeholder="Телефон (+972...)">
+                <input class="modal-input" type="tel" id="regPhone" placeholder="Телефон">
                 <input class="modal-input" type="password" id="regPassword" placeholder="Пароль">
-                <button class="modal-btn" id="registerSubmit">Зарегистрироваться</button>
+                <div class="error-msg" id="regError"></div>
+                <button class="btn btn-primary" id="registerSubmit">Зарегистрироваться</button>
             </div>
-            <button class="modal-close" id="closeProfile">Закрыть</button>
+            <button class="btn btn-secondary" id="closeProfile" style="margin-top:6px;">Закрыть</button>
         </div>
     </div>
 
@@ -532,321 +248,295 @@
     <div class="modal" id="historyModal">
         <div class="modal-content">
             <h3>📋 История поездок</h3>
-            <div id="ridesList"><p style="color:#667788;">Нет поездок</p></div>
-            <div style="margin-top:16px;padding:12px;background:rgba(74,222,128,0.1);border-radius:12px;">
+            <div id="ridesList"><p style="color:#667788;font-size:13px;">Нет поездок</p></div>
+            <div style="margin-top:12px;padding:10px;background:rgba(74,222,128,0.08);border-radius:10px;">
                 <span style="color:#4ade80;">💰 Кэшбэк: </span>
                 <span style="font-weight:700;color:#4ade80;" id="totalCashback">₪0</span>
                 <br><small style="color:#667788;">Доступен через 8 месяцев</small>
             </div>
-            <button class="modal-close" id="closeHistory">Закрыть</button>
+            <button class="btn btn-secondary" id="closeHistory" style="margin-top:6px;">Закрыть</button>
         </div>
     </div>
 
     <script>
-        // ============ ПЕРЕМЕННЫЕ ============
+        // ============ ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ============
         let map, pickupMarker, dropoffMarker, directionsService, directionsRenderer;
-        let pickupLocation = null;
-        let dropoffLocation = null;
-        let currentUser = null;
-        let currentOrderId = null;
+        let pickupLocation = null, dropoffLocation = null;
+        let currentUser = null, currentLang = 'en';
+        const i18n = {
+            he: { pickup:"מאיפה?", dropoff:"לאן?", order:"הזמן WHEEL", price:"מחיר", cashback:"קאשבק", login:"התחברות", register:"הרשמה", guest:"אורח", loginBtn:"התחבר", logout:"התנתק" },
+            ar: { pickup:"من أين؟", dropoff:"إلى أين؟", order:"اطلب WHEEL", price:"السعر", cashback:"كاش باك", login:"دخول", register:"تسجيل", guest:"زائر", loginBtn:"دخول", logout:"خروج" },
+            en: { pickup:"Pickup?", dropoff:"Where to?", order:"Order WHEEL", price:"Price", cashback:"Cashback", login:"Login", register:"Register", guest:"Guest", loginBtn:"Sign in", logout:"Log out" }
+        };
+        function t(k) { return i18n[currentLang]?.[k] || i18n.en[k] || k; }
 
         // ============ ЯЗЫКИ ============
-        const i18n = {
-            he: { pickup: "מאיפה?", dropoff: "לאן?", order: "הזמן WHEEL", price: "מחיר משוער", cashback: "קאשבק", distance: "מרחק", login: "התחברות", register: "הרשמה", history: "היסטוריית נסיעות", noRides: "אין נסיעות", availableIn: "זמין בעוד 8 חודשים" },
-            ar: { pickup: "من أين؟", dropoff: "إلى أين؟", order: "اطلب WHEEL", price: "السعر التقديري", cashback: "كاش باك", distance: "المسافة", login: "دخول", register: "تسجيل", history: "سجل الرحلات", noRides: "لا توجد رحلات", availableIn: "متاح بعد 8 أشهر" },
-            en: { pickup: "Pickup?", dropoff: "Where to?", order: "Order WHEEL", price: "Estimated price", cashback: "Cashback", distance: "Distance", login: "Login", register: "Register", history: "Ride History", noRides: "No rides", availableIn: "Available in 8 months" }
+        document.querySelectorAll('.lang-btn').forEach(b => {
+            b.addEventListener('click', () => {
+                document.querySelectorAll('.lang-btn').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                currentLang = b.dataset.lang;
+                localStorage.setItem('wheel_lang', currentLang);
+                refreshUI();
+            });
+        });
+        const sl = localStorage.getItem('wheel_lang');
+        if (sl && i18n[sl]) {
+            currentLang = sl;
+            document.querySelectorAll('.lang-btn').forEach(b => { b.classList.remove('active'); if(b.dataset.lang===sl) b.classList.add('active'); });
+        }
+
+        function refreshUI() {
+            document.getElementById('pickupInput').placeholder = t('pickup');
+            document.getElementById('dropoffInput').placeholder = t('dropoff');
+            if (!pickupLocation && !dropoffLocation) document.getElementById('orderBtn').textContent = t('order');
+        }
+
+        // ============ КАРТА (с фолбэком) ============
+        window.initMap = function() {
+            if (!window.GMAPS_LOADED || typeof google === 'undefined') {
+                showMapFallback();
+                return;
+            }
+            try {
+                map = new google.maps.Map(document.getElementById('map'), {
+                    center: { lat: 32.0853, lng: 34.7818 },
+                    zoom: 14,
+                    disableDefaultUI: true,
+                    zoomControl: true,
+                    styles: [
+                        { elementType:"geometry", stylers:[{color:"#1a1d25"}] },
+                        { elementType:"labels.text.fill", stylers:[{color:"#8a95a5"}] },
+                        { elementType:"labels.text.stroke", stylers:[{color:"#0a0c10"}] },
+                        { featureType:"road", elementType:"geometry", stylers:[{color:"#2a2d35"}] },
+                        { featureType:"water", elementType:"geometry", stylers:[{color:"#0d1628"}] }
+                    ]
+                });
+                directionsService = new google.maps.DirectionsService();
+                directionsRenderer = new google.maps.DirectionsRenderer({
+                    map, suppressMarkers: true,
+                    polylineOptions: { strokeColor:'#ffb000', strokeWeight:5 }
+                });
+
+                // Автокомплит
+                try {
+                    new google.maps.places.Autocomplete(document.getElementById('pickupInput'), { componentRestrictions:{country:'il'} })
+                        .addListener('place_changed', () => { const p=document.getElementById('pickupInput'); /* handled by input */ });
+                    new google.maps.places.Autocomplete(document.getElementById('dropoffInput'), { componentRestrictions:{country:'il'} });
+                } catch(e) { console.warn('Places API not available'); }
+
+                // Геолокация
+                document.getElementById('locateBtn').addEventListener('click', () => {
+                    if (!navigator.geolocation) return alert('Геолокация не поддерживается');
+                    navigator.geolocation.getCurrentPosition(pos => {
+                        pickupLocation = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+                        map.setCenter(pickupLocation);
+                        updatePickupMarker();
+                        new google.maps.Geocoder().geocode({location:pickupLocation}, (res,st) => {
+                            if(st==='OK' && res[0]) document.getElementById('pickupInput').value=res[0].formatted_address;
+                        });
+                    }, () => alert('Не удалось определить местоположение'));
+                });
+
+                // Отслеживание ручного ввода
+                document.getElementById('pickupInput').addEventListener('blur', geocodePickup);
+                document.getElementById('dropoffInput').addEventListener('blur', geocodeDropoff);
+
+                console.log('🗺️ Карта загружена');
+            } catch(e) {
+                console.error('Map init error:', e);
+                showMapFallback();
+            }
         };
 
-        let currentLang = 'en';
-        function t(key) { return i18n[currentLang]?.[key] || i18n.en[key] || key; }
+        function showMapFallback() {
+            document.getElementById('map').innerHTML = '<div class="map-fallback">🗺️ Карта недоступна<br><small>Используйте ручной ввод адреса и цены</small></div>';
+            document.getElementById('manualPriceGroup').style.display = 'flex';
+            document.getElementById('orderBtn').disabled = false;
+        }
 
-        // ============ КАРТА ============
-        function initMap() {
-            map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: 32.0853, lng: 34.7818 },
-                zoom: 14,
-                disableDefaultUI: true,
-                zoomControl: true,
-                styles: [
-                    { elementType: "geometry", stylers: [{ color: "#1a1d25" }] },
-                    { elementType: "labels.text.fill", stylers: [{ color: "#8a95a5" }] },
-                    { elementType: "labels.text.stroke", stylers: [{ color: "#0a0c10" }] },
-                    { featureType: "road", elementType: "geometry", stylers: [{ color: "#2a2d35" }] },
-                    { featureType: "water", elementType: "geometry", stylers: [{ color: "#0d1628" }] }
-                ]
+        function geocodePickup() {
+            if (!window.GMAPS_LOADED || !google) return;
+            const addr = document.getElementById('pickupInput').value.trim();
+            if (!addr) return;
+            new google.maps.Geocoder().geocode({address:addr, componentRestrictions:{country:'il'}}, (res,st) => {
+                if(st==='OK' && res[0]) { pickupLocation=res[0].geometry.location; updatePickupMarker(); calculateRoute(); }
             });
-
-            directionsService = new google.maps.DirectionsService();
-            directionsRenderer = new google.maps.DirectionsRenderer({
-                map: map, suppressMarkers: true,
-                polylineOptions: { strokeColor: '#ffb000', strokeWeight: 5 }
-            });
-
-            const pickupAutocomplete = new google.maps.places.Autocomplete(
-                document.getElementById('pickupInput'), { componentRestrictions: { country: 'il' } }
-            );
-            const dropoffAutocomplete = new google.maps.places.Autocomplete(
-                document.getElementById('dropoffInput'), { componentRestrictions: { country: 'il' } }
-            );
-
-            pickupAutocomplete.addListener('place_changed', () => {
-                const place = pickupAutocomplete.getPlace();
-                if (place.geometry) { pickupLocation = place.geometry.location; updatePickupMarker(); calculateRoute(); }
-            });
-
-            dropoffAutocomplete.addListener('place_changed', () => {
-                const place = dropoffAutocomplete.getPlace();
-                if (place.geometry) { dropoffLocation = place.geometry.location; updateDropoffMarker(); calculateRoute(); }
-            });
-
-            document.getElementById('locateBtn').addEventListener('click', () => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            const loc = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
-                            pickupLocation = loc;
-                            map.setCenter(loc);
-                            updatePickupMarker();
-                            new google.maps.Geocoder().geocode({ location: loc }, (results, status) => {
-                                if (status === 'OK' && results[0]) document.getElementById('pickupInput').value = results[0].formatted_address;
-                            });
-                        },
-                        () => alert('Не удалось определить местоположение')
-                    );
-                }
+        }
+        function geocodeDropoff() {
+            if (!window.GMAPS_LOADED || !google) return;
+            const addr = document.getElementById('dropoffInput').value.trim();
+            if (!addr) return;
+            new google.maps.Geocoder().geocode({address:addr, componentRestrictions:{country:'il'}}, (res,st) => {
+                if(st==='OK' && res[0]) { dropoffLocation=res[0].geometry.location; updateDropoffMarker(); calculateRoute(); }
             });
         }
 
         function updatePickupMarker() {
-            if (pickupMarker) pickupMarker.setMap(null);
-            if (pickupLocation) {
-                pickupMarker = new google.maps.Marker({
-                    position: pickupLocation, map: map,
-                    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#4ade80', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 }
-                });
-            }
+            if (!pickupLocation || !map) return;
+            if(pickupMarker) pickupMarker.setMap(null);
+            pickupMarker = new google.maps.Marker({
+                position:pickupLocation, map,
+                icon:{ path:google.maps.SymbolPath.CIRCLE, scale:10, fillColor:'#4ade80', fillOpacity:1, strokeColor:'#fff', strokeWeight:3 }
+            });
         }
-
         function updateDropoffMarker() {
-            if (dropoffMarker) dropoffMarker.setMap(null);
-            if (dropoffLocation) {
-                dropoffMarker = new google.maps.Marker({
-                    position: dropoffLocation, map: map,
-                    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#ef4444', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 }
-                });
-            }
+            if (!dropoffLocation || !map) return;
+            if(dropoffMarker) dropoffMarker.setMap(null);
+            dropoffMarker = new google.maps.Marker({
+                position:dropoffLocation, map,
+                icon:{ path:google.maps.SymbolPath.CIRCLE, scale:10, fillColor:'#ef4444', fillOpacity:1, strokeColor:'#fff', strokeWeight:3 }
+            });
         }
-
         function calculateRoute() {
-            if (!pickupLocation || !dropoffLocation) return;
+            if (!pickupLocation || !dropoffLocation || !directionsService) return;
             directionsService.route({
-                origin: pickupLocation, destination: dropoffLocation, travelMode: google.maps.TravelMode.DRIVING
-            }, (response, status) => {
-                if (status === 'OK') {
-                    directionsRenderer.setDirections(response);
-                    const route = response.routes[0].legs[0];
-                    const distanceKm = route.distance.value / 1000;
-                    const price = Math.round(distanceKm * 5 + 12);
-                    const cashback = Math.round(price * 0.05);
-                    document.getElementById('priceEstimate').style.display = 'flex';
-                    document.getElementById('priceValue').textContent = '₪' + price;
-                    document.getElementById('distanceText').textContent = distanceKm.toFixed(1) + ' км';
-                    document.getElementById('cashbackBadge').textContent = '+₪' + cashback + ' ' + t('cashback');
-                    document.getElementById('orderBtn').disabled = false;
-                    document.getElementById('orderBtn').textContent = t('order');
+                origin:pickupLocation, destination:dropoffLocation, travelMode:'DRIVING'
+            }, (res,st) => {
+                if(st==='OK') {
+                    directionsRenderer.setDirections(res);
+                    const d = res.routes[0].legs[0].distance.value/1000;
+                    const price = Math.round(d*5+12);
+                    document.getElementById('priceBox').style.display='flex';
+                    document.getElementById('priceValue').textContent='₪'+price;
+                    document.getElementById('distanceText').textContent=d.toFixed(1)+' км';
+                    document.getElementById('cashbackVal').textContent='₪'+Math.round(price*0.05);
+                    document.getElementById('orderBtn').disabled=false;
+                    document.getElementById('orderBtn').textContent=t('order');
+                    document.getElementById('manualPriceGroup').style.display='none';
                 }
             });
         }
 
+        // Если карта не загрузилась за 5 секунд — фолбэк
+        setTimeout(() => {
+            if (!window.GMAPS_LOADED) showMapFallback();
+        }, 5000);
+
         // ============ ЗАКАЗ ============
         document.getElementById('orderBtn').addEventListener('click', async () => {
             if (!currentUser) { document.getElementById('profileModal').classList.add('active'); return; }
-            if (!pickupLocation || !dropoffLocation) return;
+            const pickup = document.getElementById('pickupInput').value.trim();
+            const dropoff = document.getElementById('dropoffInput').value.trim();
+            const manualPrice = parseInt(document.getElementById('manualPrice').value) || 0;
+            const autoPrice = parseInt(document.getElementById('priceValue')?.textContent?.replace('₪','')) || 0;
+            const price = manualPrice || autoPrice;
+            const err = document.getElementById('orderError');
+            err.classList.remove('active');
+
+            if (!pickup || !dropoff) { err.textContent='Введите адреса'; err.classList.add('active'); return; }
+            if (!price) { err.textContent='Укажите цену'; err.classList.add('active'); return; }
 
             const btn = document.getElementById('orderBtn');
-            btn.disabled = true;
-            btn.textContent = 'Поиск водителя...';
+            btn.disabled = true; btn.textContent = 'Создание...';
 
             try {
-                const { collection, addDoc, serverTimestamp, GeoPoint } = window.firestoreFunctions;
-                const orderData = {
+                const { collection, addDoc, serverTimestamp } = window.firestoreFunctions;
+                const order = {
                     clientId: currentUser.uid,
-                    clientName: currentUser.displayName || currentUser.email,
-                    pickup: new GeoPoint(pickupLocation.lat(), pickupLocation.lng()),
-                    dropoff: new GeoPoint(dropoffLocation.lat(), dropoffLocation.lng()),
-                    pickupAddress: document.getElementById('pickupInput').value,
-                    dropoffAddress: document.getElementById('dropoffInput').value,
+                    clientName: currentUser.email,
+                    pickupAddress: pickup,
+                    dropoffAddress: dropoff,
                     status: 'searching',
-                    price: parseInt(document.getElementById('priceValue').textContent.replace('₪','')),
-                    cashback: Math.round(parseInt(document.getElementById('priceValue').textContent.replace('₪','')) * 0.05),
+                    price, cashback: Math.round(price*0.05),
                     createdAt: serverTimestamp(),
                     driverId: null
                 };
-                const docRef = await addDoc(collection(window.firebaseDb, 'orders'), orderData);
-                currentOrderId = docRef.id;
-                console.log('✅ Заказ создан:', currentOrderId);
-                startDriverTracking();
-            } catch (error) {
-                console.error('❌ Ошибка заказа:', error);
-                alert('Ошибка при создании заказа');
-            }
+                if (pickupLocation && dropoffLocation) {
+                    const { GeoPoint } = window.firestoreFunctions;
+                    order.pickup = new GeoPoint(pickupLocation.lat(), pickupLocation.lng());
+                    order.dropoff = new GeoPoint(dropoffLocation.lat(), dropoffLocation.lng());
+                }
+                await addDoc(collection(window.firebaseDb, 'orders'), order);
+                alert('✅ Заказ создан!');
+                document.getElementById('pickupInput').value='';
+                document.getElementById('dropoffInput').value='';
+                document.getElementById('manualPrice').value='';
+                document.getElementById('priceBox').style.display='none';
+                btn.textContent = t('order');
+            } catch(e) {
+                err.textContent = e.message; err.classList.add('active');
+            } finally { btn.disabled = false; }
         });
-
-        // ============ ОТСЛЕЖИВАНИЕ ============
-        function startDriverTracking() {
-            document.getElementById('driverTracker').classList.add('active');
-            const interval = setInterval(async () => {
-                if (!currentOrderId) { clearInterval(interval); return; }
-                try {
-                    const { doc, getDoc } = window.firestoreFunctions;
-                    const orderDoc = await getDoc(doc(window.firebaseDb, 'orders', currentOrderId));
-                    if (!orderDoc.exists()) return;
-                    const order = orderDoc.data();
-                    if (order.status === 'accepted' || order.status === 'arrived' || order.status === 'in_progress') {
-                        if (order.driverId) {
-                            const driverDoc = await getDoc(doc(window.firebaseDb, 'drivers', order.driverId));
-                            if (driverDoc.exists()) {
-                                const driver = driverDoc.data();
-                                document.getElementById('trackingDriverName').textContent = driver.fullName || 'Водитель';
-                                document.getElementById('trackingDriverCar').textContent = driver.carModel + ' • ' + driver.carNumber;
-                                if (driver.lat && driver.lng) {
-                                    const pos = new google.maps.LatLng(driver.lat, driver.lng);
-                                    if (!window.driverMarker) {
-                                        window.driverMarker = new google.maps.Marker({ position: pos, map: map, icon: '🚖' });
-                                    } else {
-                                        window.driverMarker.setPosition(pos);
-                                    }
-                                    map.panTo(pos);
-                                }
-                            }
-                        }
-                    }
-                    if (order.status === 'completed') {
-                        clearInterval(interval);
-                        document.getElementById('driverTracker').classList.remove('active');
-                        document.getElementById('orderBtn').disabled = false;
-                        document.getElementById('orderBtn').textContent = t('order');
-                        currentOrderId = null;
-                    }
-                } catch (e) { console.error('Tracking error:', e); }
-            }, 3000);
-        }
 
         // ============ АВТОРИЗАЦИЯ ============
-        window.authFunctions.onAuthStateChanged(window.firebaseAuth, async (user) => {
+        window.authFunctions.onAuthStateChanged(window.firebaseAuth, user => {
             currentUser = user;
-            const profileBtn = document.getElementById('profileBtn');
-            if (user) {
-                profileBtn.textContent = user.email?.charAt(0).toUpperCase() || 'U';
-                profileBtn.style.background = 'linear-gradient(135deg, #4ade80, #22c55e)';
-            } else {
-                profileBtn.textContent = '👤';
-                profileBtn.style.background = 'linear-gradient(135deg, #ffb000, #ff6a00)';
-            }
+            const pb = document.getElementById('profileBtn');
+            if (user) { pb.textContent = (user.email||'U').charAt(0).toUpperCase(); pb.style.background='linear-gradient(135deg,#4ade80,#22c55e)'; }
+            else { pb.textContent='👤'; pb.style.background='linear-gradient(135deg,#ffb000,#ff6a00)'; }
         });
 
-        // ============ МОДАЛКИ ============
         document.getElementById('profileBtn').addEventListener('click', () => {
-            if (currentUser) {
-                if (confirm('Выйти из аккаунта?')) window.authFunctions.signOut(window.firebaseAuth);
-            } else {
-                document.getElementById('profileModal').classList.add('active');
-            }
+            if (currentUser) { if(confirm(t('logout')+'?')) window.authFunctions.signOut(window.firebaseAuth); }
+            else document.getElementById('profileModal').classList.add('active');
         });
-
         document.getElementById('closeProfile').addEventListener('click', () => document.getElementById('profileModal').classList.remove('active'));
-        document.getElementById('historyBtn').addEventListener('click', () => { document.getElementById('historyModal').classList.add('active'); if (currentUser) loadRideHistory(); });
+        document.getElementById('historyBtn').addEventListener('click', () => { document.getElementById('historyModal').classList.add('active'); if(currentUser) loadHistory(); });
         document.getElementById('closeHistory').addEventListener('click', () => document.getElementById('historyModal').classList.remove('active'));
 
+        // Табы
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                document.getElementById('loginTab').style.display = btn.dataset.tab === 'login' ? 'block' : 'none';
-                document.getElementById('registerTab').style.display = btn.dataset.tab === 'register' ? 'block' : 'none';
+                document.getElementById('loginTab').style.display = btn.dataset.tab==='login'?'block':'none';
+                document.getElementById('registerTab').style.display = btn.dataset.tab==='register'?'block':'none';
             });
         });
 
         // Регистрация
         document.getElementById('registerSubmit').addEventListener('click', async () => {
-            const name = document.getElementById('regName').value.trim();
-            const email = document.getElementById('regEmail').value.trim();
-            const phone = document.getElementById('regPhone').value.trim();
-            const password = document.getElementById('regPassword').value;
-            if (!name || !email || !password) return alert('Заполните все поля');
+            const n=document.getElementById('regName').value.trim(), e=document.getElementById('regEmail').value.trim();
+            const p=document.getElementById('regPhone').value.trim(), pw=document.getElementById('regPassword').value;
+            const er=document.getElementById('regError'); er.classList.remove('active');
+            if(!n||!e||!pw) { er.textContent='Заполните поля'; er.classList.add('active'); return; }
             try {
-                const userCredential = await window.authFunctions.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
-                const { doc, setDoc } = window.firestoreFunctions;
-                await setDoc(doc(window.firebaseDb, 'users', userCredential.user.uid), {
-                    name, email, phone, role: 'client',
-                    totalCashback: 0, cashbackAvailable: 0,
-                    cashbackUnlockDate: new Date(Date.now() + 8 * 30 * 24 * 60 * 60 * 1000),
-                    createdAt: new Date()
+                const uc = await window.authFunctions.createUserWithEmailAndPassword(window.firebaseAuth,e,pw);
+                await window.firestoreFunctions.setDoc(window.firestoreFunctions.doc(window.firebaseDb,'users',uc.user.uid),{
+                    name:n, email:e, phone:p, role:'client', totalCashback:0, cashbackAvailable:0,
+                    cashbackUnlockDate: new Date(Date.now()+8*30*24*60*60*1000), createdAt: new Date()
                 });
                 document.getElementById('profileModal').classList.remove('active');
-                alert('Регистрация успешна!');
-            } catch (error) { alert('Ошибка: ' + error.message); }
+                alert('✅ Готово!');
+            } catch(x) { er.textContent=x.message; er.classList.add('active'); }
         });
 
         // Вход
         document.getElementById('loginSubmit').addEventListener('click', async () => {
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            if (!email || !password) return;
+            const e=document.getElementById('loginEmail').value.trim(), p=document.getElementById('loginPassword').value;
+            const er=document.getElementById('loginError'); er.classList.remove('active');
+            if(!e||!p) { er.textContent='Введите данные'; er.classList.add('active'); return; }
             try {
-                await window.authFunctions.signInWithEmailAndPassword(window.firebaseAuth, email, password);
+                await window.authFunctions.signInWithEmailAndPassword(window.firebaseAuth,e,p);
                 document.getElementById('profileModal').classList.remove('active');
-            } catch (error) { alert('Ошибка входа: ' + error.message); }
+            } catch(x) { er.textContent=x.message; er.classList.add('active'); }
         });
 
         // История
-        async function loadRideHistory() {
+        async function loadHistory() {
             try {
                 const { collection, query, where, orderBy, limit, getDocs } = window.firestoreFunctions;
-                const q = query(collection(window.firebaseDb, 'orders'), where('clientId', '==', currentUser.uid), orderBy('createdAt', 'desc'), limit(20));
-                const snapshot = await getDocs(q);
-                const ridesList = document.getElementById('ridesList');
-                if (snapshot.empty) { ridesList.innerHTML = '<p style="color:#667788;">' + t('noRides') + '</p>'; return; }
-                ridesList.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const ride = doc.data();
-                    const date = ride.createdAt?.toDate?.() || new Date();
-                    ridesList.innerHTML += `<div class="ride-item">
-                        <div class="ride-route">📍 ${ride.pickupAddress || '—'}</div>
-                        <div class="ride-route">🎯 ${ride.dropoffAddress || '—'}</div>
-                        <div class="ride-details"><span>${date.toLocaleDateString()}</span><span class="ride-price">₪${ride.price || 0}</span><span style="color:#4ade80;">+₪${ride.cashback || 0}</span></div>
+                const q = query(collection(window.firebaseDb,'orders'), where('clientId','==',currentUser.uid), orderBy('createdAt','desc'), limit(15));
+                const snap = await getDocs(q);
+                const list = document.getElementById('ridesList');
+                if(snap.empty) { list.innerHTML='<p style="color:#667788;">Нет поездок</p>'; return; }
+                list.innerHTML = '';
+                let totalCb = 0;
+                snap.forEach(d => {
+                    const r = d.data();
+                    totalCb += r.cashback || 0;
+                    list.innerHTML += `<div class="ride-item">
+                        <div>📍 ${r.pickupAddress||'—'}</div>
+                        <div>🎯 ${r.dropoffAddress||'—'}</div>
+                        <div style="color:#8899aa;font-size:11px;">${r.createdAt?.toDate?.()?.toLocaleDateString?.()||''} • ₪${r.price||0} • <span style="color:#4ade80;">+₪${r.cashback||0}</span></div>
                     </div>`;
                 });
-            } catch (e) { console.error('History error:', e); }
+                document.getElementById('totalCashback').textContent = '₪' + totalCb;
+            } catch(e) { console.error(e); }
         }
 
-        // ============ ЯЗЫКИ ============
-        document.querySelectorAll('.lang-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentLang = btn.dataset.lang;
-                localStorage.setItem('wheel_lang', currentLang);
-                document.getElementById('pickupInput').placeholder = t('pickup');
-                document.getElementById('dropoffInput').placeholder = t('dropoff');
-                document.getElementById('orderBtn').textContent = t('order');
-            });
-        });
-
-        const savedLang = localStorage.getItem('wheel_lang');
-        if (savedLang && i18n[savedLang]) {
-            currentLang = savedLang;
-            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-            document.querySelector(`.lang-btn[data-lang="${savedLang}"]`)?.classList.add('active');
-        }
-
-        // ============ ЗАПУСК ============
-        window.addEventListener('load', () => {
-            initMap();
-            document.getElementById('pickupInput').placeholder = t('pickup');
-            document.getElementById('dropoffInput').placeholder = t('dropoff');
-            document.getElementById('orderBtn').textContent = t('order');
-        });
+        refreshUI();
     </script>
 </body>
 </html>
