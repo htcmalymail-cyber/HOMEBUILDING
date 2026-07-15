@@ -64,7 +64,6 @@
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
     <style>
-        /* (ВСЕ СТИЛИ ТЕ ЖЕ, ЧТО И В ПРЕДЫДУЩЕЙ ВЕРСИИ) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -676,7 +675,68 @@
     let userDocRef = null;
 
     // ============================================================
-    // 4. FIREBASE — АВТОРИЗАЦИЯ
+    // 4. ОБРАТНЫЙ ГЕОКОДИНГ (координаты → адрес)
+    // ============================================================
+    async function reverseGeocode(lat, lng) {
+        try {
+            const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ru&zoom=16`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data && data.display_name) {
+                // Формируем короткий адрес: улица, номер, район, город
+                const parts = data.display_name.split(', ');
+                // Берём первые 3-4 значимые части
+                let address = parts.slice(0, 3).join(', ');
+                
+                // Если есть номер дома — добавляем
+                if (data.address && data.address.house_number) {
+                    const street = data.address.road || data.address.street || '';
+                    const house = data.address.house_number || '';
+                    if (street && house) {
+                        address = `${street} ${house}`;
+                    }
+                }
+                
+                // Если адрес слишком короткий — берём display_name
+                if (address.length < 5) {
+                    address = data.display_name;
+                }
+                
+                return address;
+            }
+            return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        } catch (error) {
+            console.error('Reverse geocode error:', error);
+            return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        }
+    }
+
+    // ============================================================
+    // 5. ПРЯМОЙ ГЕОКОДИНГ (адрес → координаты)
+    // ============================================================
+    async function geocode(address) {
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&accept-language=ru`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+                return {
+                    lat: parseFloat(data[0].lat),
+                    lng: parseFloat(data[0].lon),
+                    display_name: data[0].display_name
+                };
+            }
+            return null;
+        } catch (error) {
+            console.error('Geocode error:', error);
+            return null;
+        }
+    }
+
+    // ============================================================
+    // 6. FIREBASE — АВТОРИЗАЦИЯ
     // ============================================================
     async function initFirebaseAuth() {
         const auth = window.firebaseAuth;
@@ -706,7 +766,7 @@
     }
 
     // ============================================================
-    // 5. КОШЕЛЁК В FIREBASE
+    // 7. КОШЕЛЁК В FIREBASE
     // ============================================================
     async function initUserWallet(uid) {
         const db = window.firebaseDb;
@@ -720,7 +780,6 @@
         const docSnap = await getDocFn(userRef);
 
         if (!docSnap.exists()) {
-            // Создаём новый документ
             await setDocFn(userRef, {
                 wallet: 0,
                 bonuses: 0,
@@ -753,12 +812,12 @@
             const bonuses = data.bonuses || 0;
             document.getElementById('walletDisplay').textContent = wallet.toFixed(0);
             document.getElementById('modalBalance').textContent = wallet.toFixed(0);
-            document.getElementById('bonusDisplay').textContent = bonuses.toFixed(0);
+            document.getElementById('bonusDisplay').textContent = bonuses.toFixed(2);
         }
     }
 
     // ============================================================
-    // 6. ПОПОЛНЕНИЕ КОШЕЛЬКА
+    // 8. ПОПОЛНЕНИЕ КОШЕЛЬКА
     // ============================================================
     document.getElementById('topupBtn').addEventListener('click', async () => {
         const input = document.getElementById('topupInput');
@@ -788,7 +847,7 @@
     });
 
     // ============================================================
-    // 7. ГЕОЛОКАЦИЯ
+    // 9. ГЕОЛОКАЦИЯ С ОБРАТНЫМ ГЕОКОДИНГОМ
     // ============================================================
     function getCurrentPosition() {
         showStatus('⏳ Определяем ваше местоположение...', 'info');
@@ -799,7 +858,7 @@
         }
 
         navigator.geolocation.getCurrentPosition(
-            (pos) => {
+            async (pos) => {
                 const { latitude, longitude } = pos.coords;
                 const latlng = [latitude, longitude];
 
@@ -810,9 +869,13 @@
                     .addTo(map)
                     .bindPopup('📍 Вы здесь');
 
-                document.getElementById('fromInput').value = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                // 🔥 Получаем текстовый адрес по координатам
+                const address = await reverseGeocode(latitude, longitude);
+                
+                document.getElementById('fromInput').value = address;
                 document.getElementById('fromInput').dataset.lat = latitude;
                 document.getElementById('fromInput').dataset.lng = longitude;
+                document.getElementById('fromInput').dataset.address = address;
 
                 showStatus('✅ Геопозиция определена!', 'success');
                 setTimeout(() => clearStatus(), 2000);
@@ -826,29 +889,41 @@
     }
 
     // ============================================================
-    // 8. ПОСТРОЕНИЕ МАРШРУТА
+    // 10. ПОСТРОЕНИЕ МАРШРУТА
     // ============================================================
-    function buildRoute() {
+    async function buildRoute() {
         const fromInput = document.getElementById('fromInput');
         const toInput = document.getElementById('toInput');
 
         let fromLat = parseFloat(fromInput.dataset.lat);
         let fromLng = parseFloat(fromInput.dataset.lng);
+        let fromAddress = fromInput.dataset.address || fromInput.value;
 
+        // Если нет координат — пробуем геокодинг адреса
         if (!fromLat || !fromLng) {
-            const coords = parseCoordinates(fromInput.value);
-            if (coords) {
-                fromLat = coords.lat;
-                fromLng = coords.lng;
+            const geocodeResult = await geocode(fromInput.value);
+            if (geocodeResult) {
+                fromLat = geocodeResult.lat;
+                fromLng = geocodeResult.lng;
+                fromAddress = geocodeResult.display_name;
+                fromInput.dataset.lat = fromLat;
+                fromInput.dataset.lng = fromLng;
+                fromInput.dataset.address = fromAddress;
             } else {
-                showStatus('❌ Укажите координаты "Откуда"', 'error');
+                showStatus('❌ Не удалось определить адрес "Откуда"', 'error');
                 return;
             }
         }
 
-        const toCoords = parseCoordinates(toInput.value);
-        if (!toCoords) {
-            showStatus('❌ Укажите координаты "Куда"', 'error');
+        // Координаты "Куда"
+        let toLat, toLng, toAddress = toInput.value;
+        const geocodeResult = await geocode(toInput.value);
+        if (geocodeResult) {
+            toLat = geocodeResult.lat;
+            toLng = geocodeResult.lng;
+            toAddress = geocodeResult.display_name;
+        } else {
+            showStatus('❌ Не удалось определить адрес "Куда"', 'error');
             return;
         }
 
@@ -862,7 +937,7 @@
         routeControl = L.Routing.control({
             waypoints: [
                 L.latLng(fromLat, fromLng),
-                L.latLng(toCoords.lat, toCoords.lng)
+                L.latLng(toLat, toLng)
             ],
             routeWhileDragging: false,
             showAlternatives: false,
@@ -893,9 +968,15 @@
             document.getElementById('orderBtn').classList.add('active');
 
             if (toMarker) map.removeLayer(toMarker);
-            toMarker = L.marker([toCoords.lat, toCoords.lng], { icon: endIcon })
+            toMarker = L.marker([toLat, toLng], { icon: endIcon })
                 .addTo(map)
-                .bindPopup('📍 Назначение');
+                .bindPopup('📍 ' + toAddress);
+
+            // Сохраняем адреса в dataset
+            fromInput.dataset.address = fromAddress;
+            fromInput.value = fromAddress;
+            toInput.dataset.address = toAddress;
+            toInput.value = toAddress;
 
             showStatus(`✅ Маршрут построен! ${distanceKm.toFixed(1)} км, ~${durationMin} мин`, 'success');
             setTimeout(() => clearStatus(), 3000);
@@ -908,7 +989,7 @@
     }
 
     // ============================================================
-    // 9. СОЗДАНИЕ ЗАКАЗА
+    // 11. СОЗДАНИЕ ЗАКАЗА (с текстовыми адресами)
     // ============================================================
     async function createOrder() {
         const fromInput = document.getElementById('fromInput');
@@ -918,9 +999,13 @@
 
         const fromLat = parseFloat(fromInput.dataset.lat);
         const fromLng = parseFloat(fromInput.dataset.lng);
-        const toCoords = parseCoordinates(toInput.value);
+        const fromAddress = fromInput.dataset.address || fromInput.value;
 
-        if (!fromLat || !fromLng || !toCoords) {
+        const toLat = parseFloat(toInput.dataset.lat);
+        const toLng = parseFloat(toInput.dataset.lng);
+        const toAddress = toInput.dataset.address || toInput.value;
+
+        if (!fromLat || !fromLng || !toLat || !toLng) {
             showStatus('❌ Сначала постройте маршрут', 'error');
             return;
         }
@@ -939,11 +1024,10 @@
             const db = window.firebaseDb;
             const collectionFn = window.collection;
             const addDocFn = window.addDoc;
-            const updateDocFn = window.updateDoc;
             const incrementFn = window.increment;
             const runTransactionFn = window.runTransaction;
 
-            // Используем транзакцию для списания средств
+            // Транзакция для списания средств
             await runTransactionFn(db, async (transaction) => {
                 const userSnap = await transaction.get(userDocRef);
                 if (!userSnap.exists()) {
@@ -959,19 +1043,19 @@
                 });
             });
 
-            // Создаём заказ
+            // 🔥 СОЗДАНИЕ ЗАКАЗА С ТЕКСТОВЫМИ АДРЕСАМИ
             const ordersRef = collectionFn(db, 'orders');
             const orderData = {
                 clientId: currentUser ? currentUser.uid : 'anonymous',
                 from: {
                     lat: fromLat,
                     lng: fromLng,
-                    address: fromInput.value
+                    address: fromAddress  // ✅ текстовый адрес
                 },
                 to: {
-                    lat: toCoords.lat,
-                    lng: toCoords.lng,
-                    address: toInput.value
+                    lat: toLat,
+                    lng: toLng,
+                    address: toAddress  // ✅ текстовый адрес
                 },
                 price: price,
                 distance: distance,
@@ -981,8 +1065,9 @@
             };
 
             const docRef = await addDocFn(ordersRef, orderData);
+            console.log('📦 Заказ сохранён:', docRef.id, orderData);
 
-            // 🔥 Начисляем бонус (1% от стоимости)
+            // Начисляем бонус (1%)
             const bonusAmount = price * 0.01;
             const updateDocFn2 = window.updateDoc;
             const incrementFn2 = window.increment;
@@ -993,7 +1078,6 @@
 
             await updateWalletUI();
             showStatus(`✅ Заказ создан! Бонус: ${bonusAmount.toFixed(2)} ₪`, 'success');
-            console.log('✅ Order created:', docRef.id);
 
             // Демонстрация — машина на карте
             if (driverMarker) map.removeLayer(driverMarker);
@@ -1010,8 +1094,8 @@
                     showStatus('🚗 Водитель прибыл!', 'success');
                     return;
                 }
-                const lat = fromLat + (toCoords.lat - fromLat) * progress;
-                const lng = fromLng + (toCoords.lng - fromLng) * progress;
+                const lat = fromLat + (toLat - fromLat) * progress;
+                const lng = fromLng + (toLng - fromLng) * progress;
                 driverMarker.setLatLng([lat, lng]);
             }, 200);
 
@@ -1030,17 +1114,8 @@
     }
 
     // ============================================================
-    // 10. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // 12. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
     // ============================================================
-
-    function parseCoordinates(str) {
-        const cleaned = str.replace(/[^0-9.,-]/g, '').trim();
-        const parts = cleaned.split(',').map(s => parseFloat(s.trim()));
-        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-            return { lat: parts[0], lng: parts[1] };
-        }
-        return null;
-    }
 
     function showStatus(msg, type = 'info') {
         const el = document.getElementById('statusMsg');
@@ -1075,16 +1150,32 @@
     function swapAddresses() {
         const fromInput = document.getElementById('fromInput');
         const toInput = document.getElementById('toInput');
-        const temp = fromInput.value;
+        
+        // Меняем текст
+        const tempText = fromInput.value;
         fromInput.value = toInput.value;
-        toInput.value = temp;
+        toInput.value = tempText;
 
+        // Меняем данные
         const tempLat = fromInput.dataset.lat;
         const tempLng = fromInput.dataset.lng;
+        const tempAddr = fromInput.dataset.address;
+        
         fromInput.dataset.lat = toInput.dataset.lat;
         fromInput.dataset.lng = toInput.dataset.lng;
+        fromInput.dataset.address = toInput.dataset.address;
+        
         toInput.dataset.lat = tempLat;
         toInput.dataset.lng = tempLng;
+        toInput.dataset.address = tempAddr;
+
+        // Меняем маркеры
+        if (fromMarker && toMarker) {
+            const fromLatLng = fromMarker.getLatLng();
+            const toLatLng = toMarker.getLatLng();
+            fromMarker.setLatLng(toLatLng);
+            toMarker.setLatLng(fromLatLng);
+        }
 
         clearRoute();
     }
@@ -1095,7 +1186,7 @@
     window.serverTimestamp = serverTimestamp;
 
     // ============================================================
-    // 11. ОБРАБОТЧИКИ
+    // 13. ОБРАБОТЧИКИ
     // ============================================================
 
     document.getElementById('geoFromBtn').addEventListener('click', getCurrentPosition);
@@ -1120,7 +1211,7 @@
     });
 
     // ============================================================
-    // 12. ЗАПУСК
+    // 14. ЗАПУСК
     // ============================================================
 
     window.addEventListener('load', () => {
