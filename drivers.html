@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ru" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>WHEEL — Панель водителя</title>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+            authDomain: "taxi-ai-app-69628.firebaseapp.com",
+            projectId: "taxi-ai-app-69628",
+            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+            messagingSenderId: "952357992434",
+            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+            measurementId: "G-Z9NJFSSXH6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.firebaseApp = app;
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.signOut = signOut;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.doc = doc;
+        window.getDoc = getDoc;
+        window.updateDoc = updateDoc;
+        window.serverTimestamp = serverTimestamp;
+
+        console.log("✅ Driver panel ready");
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0c10;
+            min-height: 100vh;
+            color: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body[dir="rtl"] {
+            direction: rtl;
+        }
+
+        /* Шапка */
+        .header {
+            background: rgba(18, 22, 28, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo svg {
+            width: 28px;
+            height: 28px;
+            fill: #ffb000;
+        }
+
+        .logo span {
+            font-weight: 800;
+            font-size: 18px;
+            letter-spacing: 1px;
+            color: #ffb000;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Языки */
+        .lang-switcher {
+            display: flex;
+            gap: 3px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 2px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: none;
+            color: #8899aa;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .lang-btn.active {
+            background: #ffb000;
+            color: #0a0c10;
+        }
+
+        .logout-btn {
+            background: rgba(239,68,68,0.15);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #ef4444;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        /* Основной контент */
+        .main {
+            flex: 1;
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .driver-card {
+            background: rgba(18, 22, 28, 0.9);
+            border-radius: 24px;
+            padding: 32px 24px;
+            width: 100%;
+            max-width: 360px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .driver-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        .driver-name {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .driver-role {
+            font-size: 13px;
+            color: #4ade80;
+            background: rgba(74,222,128,0.1);
+            padding: 4px 14px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            font-size: 14px;
+        }
+
+        .info-label {
+            color: #8899aa;
+        }
+
+        .info-value {
+            font-weight: 500;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 16px;
+        }
+
+        .status-online {
+            background: rgba(74,222,128,0.15);
+            color: #4ade80;
+        }
+
+        .status-offline {
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+        }
+
+        .placeholder-text {
+            margin-top: 24px;
+            font-size: 13px;
+            color: #667788;
+        }
+
+        /* Заглушка заказов */
+        .no-orders {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 20px;
+            border: 1px dashed rgba(255,255,255,0.1);
+        }
+
+        .no-orders-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .no-orders-text {
+            color: #667788;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Шапка -->
+    <div class="header">
+        <div class="logo">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            <span>WHEEL</span>
+        </div>
+        <div class="header-right">
+            <div class="lang-switcher">
+                <button class="lang-btn" data-lang="he">עב</button>
+                <button class="lang-btn" data-lang="ar">عرب</button>
+                <button class="lang-btn active" data-lang="en">EN</button>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Выйти</button>
+        </div>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="main">
+        <div class="driver-card">
+            <div class="driver-avatar" id="driverInitial">🚖</div>
+            <div class="driver-name" id="driverName">Загрузка...</div>
+            <div class="driver-role" data-i18n="driverRole">Водитель</div>
+
+            <div class="info-row">
+                <span class="info-label" data-i18n="car">Автомобиль</span>
+                <span class="info-value" id="driverCar">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label" data-i18n="plate">Номер</span>
+                <span class="info-value" id="driverPlate">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label" data-i18n="rating">Рейтинг</span>
+                <span class="info-value">⭐ <span id="driverRating">—</span></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label" data-i18n="rides">Поездок</span>
+                <span class="info-value" id="driverRides">—</span>
+            </div>
+
+            <div class="status-badge status-online" id="statusBadge" data-i18n="online">🟢 Онлайн</div>
+
+            <div class="no-orders">
+                <div class="no-orders-icon">📭</div>
+                <div class="no-orders-text" data-i18n="noOrders">Нет активных заказов</div>
+                <div class="placeholder-text" data-i18n="waiting">Ожидайте, заказы появятся здесь</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ ПЕРЕВОДЫ ============
+        const translations = {
+            he: {
+                driverRole: "נהג",
+                car: "רכב",
+                plate: "מספר רכב",
+                rating: "דירוג",
+                rides: "נסיעות",
+                online: "🟢 מחובר",
+                noOrders: "אין הזמנות פעילות",
+                waiting: "המתן, הזמנות יופיעו כאן",
+                notDriver: "אינך נהג. חוזר לדף הבית...",
+                logoutConfirm: "התנתק?"
+            },
+            ar: {
+                driverRole: "سائق",
+                car: "السيارة",
+                plate: "اللوحة",
+                rating: "التقييم",
+                rides: "الرحلات",
+                online: "🟢 متصل",
+                noOrders: "لا توجد طلبات نشطة",
+                waiting: "انتظر، ستظهر الطلبات هنا",
+                notDriver: "لست سائقًا. العودة للصفحة الرئيسية...",
+                logoutConfirm: "تسجيل الخروج؟"
+            },
+            en: {
+                driverRole: "Driver",
+                car: "Car",
+                plate: "Plate",
+                rating: "Rating",
+                rides: "Rides",
+                online: "🟢 Online",
+                noOrders: "No active orders",
+                waiting: "Wait, orders will appear here",
+                notDriver: "Not a driver. Returning to home...",
+                logoutConfirm: "Log out?"
+            }
+        };
+
+        let currentLang = 'en';
+        function t(key) { return translations[currentLang]?.[key] || translations.en[key] || key; }
+
+        function switchLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.textContent = t(el.getAttribute('data-i18n'));
+            });
+            if (lang === 'ar' || lang === 'he') {
+                document.body.setAttribute('dir', 'rtl');
+            } else {
+                document.body.setAttribute('dir', 'ltr');
+            }
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.lang-btn[data-lang="${lang}"]`)?.classList.add('active');
+            localStorage.setItem('wheel_lang', lang);
+        }
+
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchLanguage(btn.dataset.lang));
+        });
+
+        const savedLang = localStorage.getItem('wheel_lang');
+        if (savedLang && translations[savedLang]) switchLanguage(savedLang);
+
+        // ============ ПРОВЕРКА ВОДИТЕЛЯ ============
+        window.addEventListener('load', () => {
+            const auth = window.firebaseAuth;
+            const db = window.firebaseDb;
+            const { doc, getDoc, updateDoc, serverTimestamp } = window;
+            const { onAuthStateChanged, signOut } = window;
+
+            onAuthStateChanged(auth, async (user) => {
+                if (!user) {
+                    // Нет пользователя — редирект на главную
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // Проверка: водитель ли?
+                const driverDocRef = doc(db, 'drivers', user.uid);
+                const driverDoc = await getDoc(driverDocRef);
+
+                if (!driverDoc.exists()) {
+                    // Не водитель — выйти и редирект
+                    await signOut(auth);
+                    alert(t('notDriver'));
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // ✅ Водитель найден
+                const data = driverDoc.data();
+
+                document.getElementById('driverInitial').textContent = (data.fullName || 'D').charAt(0).toUpperCase();
+                document.getElementById('driverName').textContent = data.fullName || 'Driver';
+                document.getElementById('driverCar').textContent = data.carModel || '—';
+                document.getElementById('driverPlate').textContent = data.carNumber || '—';
+                document.getElementById('driverRating').textContent = data.rating || '—';
+                document.getElementById('driverRides').textContent = data.totalRides || '0';
+
+                // Обновить статус
+                await updateDoc(driverDocRef, {
+                    status: 'online',
+                    lastUpdated: serverTimestamp()
+                });
+
+                console.log('✅ Водитель в панели:', data.fullName);
+            });
+
+            // Выход
+            document.getElementById('logoutBtn').addEventListener('click', async () => {
+                if (!confirm(t('logoutConfirm'))) return;
+
+                const user = auth.currentUser;
+                if (user) {
+                    const driverDocRef = doc(db, 'drivers', user.uid);
+                    await updateDoc(driverDocRef, {
+                        status: 'offline',
+                        lastUpdated: serverTimestamp()
+                    });
+                }
+
+                await signOut(auth);
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+</body>
+</html>
