@@ -11,7 +11,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, orderBy, limit, getDocs, serverTimestamp, GeoPoint } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -35,16 +35,14 @@
             signInWithEmailAndPassword,
             createUserWithEmailAndPassword,
             onAuthStateChanged,
-            signOut,
-            RecaptchaVerifier,
-            signInWithPhoneNumber
+            signOut
         };
         window.firestoreFunctions = {
             doc, setDoc, getDoc, updateDoc, collection, addDoc,
             query, where, orderBy, limit, getDocs, serverTimestamp, GeoPoint
         };
 
-        console.log("✅ Firebase + Google Maps initialized");
+        console.log("✅ Firebase + Google Maps ready");
     </script>
 
     <style>
@@ -62,6 +60,10 @@
             height: 100vh;
             overflow: hidden;
             color: white;
+        }
+
+        body[dir="rtl"] {
+            direction: rtl;
         }
 
         /* Шапка */
@@ -152,12 +154,7 @@
             border-radius: 24px 24px 0 0;
             padding: 20px 16px 32px;
             z-index: 50;
-            transition: transform 0.3s ease;
             border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .order-panel.expanded {
-            transform: translateY(-40vh);
         }
 
         .input-group {
@@ -350,7 +347,7 @@
             font-weight: 600;
         }
 
-        /* История поездок */
+        /* История */
         .ride-item {
             background: rgba(255,255,255,0.04);
             border-radius: 14px;
@@ -377,7 +374,7 @@
             font-weight: 600;
         }
 
-        /* Отслеживание водителя */
+        /* Отслеживание */
         .driver-tracker {
             display: none;
             position: absolute;
@@ -425,7 +422,7 @@
             margin-top: 8px;
         }
 
-        /* Языковой переключатель */
+        /* Языки */
         .lang-switcher {
             display: flex;
             gap: 4px;
@@ -472,7 +469,7 @@
     <!-- Карта -->
     <div id="map"></div>
 
-    <!-- Отслеживание водителя -->
+    <!-- Отслеживание -->
     <div class="driver-tracker" id="driverTracker">
         <div class="driver-info">
             <div class="driver-photo"></div>
@@ -508,7 +505,7 @@
         <button class="order-btn" id="orderBtn" disabled>Заказать WHEEL</button>
     </div>
 
-    <!-- Модалка: Профиль / Регистрация -->
+    <!-- Модалка: Профиль -->
     <div class="modal" id="profileModal">
         <div class="modal-content">
             <div class="tab-switch">
@@ -531,7 +528,7 @@
         </div>
     </div>
 
-    <!-- Модалка: История поездок -->
+    <!-- Модалка: История -->
     <div class="modal" id="historyModal">
         <div class="modal-content">
             <h3>📋 История поездок</h3>
@@ -552,28 +549,12 @@
         let dropoffLocation = null;
         let currentUser = null;
         let currentOrderId = null;
-        let driverTrackingInterval = null;
 
         // ============ ЯЗЫКИ ============
         const i18n = {
-            he: {
-                pickup: "מאיפה?", dropoff: "לאן?", order: "הזמן WHEEL",
-                price: "מחיר משוער", cashback: "קאשבק", distance: "מרחק",
-                login: "התחברות", register: "הרשמה", history: "היסטוריית נסיעות",
-                noRides: "אין נסיעות", availableIn: "זמין בעוד 8 חודשים"
-            },
-            ar: {
-                pickup: "من أين؟", dropoff: "إلى أين؟", order: "اطلب WHEEL",
-                price: "السعر التقديري", cashback: "كاش باك", distance: "المسافة",
-                login: "دخول", register: "تسجيل", history: "سجل الرحلات",
-                noRides: "لا توجد رحلات", availableIn: "متاح بعد 8 أشهر"
-            },
-            en: {
-                pickup: "Pickup?", dropoff: "Where to?", order: "Order WHEEL",
-                price: "Estimated price", cashback: "Cashback", distance: "Distance",
-                login: "Login", register: "Register", history: "Ride History",
-                noRides: "No rides", availableIn: "Available in 8 months"
-            }
+            he: { pickup: "מאיפה?", dropoff: "לאן?", order: "הזמן WHEEL", price: "מחיר משוער", cashback: "קאשבק", distance: "מרחק", login: "התחברות", register: "הרשמה", history: "היסטוריית נסיעות", noRides: "אין נסיעות", availableIn: "זמין בעוד 8 חודשים" },
+            ar: { pickup: "من أين؟", dropoff: "إلى أين؟", order: "اطلب WHEEL", price: "السعر التقديري", cashback: "كاش باك", distance: "المسافة", login: "دخول", register: "تسجيل", history: "سجل الرحلات", noRides: "لا توجد رحلات", availableIn: "متاح بعد 8 أشهر" },
+            en: { pickup: "Pickup?", dropoff: "Where to?", order: "Order WHEEL", price: "Estimated price", cashback: "Cashback", distance: "Distance", login: "Login", register: "Register", history: "Ride History", noRides: "No rides", availableIn: "Available in 8 months" }
         };
 
         let currentLang = 'en';
@@ -581,9 +562,8 @@
 
         // ============ КАРТА ============
         function initMap() {
-            const telAviv = { lat: 32.0853, lng: 34.7818 };
             map = new google.maps.Map(document.getElementById('map'), {
-                center: telAviv,
+                center: { lat: 32.0853, lng: 34.7818 },
                 zoom: 14,
                 disableDefaultUI: true,
                 zoomControl: true,
@@ -598,40 +578,27 @@
 
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer({
-                map: map,
-                suppressMarkers: true,
+                map: map, suppressMarkers: true,
                 polylineOptions: { strokeColor: '#ffb000', strokeWeight: 5 }
             });
 
-            // Автокомплит адресов
             const pickupAutocomplete = new google.maps.places.Autocomplete(
-                document.getElementById('pickupInput'),
-                { componentRestrictions: { country: 'il' } }
+                document.getElementById('pickupInput'), { componentRestrictions: { country: 'il' } }
             );
             const dropoffAutocomplete = new google.maps.places.Autocomplete(
-                document.getElementById('dropoffInput'),
-                { componentRestrictions: { country: 'il' } }
+                document.getElementById('dropoffInput'), { componentRestrictions: { country: 'il' } }
             );
 
             pickupAutocomplete.addListener('place_changed', () => {
                 const place = pickupAutocomplete.getPlace();
-                if (place.geometry) {
-                    pickupLocation = place.geometry.location;
-                    updatePickupMarker();
-                    calculateRoute();
-                }
+                if (place.geometry) { pickupLocation = place.geometry.location; updatePickupMarker(); calculateRoute(); }
             });
 
             dropoffAutocomplete.addListener('place_changed', () => {
                 const place = dropoffAutocomplete.getPlace();
-                if (place.geometry) {
-                    dropoffLocation = place.geometry.location;
-                    updateDropoffMarker();
-                    calculateRoute();
-                }
+                if (place.geometry) { dropoffLocation = place.geometry.location; updateDropoffMarker(); calculateRoute(); }
             });
 
-            // Кнопка геолокации
             document.getElementById('locateBtn').addEventListener('click', () => {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
@@ -640,12 +607,8 @@
                             pickupLocation = loc;
                             map.setCenter(loc);
                             updatePickupMarker();
-                            
-                            const geocoder = new google.maps.Geocoder();
-                            geocoder.geocode({ location: loc }, (results, status) => {
-                                if (status === 'OK' && results[0]) {
-                                    document.getElementById('pickupInput').value = results[0].formatted_address;
-                                }
+                            new google.maps.Geocoder().geocode({ location: loc }, (results, status) => {
+                                if (status === 'OK' && results[0]) document.getElementById('pickupInput').value = results[0].formatted_address;
                             });
                         },
                         () => alert('Не удалось определить местоположение')
@@ -658,16 +621,8 @@
             if (pickupMarker) pickupMarker.setMap(null);
             if (pickupLocation) {
                 pickupMarker = new google.maps.Marker({
-                    position: pickupLocation,
-                    map: map,
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 10,
-                        fillColor: '#4ade80',
-                        fillOpacity: 1,
-                        strokeColor: '#fff',
-                        strokeWeight: 3
-                    }
+                    position: pickupLocation, map: map,
+                    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#4ade80', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 }
                 });
             }
         }
@@ -676,35 +631,23 @@
             if (dropoffMarker) dropoffMarker.setMap(null);
             if (dropoffLocation) {
                 dropoffMarker = new google.maps.Marker({
-                    position: dropoffLocation,
-                    map: map,
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 10,
-                        fillColor: '#ef4444',
-                        fillOpacity: 1,
-                        strokeColor: '#fff',
-                        strokeWeight: 3
-                    }
+                    position: dropoffLocation, map: map,
+                    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#ef4444', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 }
                 });
             }
         }
 
         function calculateRoute() {
             if (!pickupLocation || !dropoffLocation) return;
-
             directionsService.route({
-                origin: pickupLocation,
-                destination: dropoffLocation,
-                travelMode: google.maps.TravelMode.DRIVING
+                origin: pickupLocation, destination: dropoffLocation, travelMode: google.maps.TravelMode.DRIVING
             }, (response, status) => {
                 if (status === 'OK') {
                     directionsRenderer.setDirections(response);
                     const route = response.routes[0].legs[0];
                     const distanceKm = route.distance.value / 1000;
-                    const price = Math.round(distanceKm * 5 + 12); // База 12 шек + 5 за км
+                    const price = Math.round(distanceKm * 5 + 12);
                     const cashback = Math.round(price * 0.05);
-
                     document.getElementById('priceEstimate').style.display = 'flex';
                     document.getElementById('priceValue').textContent = '₪' + price;
                     document.getElementById('distanceText').textContent = distanceKm.toFixed(1) + ' км';
@@ -717,10 +660,7 @@
 
         // ============ ЗАКАЗ ============
         document.getElementById('orderBtn').addEventListener('click', async () => {
-            if (!currentUser) {
-                document.getElementById('profileModal').classList.add('active');
-                return;
-            }
+            if (!currentUser) { document.getElementById('profileModal').classList.add('active'); return; }
             if (!pickupLocation || !dropoffLocation) return;
 
             const btn = document.getElementById('orderBtn');
@@ -728,13 +668,10 @@
             btn.textContent = 'Поиск водителя...';
 
             try {
-                const db = window.firebaseDb;
                 const { collection, addDoc, serverTimestamp, GeoPoint } = window.firestoreFunctions;
-
                 const orderData = {
                     clientId: currentUser.uid,
                     clientName: currentUser.displayName || currentUser.email,
-                    clientPhone: currentUser.phoneNumber || '',
                     pickup: new GeoPoint(pickupLocation.lat(), pickupLocation.lng()),
                     dropoff: new GeoPoint(dropoffLocation.lat(), dropoffLocation.lng()),
                     pickupAddress: document.getElementById('pickupInput').value,
@@ -745,11 +682,9 @@
                     createdAt: serverTimestamp(),
                     driverId: null
                 };
-
-                const docRef = await addDoc(collection(db, 'orders'), orderData);
+                const docRef = await addDoc(collection(window.firebaseDb, 'orders'), orderData);
                 currentOrderId = docRef.id;
                 console.log('✅ Заказ создан:', currentOrderId);
-
                 startDriverTracking();
             } catch (error) {
                 console.error('❌ Ошибка заказа:', error);
@@ -757,82 +692,53 @@
             }
         });
 
-        // ============ ОТСЛЕЖИВАНИЕ ВОДИТЕЛЯ ============
+        // ============ ОТСЛЕЖИВАНИЕ ============
         function startDriverTracking() {
             document.getElementById('driverTracker').classList.add('active');
-            
-            driverTrackingInterval = setInterval(async () => {
-                if (!currentOrderId) return;
-                
+            const interval = setInterval(async () => {
+                if (!currentOrderId) { clearInterval(interval); return; }
                 try {
-                    const db = window.firebaseDb;
                     const { doc, getDoc } = window.firestoreFunctions;
-                    
-                    const orderDoc = await getDoc(doc(db, 'orders', currentOrderId));
+                    const orderDoc = await getDoc(doc(window.firebaseDb, 'orders', currentOrderId));
                     if (!orderDoc.exists()) return;
-                    
                     const order = orderDoc.data();
-                    
                     if (order.status === 'accepted' || order.status === 'arrived' || order.status === 'in_progress') {
                         if (order.driverId) {
-                            const driverDoc = await getDoc(doc(db, 'drivers', order.driverId));
+                            const driverDoc = await getDoc(doc(window.firebaseDb, 'drivers', order.driverId));
                             if (driverDoc.exists()) {
                                 const driver = driverDoc.data();
                                 document.getElementById('trackingDriverName').textContent = driver.fullName || 'Водитель';
                                 document.getElementById('trackingDriverCar').textContent = driver.carModel + ' • ' + driver.carNumber;
-                                
-                                // Обновить маркер водителя на карте
                                 if (driver.lat && driver.lng) {
-                                    const driverPos = new google.maps.LatLng(driver.lat, driver.lng);
+                                    const pos = new google.maps.LatLng(driver.lat, driver.lng);
                                     if (!window.driverMarker) {
-                                        window.driverMarker = new google.maps.Marker({
-                                            position: driverPos,
-                                            map: map,
-                                            icon: '🚖',
-                                            title: driver.fullName
-                                        });
+                                        window.driverMarker = new google.maps.Marker({ position: pos, map: map, icon: '🚖' });
                                     } else {
-                                        window.driverMarker.setPosition(driverPos);
+                                        window.driverMarker.setPosition(pos);
                                     }
-                                    map.panTo(driverPos);
+                                    map.panTo(pos);
                                 }
                             }
                         }
                     }
-                    
                     if (order.status === 'completed') {
-                        clearInterval(driverTrackingInterval);
+                        clearInterval(interval);
                         document.getElementById('driverTracker').classList.remove('active');
                         document.getElementById('orderBtn').disabled = false;
                         document.getElementById('orderBtn').textContent = t('order');
                         currentOrderId = null;
                     }
-                } catch (e) {
-                    console.error('Tracking error:', e);
-                }
+                } catch (e) { console.error('Tracking error:', e); }
             }, 3000);
         }
 
         // ============ АВТОРИЗАЦИЯ ============
-        const { onAuthStateChanged, signOut } = window.authFunctions;
-        
-        onAuthStateChanged(window.firebaseAuth, async (user) => {
+        window.authFunctions.onAuthStateChanged(window.firebaseAuth, async (user) => {
             currentUser = user;
             const profileBtn = document.getElementById('profileBtn');
-            
             if (user) {
                 profileBtn.textContent = user.email?.charAt(0).toUpperCase() || 'U';
                 profileBtn.style.background = 'linear-gradient(135deg, #4ade80, #22c55e)';
-                
-                // Загрузить профиль из Firestore
-                const { doc, getDoc } = window.firestoreFunctions;
-                const userDoc = await getDoc(doc(window.firebaseDb, 'users', user.uid));
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    if (userData.totalCashback) {
-                        document.getElementById('totalCashback').textContent = '₪' + userData.totalCashback;
-                    }
-                }
             } else {
                 profileBtn.textContent = '👤';
                 profileBtn.style.background = 'linear-gradient(135deg, #ffb000, #ff6a00)';
@@ -842,38 +748,22 @@
         // ============ МОДАЛКИ ============
         document.getElementById('profileBtn').addEventListener('click', () => {
             if (currentUser) {
-                // Показать профиль или выйти
-                if (confirm('Выйти из аккаунта?')) {
-                    signOut(window.firebaseAuth);
-                }
+                if (confirm('Выйти из аккаунта?')) window.authFunctions.signOut(window.firebaseAuth);
             } else {
                 document.getElementById('profileModal').classList.add('active');
             }
         });
 
-        document.getElementById('closeProfile').addEventListener('click', () => {
-            document.getElementById('profileModal').classList.remove('active');
-        });
+        document.getElementById('closeProfile').addEventListener('click', () => document.getElementById('profileModal').classList.remove('active'));
+        document.getElementById('historyBtn').addEventListener('click', () => { document.getElementById('historyModal').classList.add('active'); if (currentUser) loadRideHistory(); });
+        document.getElementById('closeHistory').addEventListener('click', () => document.getElementById('historyModal').classList.remove('active'));
 
-        document.getElementById('historyBtn').addEventListener('click', async () => {
-            document.getElementById('historyModal').classList.add('active');
-            if (currentUser) {
-                await loadRideHistory();
-            }
-        });
-
-        document.getElementById('closeHistory').addEventListener('click', () => {
-            document.getElementById('historyModal').classList.remove('active');
-        });
-
-        // Табы логин/регистрация
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                const tab = btn.dataset.tab;
-                document.getElementById('loginTab').style.display = tab === 'login' ? 'block' : 'none';
-                document.getElementById('registerTab').style.display = tab === 'register' ? 'block' : 'none';
+                document.getElementById('loginTab').style.display = btn.dataset.tab === 'login' ? 'block' : 'none';
+                document.getElementById('registerTab').style.display = btn.dataset.tab === 'register' ? 'block' : 'none';
             });
         });
 
@@ -883,90 +773,51 @@
             const email = document.getElementById('regEmail').value.trim();
             const phone = document.getElementById('regPhone').value.trim();
             const password = document.getElementById('regPassword').value;
-
             if (!name || !email || !password) return alert('Заполните все поля');
-
             try {
-                const { createUserWithEmailAndPassword } = window.authFunctions;
-                const userCredential = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
-                const user = userCredential.user;
-
-                // Сохранить профиль
+                const userCredential = await window.authFunctions.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
                 const { doc, setDoc } = window.firestoreFunctions;
-                await setDoc(doc(window.firebaseDb, 'users', user.uid), {
-                    name, email, phone,
-                    role: 'client',
-                    totalCashback: 0,
-                    cashbackAvailable: 0,
-                    cashbackUnlockDate: new Date(Date.now() + 8 * 30 * 24 * 60 * 60 * 1000), // +8 месяцев
+                await setDoc(doc(window.firebaseDb, 'users', userCredential.user.uid), {
+                    name, email, phone, role: 'client',
+                    totalCashback: 0, cashbackAvailable: 0,
+                    cashbackUnlockDate: new Date(Date.now() + 8 * 30 * 24 * 60 * 60 * 1000),
                     createdAt: new Date()
                 });
-
                 document.getElementById('profileModal').classList.remove('active');
                 alert('Регистрация успешна!');
-            } catch (error) {
-                alert('Ошибка: ' + error.message);
-            }
+            } catch (error) { alert('Ошибка: ' + error.message); }
         });
 
         // Вход
         document.getElementById('loginSubmit').addEventListener('click', async () => {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
-
             if (!email || !password) return;
-
             try {
-                const { signInWithEmailAndPassword } = window.authFunctions;
-                await signInWithEmailAndPassword(window.firebaseAuth, email, password);
+                await window.authFunctions.signInWithEmailAndPassword(window.firebaseAuth, email, password);
                 document.getElementById('profileModal').classList.remove('active');
-            } catch (error) {
-                alert('Ошибка входа: ' + error.message);
-            }
+            } catch (error) { alert('Ошибка входа: ' + error.message); }
         });
 
-        // ============ ИСТОРИЯ ПОЕЗДОК ============
+        // История
         async function loadRideHistory() {
-            if (!currentUser) return;
-            
             try {
-                const db = window.firebaseDb;
                 const { collection, query, where, orderBy, limit, getDocs } = window.firestoreFunctions;
-                
-                const q = query(
-                    collection(db, 'orders'),
-                    where('clientId', '==', currentUser.uid),
-                    orderBy('createdAt', 'desc'),
-                    limit(20)
-                );
-                
+                const q = query(collection(window.firebaseDb, 'orders'), where('clientId', '==', currentUser.uid), orderBy('createdAt', 'desc'), limit(20));
                 const snapshot = await getDocs(q);
                 const ridesList = document.getElementById('ridesList');
-                
-                if (snapshot.empty) {
-                    ridesList.innerHTML = '<p style="color:#667788;">' + t('noRides') + '</p>';
-                    return;
-                }
-
+                if (snapshot.empty) { ridesList.innerHTML = '<p style="color:#667788;">' + t('noRides') + '</p>'; return; }
                 ridesList.innerHTML = '';
                 snapshot.forEach(doc => {
                     const ride = doc.data();
                     const date = ride.createdAt?.toDate?.() || new Date();
-                    ridesList.innerHTML += `
-                        <div class="ride-item">
-                            <div class="ride-route">📍 ${ride.pickupAddress || '—'}</div>
-                            <div class="ride-route">🎯 ${ride.dropoffAddress || '—'}</div>
-                            <div class="ride-details">
-                                <span>${date.toLocaleDateString()}</span>
-                                <span class="ride-price">₪${ride.price || 0}</span>
-                                <span style="color:#4ade80;">+₪${ride.cashback || 0}</span>
-                            </div>
-                        </div>
-                    `;
+                    ridesList.innerHTML += `<div class="ride-item">
+                        <div class="ride-route">📍 ${ride.pickupAddress || '—'}</div>
+                        <div class="ride-route">🎯 ${ride.dropoffAddress || '—'}</div>
+                        <div class="ride-details"><span>${date.toLocaleDateString()}</span><span class="ride-price">₪${ride.price || 0}</span><span style="color:#4ade80;">+₪${ride.cashback || 0}</span></div>
+                    </div>`;
                 });
-            } catch (e) {
-                console.error('History error:', e);
-            }
+            } catch (e) { console.error('History error:', e); }
         }
 
         // ============ ЯЗЫКИ ============
@@ -982,7 +833,6 @@
             });
         });
 
-        // Загрузка языка
         const savedLang = localStorage.getItem('wheel_lang');
         if (savedLang && i18n[savedLang]) {
             currentLang = savedLang;
