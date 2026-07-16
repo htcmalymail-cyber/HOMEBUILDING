@@ -34,6 +34,7 @@
         body[dir="rtl"] .phone-frame { direction: rtl; }
         body[dir="rtl"] .suggestion-item { direction: rtl; text-align: right; }
         body[dir="rtl"] .address-input input { text-align: right; }
+        body[dir="rtl"] .header-center { flex-direction: row-reverse; }
 
         .phone-frame {
             width: 100%;
@@ -53,54 +54,87 @@
             overflow: hidden;
         }
 
-        /* ===== КОМПАКТНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== */
-        .lang-toggle {
-            position: absolute;
-            top: 20px;
-            right: 24px;
-            z-index: 40;
-            cursor: pointer;
+        /* ===== HEADER С ЦЕНТРАЛЬНЫМ ЛОГО И ЯЗЫКОМ ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 6px 14px 6px;
+            margin-top: 10px;
+            flex-shrink: 0;
+            z-index: 20;
         }
 
-        body[dir="rtl"] .lang-toggle {
-            right: auto;
-            left: 24px;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 1px;
+            background: linear-gradient(to right, #ffffff, #ffb000);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-title span {
+            font-weight: 300;
+            -webkit-text-fill-color: #ffb000;
+        }
+
+        /* ===== КОМПАКТНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА ===== */
+        .lang-toggle {
+            position: relative;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
         }
 
         .lang-toggle-btn {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             color: #ffffff;
-            font-size: 18px;
+            font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
             backdrop-filter: blur(10px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         .lang-toggle-btn:hover {
-            background: rgba(255, 180, 0, 0.2);
+            background: rgba(255, 180, 0, 0.15);
             border-color: #ffb000;
             transform: scale(1.05);
         }
 
-        /* Выпадающий список языков */
         .lang-dropdown {
             position: absolute;
-            top: 48px;
-            right: 0;
-            background: rgba(18, 22, 28, 0.95);
+            top: 42px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(18, 22, 28, 0.96);
             backdrop-filter: blur(20px);
             border-radius: 14px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 20px 40px rgba(0,0,0,0.6);
             padding: 6px;
-            min-width: 100px;
+            min-width: 120px;
             display: none;
             flex-direction: column;
             gap: 2px;
@@ -112,13 +146,8 @@
         }
 
         @keyframes dropIn {
-            from { opacity: 0; transform: translateY(-10px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        body[dir="rtl"] .lang-dropdown {
-            right: auto;
-            left: 0;
+            from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.95); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
         }
 
         .lang-dropdown-item {
@@ -131,16 +160,13 @@
             transition: all 0.15s ease;
             border: none;
             background: transparent;
-            text-align: left;
+            text-align: center;
             white-space: nowrap;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
         }
-        body[dir="rtl"] .lang-dropdown-item {
-            text-align: right;
-        }
-
         .lang-dropdown-item:hover {
             background: rgba(255, 255, 255, 0.06);
             color: #ffffff;
@@ -154,17 +180,6 @@
             font-size: 16px;
         }
 
-        /* ===== HEADER ===== */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 6px 14px 6px;
-            margin-top: 10px;
-            flex-shrink: 0;
-            z-index: 20;
-        }
-        .header-left { display: flex; align-items: center; gap: 10px; }
         .back-btn {
             background: rgba(255,255,255,0.08);
             border: none;
@@ -181,8 +196,7 @@
             text-decoration: none;
         }
         .back-btn:hover { background: rgba(255,255,255,0.15); }
-        .header-title { font-size: 18px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; }
-        .header-title span { color: #ffb000; }
+
         .wallet-badge {
             background: rgba(255,180,0,0.15);
             border: 1px solid rgba(255,180,0,0.2);
@@ -196,6 +210,7 @@
             gap: 6px;
             cursor: pointer;
             transition: 0.2s;
+            white-space: nowrap;
         }
         .wallet-badge:hover { background: rgba(255,180,0,0.25); }
 
@@ -653,10 +668,9 @@
                 padding: 14px 14px 18px;
                 margin-top: -8px;
             }
-            .header-title { font-size: 16px; }
-            .wallet-badge { font-size: 12px; padding: 4px 12px; }
-            .lang-toggle { top: 14px; right: 16px; }
-            body[dir="rtl"] .lang-toggle { right: auto; left: 16px; }
+            .header-title { font-size: 17px; }
+            .wallet-badge { font-size: 11px; padding: 4px 10px; }
+            .lang-toggle-btn { width: 32px; height: 32px; font-size: 14px; }
         }
     </style>
 </head>
@@ -664,28 +678,37 @@
 
 <div class="phone-frame">
 
-    <!-- ===== КОМПАКТНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== -->
-    <div class="lang-toggle">
-        <button class="lang-toggle-btn" id="langToggleBtn">🌐</button>
-        <div class="lang-dropdown" id="langDropdown">
-            <button class="lang-dropdown-item active" data-lang="en">
-                <span class="flag">🇬🇧</span> English
-            </button>
-            <button class="lang-dropdown-item" data-lang="he">
-                <span class="flag">🇮🇱</span> עברית
-            </button>
-            <button class="lang-dropdown-item" data-lang="ar">
-                <span class="flag">🇸🇦</span> العربية
-            </button>
-        </div>
-    </div>
-
     <!-- ===== HEADER ===== -->
     <div class="header">
+        <!-- Левая часть: назад -->
         <div class="header-left">
             <a href="index.html" class="back-btn">←</a>
-            <div class="header-title">WHEEL <span>TAXI</span></div>
         </div>
+
+        <!-- Центр: логотип + переключатель языка -->
+        <div class="header-center">
+            <div class="header-title">
+                WHEEL <span>TAXI</span>
+            </div>
+
+            <!-- КОМПАКТНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА -->
+            <div class="lang-toggle">
+                <button class="lang-toggle-btn" id="langToggleBtn">🌐</button>
+                <div class="lang-dropdown" id="langDropdown">
+                    <button class="lang-dropdown-item active" data-lang="en">
+                        <span class="flag">🇬🇧</span> English
+                    </button>
+                    <button class="lang-dropdown-item" data-lang="he">
+                        <span class="flag">🇮🇱</span> עברית
+                    </button>
+                    <button class="lang-dropdown-item" data-lang="ar">
+                        <span class="flag">🇸🇦</span> العربية
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая часть: кошелёк -->
         <div class="wallet-badge" id="walletBtn">
             <i>💰</i> <span id="walletDisplay">0</span> ₪
         </div>
@@ -1315,7 +1338,7 @@
     }
 
     // ============================================================
-    // 10. СОЗДАНИЕ ЗАКАЗА (СОХРАНЕНИЕ В LOCALSTORAGE ДЛЯ ДЕМО)
+    // 10. СОЗДАНИЕ ЗАКАЗА
     // ============================================================
     document.getElementById('orderBtn').addEventListener('click', function() {
         const fromInput = document.getElementById('fromInput');
@@ -1340,71 +1363,45 @@
         const now = new Date();
 
         // ============================================================
-        // ⚡ ЗДЕСЬ СОХРАНЯЕТСЯ ЗАКАЗ В FIREBASE
+        // ⚡ ЗАКАЗ ДЛЯ FIRESTORE
         // ============================================================
         const orderData = {
-            // --- ОСНОВНАЯ ИНФОРМАЦИЯ ---
             orderId: 'ORD-' + Date.now().toString().slice(-8),
-            status: 'waiting', // waiting | accepted | en_route | completed | cancelled
-            
-            // --- КЛИЕНТ ---
+            status: 'waiting',
+            clientId: 'test_client_1',
             client: {
-                id: 'anonymous_' + Date.now(),
-                phone: null, // будет заполняться при регистрации
-                name: 'Guest',
+                name: 'Клиент Тестовый',
+                phone: '+972501234567',
                 from: {
                     lat: fromLat,
                     lng: fromLng,
                     address: fromAddress
                 }
             },
-            
-            // --- НАЗНАЧЕНИЕ ---
             destination: {
                 lat: toLat,
                 lng: toLng,
                 address: toAddress
             },
-            
-            // --- ЦЕНА ---
-            price: {
-                base: price,
-                min: price * 0.94,  // -6%
-                max: price * 1.06,  // +6%
-                currency: 'ILS'
-            },
-            
-            // --- МАРШРУТ ---
             route: {
                 distance_km: distance,
                 duration_min: parseInt(document.getElementById('durationDisplay').textContent) || 0
             },
-            
-            // --- ВРЕМЯ ---
+            price: {
+                base: price,
+                min: price * 0.94,
+                max: price * 1.06,
+                currency: 'ILS',
+                perKm: 1.5,
+                baseFare: 25
+            },
             createdAt: now.toISOString(),
-            createdAtTimestamp: now.getTime(),
             date: now.toLocaleDateString('he-IL'),
             time: now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
-            
-            // --- ДЛЯ ВОДИТЕЛЯ ---
-            driver: {
-                id: null,       // заполняется при назначении
-                name: null,
-                phone: null,
-                status: 'pending' // pending | assigned | arrived | completed
-            },
-            
-            // --- ДИСПЕТЧЕР ---
-            dispatcher: {
-                id: null,
-                note: null
-            },
-            
-            // --- ОПЦИОНАЛЬНО ---
-            paymentMethod: 'wallet', // wallet | cash | card
+            driverId: null,
+            paymentMethod: 'wallet',
             bonusUsed: 0,
-            isPreorder: false,
-            preorderTime: null
+            isPreorder: false
         };
 
         // Сохраняем в localStorage для демо
@@ -1413,7 +1410,6 @@
         localStorage.setItem('wheel_orders', JSON.stringify(orders));
 
         console.log('📦 ЗАКАЗ СОЗДАН:', orderData);
-        console.log('💾 Сохранено в localStorage (для демо)');
 
         showStatus(`✅ Заказ создан! ID: ${orderData.orderId}`, 'success');
         this.disabled = true;
@@ -1445,7 +1441,7 @@
     });
 
     // ============================================================
-    // 11. КОШЕЛЁК (ЗАГЛУШКА)
+    // 11. КОШЕЛЁК
     // ============================================================
     document.getElementById('walletBtn').addEventListener('click', () => {
         document.getElementById('walletModal').classList.add('active');
