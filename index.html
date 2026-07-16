@@ -10,6 +10,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
@@ -24,10 +25,12 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const analytics = getAnalytics(app);
 
         window.firebaseApp = app;
         window.firebaseAuth = auth;
         window.firebaseDb = db;
+        window.firebaseAnalytics = analytics;
         window.signInWithEmailAndPassword = signInWithEmailAndPassword;
         window.signOut = signOut;
         window.onAuthStateChanged = onAuthStateChanged;
@@ -36,7 +39,7 @@
         window.updateDoc = updateDoc;
         window.serverTimestamp = serverTimestamp;
 
-        console.log("✅ Firebase ready");
+        console.log("✅ Firebase initialized with Firestore");
     </script>
 
     <style>
@@ -60,10 +63,21 @@
                 radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.06) 0%, transparent 40%),
                 radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
             background-attachment: fixed;
+            transition: direction 0.3s ease;
         }
 
         body[dir="rtl"] .phone-frame {
             direction: rtl;
+        }
+
+        body[dir="rtl"] .slogan-icon {
+            margin-right: 0;
+            margin-left: 6px;
+        }
+
+        body[dir="rtl"] .micro-text::before {
+            margin-right: 0;
+            margin-left: 6px;
         }
 
         .phone-frame {
@@ -86,7 +100,7 @@
             position: relative;
         }
 
-        /* Переключатель языков */
+        /* ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== */
         .lang-switcher {
             position: absolute;
             top: 20px;
@@ -132,7 +146,7 @@
             box-shadow: 0 2px 8px rgba(255, 160, 0, 0.3);
         }
 
-        /* Логотип */
+        /* ===== ЛОГОТИП (с двойным кликом) ===== */
         .logo-icon {
             margin-top: 50px;
             margin-bottom: 12px;
@@ -145,6 +159,13 @@
             justify-content: center;
             box-shadow: 0 15px 30px rgba(255, 160, 0, 0.3);
             position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            user-select: none;
+        }
+
+        .logo-icon:hover {
+            transform: scale(1.05);
         }
 
         .logo-icon::after {
@@ -166,6 +187,105 @@
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
         }
 
+        /* ===== СКРЫТАЯ ФОРМА ВХОДА ДЛЯ ДИСПЕТЧЕРА ===== */
+        .secret-form {
+            display: none;
+            margin: 16px 0 10px;
+            width: 100%;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .secret-form.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .secret-form label {
+            display: block;
+            font-size: 13px;
+            color: #8899aa;
+            margin-bottom: 8px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .secret-form .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .secret-form input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #ffffff;
+            font-size: 16px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .secret-form input:focus {
+            border-color: #ffb000;
+            box-shadow: 0 0 0 4px rgba(255,180,0,0.08);
+        }
+
+        .secret-form input::placeholder {
+            color: #556677;
+        }
+
+        .secret-form .btn-secret {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #ffb000, #ff6a00);
+            color: #0a0c10;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .secret-form .btn-secret:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(255,140,0,0.3);
+        }
+
+        .secret-form .secret-error {
+            color: #ef4444;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+            text-align: left;
+        }
+
+        .secret-form .secret-error.active {
+            display: block;
+        }
+
+        .secret-form .secret-success {
+            color: #4ade80;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+            text-align: left;
+        }
+
+        .secret-form .secret-success.active {
+            display: block;
+        }
+
+        /* ===== ОСТАЛЬНЫЕ СТИЛИ ===== */
         h1 {
             font-size: 32px;
             font-weight: 800;
@@ -202,17 +322,11 @@
             animation: bounce 0.6s infinite alternate;
         }
 
-        body[dir="rtl"] .slogan-icon {
-            margin-right: 0;
-            margin-left: 6px;
-        }
-
         @keyframes bounce {
             from { transform: translateY(0); }
             to { transform: translateY(-3px); }
         }
 
-        /* Кнопка заказа */
         .cta-button {
             width: 100%;
             background: linear-gradient(135deg, #ffb000, #ff6a00);
@@ -255,7 +369,6 @@
             font-size: 14px;
         }
 
-        /* Преимущества */
         .features {
             width: 100%;
             display: flex;
@@ -290,7 +403,6 @@
             margin-top: 4px;
         }
 
-        /* Точка входа для водителей */
         .driver-entry {
             margin-top: auto;
             font-size: 13px;
@@ -313,19 +425,6 @@
             background: rgba(255,180,0,0.08);
         }
 
-        /* Статус водителя */
-        .driver-status {
-            margin-top: 12px;
-            font-size: 13px;
-            color: #4ade80;
-            display: none;
-        }
-
-        .driver-status.active {
-            display: block;
-        }
-
-        /* Модальное окно */
         .modal {
             display: none;
             position: fixed;
@@ -404,6 +503,17 @@
             width: 100%;
         }
 
+        .driver-status {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #4ade80;
+            display: none;
+        }
+
+        .driver-status.active {
+            display: block;
+        }
+
         .error-msg {
             color: #ef4444;
             font-size: 13px;
@@ -423,6 +533,21 @@
             border-radius: 20px;
         }
 
+        /* ===== ПОДСКАЗКА ДЛЯ ДИСПЕТЧЕРА ===== */
+        .secret-hint {
+            font-size: 10px;
+            color: #334455;
+            margin-top: 8px;
+            opacity: 0.3;
+            transition: opacity 0.3s;
+            cursor: default;
+            user-select: none;
+        }
+
+        .secret-hint:hover {
+            opacity: 0.6;
+        }
+
         @media (max-width: 420px) {
             .phone-frame {
                 border-radius: 0;
@@ -437,6 +562,7 @@
                 right: 20px;
             }
             body[dir="rtl"] .lang-switcher {
+                right: auto;
                 left: 20px;
             }
         }
@@ -444,18 +570,29 @@
 </head>
 <body>
     <div class="phone-frame">
-        <!-- Переключатель языков -->
+        <!-- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ -->
         <div class="lang-switcher">
             <button class="lang-btn" data-lang="he" title="עברית">עב</button>
             <button class="lang-btn" data-lang="ar" title="العربية">عرب</button>
             <button class="lang-btn active" data-lang="en" title="English">EN</button>
         </div>
 
-        <!-- Логотип -->
-        <div class="logo-icon">
+        <!-- ЛОГОТИП (двойной клик для входа диспетчера) -->
+        <div class="logo-icon" id="logoIcon" title="👆 Двойной клик для входа диспетчера">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
             </svg>
+        </div>
+
+        <!-- СКРЫТАЯ ФОРМА ДЛЯ ДИСПЕТЧЕРА -->
+        <div class="secret-form" id="secretForm">
+            <label for="secretPassword">🔑 Вход для диспетчера</label>
+            <div class="input-row">
+                <input type="password" id="secretPassword" placeholder="Введите пароль" autocomplete="off" />
+                <button class="btn-secret" id="secretLoginBtn">Войти</button>
+            </div>
+            <div class="secret-error" id="secretError">❌ Неверный пароль</div>
+            <div class="secret-success" id="secretSuccess">✅ Перенаправление...</div>
         </div>
 
         <h1>WHEEL</h1>
@@ -464,8 +601,7 @@
             <span data-i18n="slogan">Мы уже едем к вам</span>
         </div>
 
-        <!-- Кнопка заказа → clients.html -->
-        <a href="clients.html" class="cta-button">
+        <a href="client.html" class="cta-button" id="clientOrder">
             <span>📍</span> 
             <span data-i18n="orderBtn">Заказать сейчас</span>
         </a>
@@ -473,7 +609,6 @@
             <span data-i18n="noReg">Без регистрации — просто укажите точку на карте</span>
         </div>
 
-        <!-- Преимущества -->
         <div class="features">
             <div class="feature-item">
                 <div class="feature-icon">⚡</div>
@@ -492,21 +627,22 @@
             </div>
         </div>
 
-        <!-- Точка входа для водителей -->
         <button class="driver-entry" id="driverBtn">
             🚖 <span data-i18n="driverEntry">Я водитель</span>
         </button>
         <div class="driver-status" id="driverStatus">
             <span data-i18n="loggedIn">✅ Вы вошли как водитель</span>
             <br><small id="driverEmail"></small>
-            <br><a href="driver.html" style="color:#ffb000; font-size:12px;" data-i18n="goToPanel">Перейти в панель</a>
-            <br><a href="#" id="logoutBtn" style="color:#ef4444; font-size:12px;" data-i18n="logout">Выйти</a>
+            <br><a href="#" id="logoutBtn" style="color:#ffb000; font-size:12px;" data-i18n="logout">Выйти</a>
         </div>
+
+        <!-- Скрытая подсказка для диспетчера -->
+        <div class="secret-hint">🔑 двойной клик по логотипу</div>
 
         <div class="home-indicator"></div>
     </div>
 
-    <!-- Модальное окно входа -->
+    <!-- Модальное окно входа для водителя -->
     <div class="modal" id="loginModal">
         <div class="modal-content">
             <h2 data-i18n="loginTitle">🚖 Вход для водителей</h2>
@@ -537,7 +673,6 @@
                 driverEntry: "אני נהג",
                 loggedIn: "✅ התחברת כנהג",
                 logout: "התנתק",
-                goToPanel: "עבור לפאנל",
                 loginTitle: "🚖 כניסת נהגים",
                 emailPlaceholder: "אימייל",
                 passPlaceholder: "סיסמה",
@@ -560,7 +695,6 @@
                 driverEntry: "أنا سائق",
                 loggedIn: "✅ تم تسجيل دخولك كسائق",
                 logout: "تسجيل خروج",
-                goToPanel: "اذهب إلى اللوحة",
                 loginTitle: "🚖 دخول السائقين",
                 emailPlaceholder: "البريد الإلكتروني",
                 passPlaceholder: "كلمة المرور",
@@ -583,7 +717,6 @@
                 driverEntry: "I'm a driver",
                 loggedIn: "✅ Logged in as driver",
                 logout: "Log out",
-                goToPanel: "Go to panel",
                 loginTitle: "🚖 Driver login",
                 emailPlaceholder: "Email",
                 passPlaceholder: "Password",
@@ -603,12 +736,16 @@
 
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
+                if (t[key]) {
+                    el.textContent = t[key];
+                }
             });
 
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 const key = el.getAttribute('data-i18n-placeholder');
-                if (t[key]) el.placeholder = t[key];
+                if (t[key]) {
+                    el.placeholder = t[key];
+                }
             });
 
             if (lang === 'ar' || lang === 'he') {
@@ -621,20 +758,104 @@
 
             document.querySelectorAll('.lang-btn').forEach(btn => {
                 btn.classList.remove('active');
-                if (btn.getAttribute('data-lang') === lang) btn.classList.add('active');
+                if (btn.getAttribute('data-lang') === lang) {
+                    btn.classList.add('active');
+                }
             });
 
             localStorage.setItem('wheel_lang', lang);
         }
 
         document.querySelectorAll('.lang-btn').forEach(btn => {
-            btn.addEventListener('click', () => switchLanguage(btn.getAttribute('data-lang')));
+            btn.addEventListener('click', () => {
+                const lang = btn.getAttribute('data-lang');
+                switchLanguage(lang);
+            });
         });
 
         const savedLang = localStorage.getItem('wheel_lang');
-        if (savedLang && translations[savedLang]) switchLanguage(savedLang);
+        if (savedLang && translations[savedLang]) {
+            switchLanguage(savedLang);
+        }
 
-        // ============ FIREBASE: ВХОД ВОДИТЕЛЯ ============
+        // ============ СКРЫТЫЙ ВХОД ДЛЯ ДИСПЕТЧЕРА ============
+        const SECRET_PASSWORD = '0902';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoIcon = document.getElementById('logoIcon');
+            const secretForm = document.getElementById('secretForm');
+            const secretPassword = document.getElementById('secretPassword');
+            const secretLoginBtn = document.getElementById('secretLoginBtn');
+            const secretError = document.getElementById('secretError');
+            const secretSuccess = document.getElementById('secretSuccess');
+            let clickCount = 0;
+            let clickTimer = null;
+
+            // Двойной клик по логотипу
+            logoIcon.addEventListener('dblclick', function(e) {
+                e.preventDefault();
+                secretForm.classList.toggle('active');
+                secretError.classList.remove('active');
+                secretSuccess.classList.remove('active');
+                secretPassword.value = '';
+                if (secretForm.classList.contains('active')) {
+                    secretPassword.focus();
+                }
+            });
+
+            // Вход по паролю
+            function handleSecretLogin() {
+                const password = secretPassword.value.trim();
+                
+                if (password === SECRET_PASSWORD) {
+                    secretError.classList.remove('active');
+                    secretSuccess.classList.add('active');
+                    secretSuccess.textContent = '✅ Перенаправление...';
+                    
+                    setTimeout(function() {
+                        window.location.href = 'dispatcher.html';
+                    }, 800);
+                } else {
+                    secretSuccess.classList.remove('active');
+                    secretError.classList.add('active');
+                    secretError.textContent = '❌ Неверный пароль';
+                    secretPassword.value = '';
+                    secretPassword.focus();
+                }
+            }
+
+            secretLoginBtn.addEventListener('click', handleSecretLogin);
+
+            secretPassword.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSecretLogin();
+                }
+            });
+
+            // Закрытие формы по Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && secretForm.classList.contains('active')) {
+                    secretForm.classList.remove('active');
+                    secretError.classList.remove('active');
+                    secretSuccess.classList.remove('active');
+                }
+            });
+
+            // Клик вне формы закрывает её
+            document.addEventListener('click', function(e) {
+                if (secretForm.classList.contains('active')) {
+                    const isClickInside = secretForm.contains(e.target) || logoIcon.contains(e.target);
+                    if (!isClickInside) {
+                        secretForm.classList.remove('active');
+                        secretError.classList.remove('active');
+                        secretSuccess.classList.remove('active');
+                    }
+                }
+            });
+        });
+
+        // ============ FIREBASE AUTH + DRIVER CHECK ============
         window.addEventListener('load', () => {
             const driverBtn = document.getElementById('driverBtn');
             const loginModal = document.getElementById('loginModal');
@@ -645,22 +866,29 @@
             const driverStatus = document.getElementById('driverStatus');
             const driverEmail = document.getElementById('driverEmail');
             const logoutBtn = document.getElementById('logoutBtn');
+            const clientOrder = document.getElementById('clientOrder');
             const loginError = document.getElementById('loginError');
 
             driverBtn.addEventListener('click', () => {
                 loginModal.classList.add('active');
                 loginError.classList.remove('active');
+                loginError.textContent = '';
             });
 
-            closeModal.addEventListener('click', () => loginModal.classList.remove('active'));
+            closeModal.addEventListener('click', () => {
+                loginModal.classList.remove('active');
+            });
+
             loginModal.addEventListener('click', (e) => {
-                if (e.target === loginModal) loginModal.classList.remove('active');
+                if (e.target === loginModal) {
+                    loginModal.classList.remove('active');
+                }
             });
 
-            // Вход
             loginSubmit.addEventListener('click', async () => {
                 const email = emailInput.value.trim();
                 const password = passwordInput.value.trim();
+
                 loginError.classList.remove('active');
 
                 if (!email || !password) {
@@ -672,44 +900,67 @@
                 try {
                     loginSubmit.textContent = '...';
                     loginSubmit.disabled = true;
+                    loginError.classList.remove('active');
 
                     const auth = window.firebaseAuth;
                     const signIn = window.signInWithEmailAndPassword;
+                    
                     const userCredential = await signIn(auth, email, password);
                     const user = userCredential.user;
+                    
+                    console.log('🔐 Auth success:', user.uid);
 
-                    // Проверка: есть ли водитель в Firestore
                     const db = window.firebaseDb;
                     const docFn = window.doc;
                     const getDocFn = window.getDoc;
-                    const driverDoc = await getDocFn(docFn(db, 'drivers', user.uid));
+                    
+                    const driverDocRef = docFn(db, 'drivers', user.uid);
+                    const driverDoc = await getDocFn(driverDocRef);
 
                     if (!driverDoc.exists()) {
+                        console.error('❌ Not a driver:', user.uid);
                         await window.signOut(auth);
+                        
                         loginError.textContent = translations[currentLang].notDriver;
                         loginError.classList.add('active');
+                        loginSubmit.textContent = translations[currentLang].loginBtn;
+                        loginSubmit.disabled = false;
                         return;
                     }
 
                     const driverData = driverDoc.data();
-
-                    // Обновить статус
-                    await window.updateDoc(docFn(db, 'drivers', user.uid), {
+                    console.log('✅ Driver found:', driverData.fullName || driverData.email);
+                    
+                    const updateDocFn = window.updateDoc;
+                    const serverTimestampFn = window.serverTimestamp;
+                    
+                    await updateDocFn(driverDocRef, {
                         status: 'online',
-                        lastUpdated: window.serverTimestamp()
+                        lastUpdated: serverTimestampFn()
                     });
 
-                    // Показать статус
                     driverStatus.classList.add('active');
                     driverEmail.textContent = driverData.fullName || user.email;
                     driverBtn.style.display = 'none';
                     loginModal.classList.remove('active');
+                    
                     emailInput.value = '';
                     passwordInput.value = '';
-
+                    
                 } catch (error) {
-                    console.error('Login error:', error);
-                    loginError.textContent = translations[currentLang].loginError;
+                    console.error('❌ Login error:', error);
+                    
+                    let errorMsg = translations[currentLang].loginError;
+                    
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                        errorMsg = translations[currentLang].loginError;
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMsg = 'Invalid email format';
+                    } else if (error.code === 'auth/too-many-requests') {
+                        errorMsg = 'Too many attempts. Try again later.';
+                    }
+                    
+                    loginError.textContent = errorMsg;
                     loginError.classList.add('active');
                 } finally {
                     loginSubmit.textContent = translations[currentLang].loginBtn;
@@ -717,32 +968,64 @@
                 }
             });
 
-            // Выход
             logoutBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
-                const user = window.firebaseAuth.currentUser;
-                if (user) {
-                    await window.updateDoc(window.doc(window.firebaseDb, 'drivers', user.uid), {
-                        status: 'offline',
-                        lastUpdated: window.serverTimestamp()
-                    });
+                try {
+                    const auth = window.firebaseAuth;
+                    
+                    const user = auth.currentUser;
+                    if (user) {
+                        const db = window.firebaseDb;
+                        const docFn = window.doc;
+                        const updateDocFn = window.updateDoc;
+                        const serverTimestampFn = window.serverTimestamp;
+                        
+                        const driverDocRef = docFn(db, 'drivers', user.uid);
+                        await updateDocFn(driverDocRef, {
+                            status: 'offline',
+                            lastUpdated: serverTimestampFn()
+                        });
+                    }
+                    
+                    await window.signOut(auth);
+                    
+                    driverStatus.classList.remove('active');
+                    driverEmail.textContent = '';
+                    driverBtn.style.display = 'block';
+                    
+                    console.log('👋 Driver logged out');
+                } catch (error) {
+                    console.error('Logout error:', error);
                 }
-                await window.signOut(window.firebaseAuth);
-                driverStatus.classList.remove('active');
-                driverBtn.style.display = 'block';
             });
 
-            // Проверка при загрузке
-            window.onAuthStateChanged(window.firebaseAuth, async (user) => {
+            const auth = window.firebaseAuth;
+            const onAuth = window.onAuthStateChanged;
+            
+            onAuth(auth, async (user) => {
                 if (user) {
-                    const driverDoc = await window.getDoc(window.doc(window.firebaseDb, 'drivers', user.uid));
+                    const db = window.firebaseDb;
+                    const docFn = window.doc;
+                    const getDocFn = window.getDoc;
+                    
+                    const driverDocRef = docFn(db, 'drivers', user.uid);
+                    const driverDoc = await getDocFn(driverDocRef);
+                    
                     if (driverDoc.exists()) {
+                        const driverData = driverDoc.data();
                         driverStatus.classList.add('active');
-                        driverEmail.textContent = driverDoc.data().fullName || user.email;
+                        driverEmail.textContent = driverData.fullName || user.email;
                         driverBtn.style.display = 'none';
                     } else {
-                        await window.signOut(window.firebaseAuth);
+                        await window.signOut(auth);
+                        driverStatus.classList.remove('active');
+                        driverEmail.textContent = '';
+                        driverBtn.style.display = 'block';
                     }
+                } else {
+                    driverStatus.classList.remove('active');
+                    driverEmail.textContent = '';
+                    driverBtn.style.display = 'block';
                 }
             });
         });
