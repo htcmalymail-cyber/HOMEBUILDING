@@ -5,16 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>WHEEL — Заказ такси</title>
 
-    <!-- ===== Leaflet CSS ===== -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     
-    <!-- ===== Leaflet JS ===== -->
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
     <style>
-        /* ===== БАЗОВЫЕ СТИЛИ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -35,7 +34,6 @@
         body[dir="rtl"] .phone-frame { direction: rtl; }
         body[dir="rtl"] .suggestion-item { direction: rtl; text-align: right; }
         body[dir="rtl"] .address-input input { text-align: right; }
-        body[dir="rtl"] .lang-switcher { right: auto; left: 24px; }
 
         .phone-frame {
             width: 100%;
@@ -55,43 +53,105 @@
             overflow: hidden;
         }
 
-        /* ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== */
-        .lang-switcher {
+        /* ===== КОМПАКТНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== */
+        .lang-toggle {
             position: absolute;
             top: 20px;
             right: 24px;
-            z-index: 30;
-            display: flex;
-            gap: 4px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 3px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
+            z-index: 40;
+            cursor: pointer;
         }
 
-        .lang-btn {
-            background: transparent;
-            border: none;
-            color: #8899aa;
-            font-size: 12px;
-            font-weight: 600;
-            padding: 6px 10px;
-            border-radius: 10px;
+        body[dir="rtl"] .lang-toggle {
+            right: auto;
+            left: 24px;
+        }
+
+        .lang-toggle-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
-            letter-spacing: 0.5px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .lang-toggle-btn:hover {
+            background: rgba(255, 180, 0, 0.2);
+            border-color: #ffb000;
+            transform: scale(1.05);
+        }
+
+        /* Выпадающий список языков */
+        .lang-dropdown {
+            position: absolute;
+            top: 48px;
+            right: 0;
+            background: rgba(18, 22, 28, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            padding: 6px;
+            min-width: 100px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+        }
+        .lang-dropdown.active {
+            display: flex;
+            animation: dropIn 0.2s ease;
+        }
+
+        @keyframes dropIn {
+            from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        body[dir="rtl"] .lang-dropdown {
+            right: auto;
+            left: 0;
+        }
+
+        .lang-dropdown-item {
+            padding: 8px 16px;
+            border-radius: 10px;
+            color: #8899aa;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: none;
+            background: transparent;
+            text-align: left;
             white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .lang-btn:hover {
+        body[dir="rtl"] .lang-dropdown-item {
+            text-align: right;
+        }
+
+        .lang-dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.06);
             color: #ffffff;
-            background: rgba(255, 255, 255, 0.08);
         }
-        .lang-btn.active {
+        .lang-dropdown-item.active {
             background: linear-gradient(135deg, #ffb000, #ff6a00);
             color: #0a0c10;
             font-weight: 700;
-            box-shadow: 0 2px 8px rgba(255, 160, 0, 0.3);
+        }
+        .lang-dropdown-item .flag {
+            font-size: 16px;
         }
 
         /* ===== HEADER ===== */
@@ -231,7 +291,6 @@
         }
         .panel-title i { color: #ffb000; }
 
-        /* ===== АДРЕСНЫЕ ПОЛЯ ===== */
         .address-group { 
             margin-bottom: 10px; 
             position: relative;
@@ -284,7 +343,6 @@
         }
         .address-input .geo-btn:hover { transform: scale(1.15); }
 
-        /* ===== ПОДСКАЗКИ ===== */
         .suggestions-list {
             position: absolute;
             top: 100%;
@@ -351,7 +409,6 @@
             border-color: #ffb000;
         }
 
-        /* ===== ЦЕНА С ВИЛКОЙ ===== */
         .trip-info {
             background: rgba(255,255,255,0.04);
             border-radius: 14px;
@@ -492,7 +549,6 @@
             border: 1px solid rgba(59,130,246,0.2);
         }
 
-        /* ===== МОДАЛКА ===== */
         .modal {
             display: none;
             position: fixed;
@@ -599,9 +655,8 @@
             }
             .header-title { font-size: 16px; }
             .wallet-badge { font-size: 12px; padding: 4px 12px; }
-            .lang-switcher { top: 14px; right: 16px; }
-            body[dir="rtl"] .lang-switcher { right: auto; left: 16px; }
-            .lang-btn { font-size: 10px; padding: 4px 8px; }
+            .lang-toggle { top: 14px; right: 16px; }
+            body[dir="rtl"] .lang-toggle { right: auto; left: 16px; }
         }
     </style>
 </head>
@@ -609,11 +664,20 @@
 
 <div class="phone-frame">
 
-    <!-- ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== -->
-    <div class="lang-switcher">
-        <button class="lang-btn" data-lang="he" title="עברית">עב</button>
-        <button class="lang-btn" data-lang="ar" title="العربية">عرب</button>
-        <button class="lang-btn active" data-lang="en" title="English">EN</button>
+    <!-- ===== КОМПАКТНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== -->
+    <div class="lang-toggle">
+        <button class="lang-toggle-btn" id="langToggleBtn">🌐</button>
+        <div class="lang-dropdown" id="langDropdown">
+            <button class="lang-dropdown-item active" data-lang="en">
+                <span class="flag">🇬🇧</span> English
+            </button>
+            <button class="lang-dropdown-item" data-lang="he">
+                <span class="flag">🇮🇱</span> עברית
+            </button>
+            <button class="lang-dropdown-item" data-lang="ar">
+                <span class="flag">🇸🇦</span> العربية
+            </button>
+        </div>
     </div>
 
     <!-- ===== HEADER ===== -->
@@ -804,23 +868,16 @@
         currentLang = lang;
         const t = translations[lang];
 
-        // Перевод текстов
         document.querySelectorAll('.i18n').forEach(el => {
             const key = el.getAttribute('data-key');
-            if (t[key]) {
-                el.textContent = t[key];
-            }
+            if (t[key]) el.textContent = t[key];
         });
 
-        // Перевод placeholder
         document.querySelectorAll('.i18n-placeholder').forEach(el => {
             const key = el.getAttribute('data-key');
-            if (t[key]) {
-                el.placeholder = t[key];
-            }
+            if (t[key]) el.placeholder = t[key];
         });
 
-        // Направление текста
         if (lang === 'ar' || lang === 'he') {
             document.body.setAttribute('dir', 'rtl');
             document.documentElement.lang = lang;
@@ -829,8 +886,7 @@
             document.documentElement.lang = 'en';
         }
 
-        // Активная кнопка
-        document.querySelectorAll('.lang-btn').forEach(btn => {
+        document.querySelectorAll('.lang-dropdown-item').forEach(btn => {
             btn.classList.remove('active');
             if (btn.getAttribute('data-lang') === lang) {
                 btn.classList.add('active');
@@ -838,17 +894,27 @@
         });
 
         localStorage.setItem('wheel_client_lang', lang);
+        document.getElementById('langDropdown').classList.remove('active');
     }
 
-    // Обработчики кнопок языка
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+    // Toggle dropdown
+    document.getElementById('langToggleBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('langDropdown').classList.toggle('active');
+    });
+
+    document.addEventListener('click', () => {
+        document.getElementById('langDropdown').classList.remove('active');
+    });
+
+    document.querySelectorAll('.lang-dropdown-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             const lang = btn.getAttribute('data-lang');
             switchLanguage(lang);
         });
     });
 
-    // Загрузка сохранённого языка
     const savedLang = localStorage.getItem('wheel_client_lang');
     if (savedLang && translations[savedLang]) {
         switchLanguage(savedLang);
@@ -1249,26 +1315,138 @@
     }
 
     // ============================================================
-    // 10. ОБРАБОТЧИКИ
+    // 10. СОЗДАНИЕ ЗАКАЗА (СОХРАНЕНИЕ В LOCALSTORAGE ДЛЯ ДЕМО)
     // ============================================================
-    document.getElementById('geoFromBtn').addEventListener('click', getCurrentPosition);
-    document.getElementById('buildRouteBtn').addEventListener('click', buildRoute);
-    document.getElementById('clearRouteBtn').addEventListener('click', clearRoute);
-    document.getElementById('swapBtn').addEventListener('click', swapAddresses);
-
-    // Заглушка для заказа
     document.getElementById('orderBtn').addEventListener('click', function() {
-        const price = document.getElementById('priceDisplay').textContent;
-        showStatus(`✅ Заказ создан! Стоимость: ${price} ₪`, 'success');
+        const fromInput = document.getElementById('fromInput');
+        const toInput = document.getElementById('toInput');
+        const priceDisplay = document.getElementById('priceDisplay');
+        const distanceDisplay = document.getElementById('distanceDisplay');
+
+        const fromLat = parseFloat(fromInput.dataset.lat);
+        const fromLng = parseFloat(fromInput.dataset.lng);
+        const fromAddress = fromInput.dataset.address || fromInput.value;
+        const toLat = parseFloat(toInput.dataset.lat);
+        const toLng = parseFloat(toInput.dataset.lng);
+        const toAddress = toInput.dataset.address || toInput.value;
+
+        if (!fromLat || !fromLng || !toLat || !toLng) {
+            showStatus('❌ Сначала постройте маршрут', 'error');
+            return;
+        }
+
+        const price = parseFloat(priceDisplay.textContent);
+        const distance = parseFloat(distanceDisplay.textContent);
+        const now = new Date();
+
+        // ============================================================
+        // ⚡ ЗДЕСЬ СОХРАНЯЕТСЯ ЗАКАЗ В FIREBASE
+        // ============================================================
+        const orderData = {
+            // --- ОСНОВНАЯ ИНФОРМАЦИЯ ---
+            orderId: 'ORD-' + Date.now().toString().slice(-8),
+            status: 'waiting', // waiting | accepted | en_route | completed | cancelled
+            
+            // --- КЛИЕНТ ---
+            client: {
+                id: 'anonymous_' + Date.now(),
+                phone: null, // будет заполняться при регистрации
+                name: 'Guest',
+                from: {
+                    lat: fromLat,
+                    lng: fromLng,
+                    address: fromAddress
+                }
+            },
+            
+            // --- НАЗНАЧЕНИЕ ---
+            destination: {
+                lat: toLat,
+                lng: toLng,
+                address: toAddress
+            },
+            
+            // --- ЦЕНА ---
+            price: {
+                base: price,
+                min: price * 0.94,  // -6%
+                max: price * 1.06,  // +6%
+                currency: 'ILS'
+            },
+            
+            // --- МАРШРУТ ---
+            route: {
+                distance_km: distance,
+                duration_min: parseInt(document.getElementById('durationDisplay').textContent) || 0
+            },
+            
+            // --- ВРЕМЯ ---
+            createdAt: now.toISOString(),
+            createdAtTimestamp: now.getTime(),
+            date: now.toLocaleDateString('he-IL'),
+            time: now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
+            
+            // --- ДЛЯ ВОДИТЕЛЯ ---
+            driver: {
+                id: null,       // заполняется при назначении
+                name: null,
+                phone: null,
+                status: 'pending' // pending | assigned | arrived | completed
+            },
+            
+            // --- ДИСПЕТЧЕР ---
+            dispatcher: {
+                id: null,
+                note: null
+            },
+            
+            // --- ОПЦИОНАЛЬНО ---
+            paymentMethod: 'wallet', // wallet | cash | card
+            bonusUsed: 0,
+            isPreorder: false,
+            preorderTime: null
+        };
+
+        // Сохраняем в localStorage для демо
+        const orders = JSON.parse(localStorage.getItem('wheel_orders') || '[]');
+        orders.push(orderData);
+        localStorage.setItem('wheel_orders', JSON.stringify(orders));
+
+        console.log('📦 ЗАКАЗ СОЗДАН:', orderData);
+        console.log('💾 Сохранено в localStorage (для демо)');
+
+        showStatus(`✅ Заказ создан! ID: ${orderData.orderId}`, 'success');
         this.disabled = true;
         this.textContent = '⏳ Водитель едет...';
+
+        // Демонстрация машины
+        if (driverMarker) map.removeLayer(driverMarker);
+        driverMarker = L.marker([fromLat, fromLng], { icon: driverIcon })
+            .addTo(map)
+            .bindPopup('🚗 Водитель назначен');
+
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 0.02;
+            if (progress > 1) {
+                clearInterval(interval);
+                showStatus('🚗 Водитель прибыл!', 'success');
+                return;
+            }
+            const lat = fromLat + (toLat - fromLat) * progress;
+            const lng = fromLng + (toLng - fromLng) * progress;
+            driverMarker.setLatLng([lat, lng]);
+        }, 200);
+
         setTimeout(() => {
             this.disabled = false;
             this.innerHTML = '<i class="fas fa-taxi"></i> Заказать такси';
-        }, 5000);
+        }, 8000);
     });
 
-    // Кошелёк (заглушка)
+    // ============================================================
+    // 11. КОШЕЛЁК (ЗАГЛУШКА)
+    // ============================================================
     document.getElementById('walletBtn').addEventListener('click', () => {
         document.getElementById('walletModal').classList.add('active');
     });
@@ -1298,7 +1476,7 @@
     });
 
     // ============================================================
-    // 11. ЗАПУСК
+    // 12. ЗАПУСК
     // ============================================================
     window.addEventListener('load', () => {
         setTimeout(getCurrentPosition, 800);
