@@ -14,7 +14,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
     <style>
-        /* ===== БАЗА ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -25,25 +24,13 @@
                 radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.08) 0%, transparent 40%),
                 radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.06) 0%, transparent 40%);
             background-attachment: fixed;
-            transition: direction 0.3s ease;
         }
-
-        body[dir="rtl"] .container { direction: rtl; }
-        body[dir="rtl"] .nav a { margin-right: 0; margin-left: 15px; }
-        body[dir="rtl"] .header-center { flex-direction: row-reverse; }
-        body[dir="rtl"] .form-row { direction: rtl; }
-        body[dir="rtl"] .table th { text-align: right; }
-        body[dir="rtl"] .table td { text-align: right; }
-        body[dir="rtl"] .action-buttons { justify-content: flex-end; }
-        body[dir="rtl"] .lang-dropdown { left: 50%; transform: translateX(50%); }
-        body[dir="rtl"] .lang-dropdown.active { transform: translateX(50%) translateY(0); }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
         }
 
-        /* ===== HEADER ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -51,20 +38,13 @@
             padding: 12px 20px;
             background: rgba(18, 22, 28, 0.92);
             backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
             border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255,255,255,0.08);
             margin-bottom: 20px;
             flex-wrap: wrap;
             gap: 10px;
         }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
+        .header-left { display: flex; align-items: center; gap: 16px; }
         .header-center {
             display: flex;
             align-items: center;
@@ -72,27 +52,17 @@
             flex: 1;
             justify-content: center;
         }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .header-right { display: flex; align-items: center; gap: 12px; }
 
         .logo {
             font-size: 22px;
             font-weight: 800;
-            color: #ffffff;
-            letter-spacing: 1px;
             background: linear-gradient(to right, #ffffff, #ffb000);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        .logo span {
-            font-weight: 300;
-            -webkit-text-fill-color: #ffb000;
-        }
+        .logo span { font-weight: 300; -webkit-text-fill-color: #ffb000; }
 
         .back-btn {
             background: rgba(255,255,255,0.06);
@@ -105,110 +75,18 @@
             cursor: pointer;
             transition: 0.2s;
             text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
-        .back-btn:hover {
-            background: rgba(255, 180, 0, 0.15);
-            border-color: #ffb000;
-        }
+        .back-btn:hover { background: rgba(255,180,0,0.15); border-color: #ffb000; }
 
-        /* ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== */
-        .lang-toggle {
-            position: relative;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-        }
-        .lang-toggle-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #ffffff;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(10px);
-        }
-        .lang-toggle-btn:hover {
-            background: rgba(255, 180, 0, 0.15);
-            border-color: #ffb000;
-            transform: scale(1.05);
-        }
-
-        .lang-dropdown {
-            position: absolute;
-            top: 42px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(18,22,28,0.96);
-            backdrop-filter: blur(20px);
-            border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            padding: 6px;
-            min-width: 120px;
-            display: none;
-            flex-direction: column;
-            gap: 2px;
-            overflow: hidden;
-        }
-        .lang-dropdown.active {
-            display: flex;
-            animation: dropIn 0.2s ease;
-        }
-
-        @keyframes dropIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.95); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-        }
-
-        .lang-dropdown-item {
-            padding: 8px 16px;
-            border-radius: 10px;
-            color: #8899aa;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            border: none;
-            background: transparent;
-            text-align: center;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .lang-dropdown-item:hover {
-            background: rgba(255,255,255,0.06);
-            color: #ffffff;
-        }
-        .lang-dropdown-item.active {
-            background: linear-gradient(135deg, #ffb000, #ff6a00);
-            color: #0a0c10;
-            font-weight: 700;
-        }
-        .lang-dropdown-item .flag { font-size: 16px; }
-
-        /* ===== КАРТОЧКИ ===== */
         .card {
             background: rgba(18, 22, 28, 0.92);
             backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             border-radius: 20px;
             padding: 24px;
             border: 1px solid rgba(255,255,255,0.06);
             margin: 16px 0;
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
-
         .card-title {
             font-size: 18px;
             font-weight: 700;
@@ -220,33 +98,6 @@
         }
         .card-title i { color: #ffb000; }
 
-        /* ===== ФОРМЫ ===== */
-        .form-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-        .form-row input, .form-row select {
-            flex: 1;
-            min-width: 180px;
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.08);
-            background: rgba(255,255,255,0.04);
-            color: #e8edf5;
-            font-size: 14px;
-            outline: none;
-            transition: 0.2s;
-        }
-        .form-row input:focus, .form-row select:focus {
-            border-color: #ffb000;
-            box-shadow: 0 0 0 4px rgba(255,180,0,0.08);
-        }
-        .form-row input::placeholder { color: #556677; }
-        .form-row select option { background: #1a1e26; color: #e8edf5; }
-
-        /* ===== КНОПКИ ===== */
         .btn {
             padding: 10px 22px;
             border: none;
@@ -262,41 +113,14 @@
         .btn:hover { transform: scale(1.02); }
         .btn:active { transform: scale(0.97); }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #ffb000, #ff6a00);
-            color: #0a0c10;
-        }
-        .btn-primary:hover { box-shadow: 0 8px 20px rgba(255,140,0,0.3); }
-
-        .btn-success {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
-            color: #ffffff;
-        }
-        .btn-success:hover { box-shadow: 0 8px 20px rgba(34,197,94,0.3); }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: #ffffff;
-        }
-        .btn-danger:hover { box-shadow: 0 8px 20px rgba(239,68,68,0.3); }
-
-        .btn-warning {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #0a0c10;
-        }
-        .btn-warning:hover { box-shadow: 0 8px 20px rgba(245,158,11,0.3); }
-
-        .btn-secondary {
-            background: rgba(255,255,255,0.06);
-            color: #8899aa;
-            border: 1px solid rgba(255,255,255,0.08);
-        }
+        .btn-primary { background: linear-gradient(135deg, #ffb000, #ff6a00); color: #0a0c10; }
+        .btn-success { background: linear-gradient(135deg, #22c55e, #16a34a); color: #ffffff; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: #ffffff; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: #0a0c10; }
+        .btn-secondary { background: rgba(255,255,255,0.06); color: #8899aa; border: 1px solid rgba(255,255,255,0.08); }
         .btn-secondary:hover { background: rgba(255,255,255,0.1); color: #ffffff; }
-
         .btn-sm { padding: 6px 14px; font-size: 12px; }
-        .btn-sm i { font-size: 12px; }
 
-        /* ===== СТАТИСТИКА ===== */
         .stats {
             display: flex;
             gap: 16px;
@@ -325,7 +149,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* ===== ТАБЛИЦЫ ===== */
         .table-wrap {
             overflow-x: auto;
             border-radius: 14px;
@@ -360,7 +183,6 @@
             padding: 30px 16px;
         }
 
-        /* ===== СТАТУСЫ ===== */
         .status-badge {
             display: inline-block;
             padding: 3px 14px;
@@ -372,18 +194,12 @@
         .status-offline { background: rgba(239,68,68,0.2); color: #f87171; }
         .status-busy { background: rgba(245,158,11,0.2); color: #fbbf24; }
         .status-waiting { background: rgba(245,158,11,0.2); color: #fbbf24; }
+        .status-offering { background: rgba(59,130,246,0.2); color: #60a5fa; }
         .status-assigned { background: rgba(59,130,246,0.2); color: #60a5fa; }
         .status-accepted { background: rgba(34,197,94,0.2); color: #4ade80; }
-        .status-en_route { background: rgba(139,92,246,0.2); color: #a78bfa; }
-        .status-arrived { background: rgba(34,197,94,0.2); color: #4ade80; }
         .status-completed { background: rgba(107,114,128,0.2); color: #9ca3af; }
         .status-cancelled { background: rgba(239,68,68,0.2); color: #f87171; }
-        .status-searching { background: rgba(245,158,11,0.2); color: #fbbf24; }
-        .status-offering { background: rgba(59,130,246,0.2); color: #60a5fa; }
-        .status-created { background: rgba(245,158,11,0.2); color: #fbbf24; }
-        .status-started { background: rgba(139,92,246,0.2); color: #a78bfa; }
 
-        /* ===== АЛЕРТЫ ===== */
         .alert-box {
             padding: 16px 20px;
             border-radius: 14px;
@@ -394,47 +210,37 @@
         }
         .alert-box strong { display: block; margin-bottom: 4px; }
 
-        .alert-success {
-            background: rgba(34,197,94,0.1);
-            border-color: rgba(34,197,94,0.2);
-            color: #4ade80;
+        .form-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
         }
-        .alert-danger {
-            background: rgba(239,68,68,0.1);
-            border-color: rgba(239,68,68,0.2);
-            color: #f87171;
+        .form-row input {
+            flex: 1;
+            min-width: 180px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04);
+            color: #e8edf5;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
         }
+        .form-row input:focus { border-color: #ffb000; }
 
-        /* ===== СКРЫТЫЕ ===== */
         .hidden { display: none !important; }
 
-        /* ===== АДАПТИВ ===== */
         @media (max-width: 768px) {
             body { padding: 10px; }
-            .header { padding: 10px 14px; flex-direction: column; }
+            .header { flex-direction: column; }
             .header-center { order: 3; width: 100%; }
-            .header-left { width: 100%; justify-content: space-between; }
-            .header-right { width: 100%; justify-content: center; }
-            .logo { font-size: 18px; }
             .stats { flex-direction: column; }
-            .stat-item { min-width: auto; }
-            .form-row input, .form-row select { min-width: 100%; }
+            .form-row input { min-width: 100%; }
             .table { font-size: 12px; }
             .table th, .table td { padding: 8px 10px; }
-            .btn { padding: 8px 14px; font-size: 12px; }
             .card { padding: 16px; }
-            .lang-toggle-btn { width: 32px; height: 32px; font-size: 14px; }
-            .lang-dropdown { min-width: 100px; top: 38px; }
-            .lang-dropdown-item { font-size: 12px; padding: 6px 12px; }
-        }
-
-        @media (max-width: 480px) {
-            .header { border-radius: 16px; }
-            .card { border-radius: 16px; padding: 14px; }
-            .table-wrap { border-radius: 10px; }
-            .table th, .table td { padding: 6px 8px; font-size: 11px; }
-            .status-badge { font-size: 10px; padding: 2px 10px; }
-            .back-btn { font-size: 11px; padding: 6px 12px; }
         }
     </style>
 </head>
@@ -449,14 +255,6 @@
         </div>
         <div class="header-center">
             <div class="logo">WHEEL <span>TAXI</span></div>
-            <div class="lang-toggle">
-                <button class="lang-toggle-btn" id="langToggleBtn">🌐</button>
-                <div class="lang-dropdown" id="langDropdown">
-                    <button class="lang-dropdown-item active" data-lang="en"><span class="flag">🇬🇧</span> English</button>
-                    <button class="lang-dropdown-item" data-lang="he"><span class="flag">🇮🇱</span> עברית</button>
-                    <button class="lang-dropdown-item" data-lang="ar"><span class="flag">🇸🇦</span> العربية</button>
-                </div>
-            </div>
         </div>
         <div class="header-right">
             <span style="color:#667788; font-size:13px;" id="userStatusDisplay">❌ Не авторизован</span>
@@ -467,7 +265,6 @@
     <!-- ===== АВТОРИЗАЦИЯ ===== -->
     <div id="auth-section" class="card">
         <div class="card-title"><i class="fas fa-user-shield"></i> Авторизация диспетчера</div>
-
         <div style="margin-bottom:16px;">
             <h4 style="color:#8899aa; font-size:14px; margin-bottom:8px;">📝 Регистрация</h4>
             <div class="form-row">
@@ -483,9 +280,7 @@
             </div>
             <button class="btn btn-primary" onclick="signUpDispatcher()"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
         </div>
-
         <hr style="border-color:rgba(255,255,255,0.06); margin:16px 0;" />
-
         <h4 style="color:#8899aa; font-size:14px; margin-bottom:8px;">🔑 Вход</h4>
         <div class="form-row">
             <input type="email" id="login-email" placeholder="Email" value="dispatcher@taxi.com" />
@@ -505,7 +300,6 @@
                 <strong>⚠️ Вы вошли, но не зарегистрированы как диспетчер.</strong>
                 Заполните форму выше и нажмите «Зарегистрироваться».
             </div>
-
             <div id="dispatcher-content">
                 <div style="background:rgba(255,180,0,0.06); padding:14px 20px; border-radius:14px; margin-bottom:16px; border:1px solid rgba(255,180,0,0.1);">
                     <div style="display:flex; gap:20px; flex-wrap:wrap;">
@@ -514,7 +308,6 @@
                     </div>
                 </div>
 
-                <!-- СТАТИСТИКА -->
                 <div class="stats">
                     <div class="stat-item">
                         <span class="number" id="stat-drivers">0</span>
@@ -534,62 +327,47 @@
                     </div>
                 </div>
 
-                <!-- ВКЛАДКИ -->
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin:16px 0;">
                     <button class="btn btn-primary btn-sm" onclick="showTab('drivers')"><i class="fas fa-users"></i> Водители</button>
                     <button class="btn btn-secondary btn-sm" onclick="showTab('orders')"><i class="fas fa-list"></i> Заказы</button>
                     <button class="btn btn-success btn-sm" onclick="showTab('addDriver')"><i class="fas fa-user-plus"></i> ➕ Добавить водителя</button>
                 </div>
 
-                <!-- ===== ВКЛАДКА: ВОДИТЕЛИ ===== -->
                 <div id="tab-drivers">
                     <div class="card-title" style="font-size:16px;"><i class="fas fa-users"></i> Все зарегистрированные водители</div>
                     <div class="table-wrap">
                         <table class="table" id="drivers-table">
                             <thead>
                                 <tr>
-                                    <th>ФИО</th>
-                                    <th>Авто</th>
-                                    <th>Номер</th>
-                                    <th>Телефон</th>
-                                    <th>Статус</th>
-                                    <th>Текущий заказ</th>
-                                    <th>ETA</th>
-                                    <th>Действия</th>
+                                    <th>ФИО</th><th>Авто</th><th>Номер</th><th>Телефон</th>
+                                    <th>Статус</th><th>Текущий заказ</th><th>Действия</th>
                                 </tr>
                             </thead>
                             <tbody id="drivers-tbody">
-                                <tr class="empty-row"><td colspan="8">Нет зарегистрированных водителей</td></tr>
+                                <tr class="empty-row"><td colspan="7">Нет зарегистрированных водителей</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- ===== ВКЛАДКА: ЗАКАЗЫ ===== -->
                 <div id="tab-orders" class="hidden">
                     <div class="card-title" style="font-size:16px;"><i class="fas fa-list"></i> Все заказы</div>
-                    <div id="autoAssignStatus" style="margin-bottom:12px; color:#ffb000; font-size:14px;"></div>
+                    <div id="autoAssignStatus" style="margin-bottom:12px; color:#4ade80; font-size:14px;"></div>
                     <div class="table-wrap">
                         <table class="table" id="orders-table">
                             <thead>
                                 <tr>
-                                    <th>Заказ</th>
-                                    <th>Клиент</th>
-                                    <th>Статус</th>
-                                    <th>Водитель</th>
-                                    <th>ETA</th>
-                                    <th>Цена</th>
-                                    <th>Действия</th>
+                                    <th>Заказ</th><th>Клиент</th><th>Статус</th>
+                                    <th>Водитель</th><th>Цена</th><th>Действия</th>
                                 </tr>
                             </thead>
                             <tbody id="orders-tbody">
-                                <tr class="empty-row"><td colspan="7">Нет заказов</td></tr>
+                                <tr class="empty-row"><td colspan="6">Нет заказов</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- ===== ВКЛАДКА: ДОБАВИТЬ ВОДИТЕЛЯ ===== -->
                 <div id="tab-addDriver" class="hidden">
                     <div class="card-title" style="font-size:16px;"><i class="fas fa-user-plus"></i> Добавить нового водителя</div>
                     <div class="form-row">
@@ -609,7 +387,6 @@
                     <button class="btn btn-success" onclick="addNewDriver()"><i class="fas fa-save"></i> Сохранить водителя</button>
                     <div id="addDriverResult" style="margin-top:12px;"></div>
                 </div>
-
             </div>
         </div>
     </div>
@@ -635,6 +412,7 @@
 
     let currentUser = null;
     let currentUserData = null;
+    let currentTab = 'drivers';
 
     // ============================================================
     // РАСЧЁТ РАССТОЯНИЯ (Гаверсин)
@@ -651,41 +429,44 @@
     }
 
     // ============================================================
-    // АВТОМАТИЧЕСКОЕ НАЗНАЧЕНИЕ НА БЛИЖАЙШЕГО ВОДИТЕЛЯ
+    // 🔥 АВТОМАТИЧЕСКОЕ РАСПРЕДЕЛЕНИЕ ЗАКАЗОВ (без диспетчера)
     // ============================================================
-    async function assignOrderToNearestDriver(orderId) {
-        console.log('🔍 Ищем ближайшего водителя для заказа:', orderId);
+    async function distributeOrderToDrivers(orderId) {
+        console.log('📡 Распределяем заказ:', orderId);
 
         const orderDoc = await db.collection('orders').doc(orderId).get();
-        if (!orderDoc.exists) {
-            return { success: false, message: 'Заказ не найден' };
-        }
+        if (!orderDoc.exists) return;
 
         const order = orderDoc.data();
         const fromLat = order.client?.from?.lat || order.fromLat;
         const fromLng = order.client?.from?.lng || order.fromLng;
 
         if (!fromLat || !fromLng) {
-            return { success: false, message: 'Нет координат откуда' };
+            console.log('❌ Нет координат откуда');
+            return;
         }
 
+        // Найти всех свободных водителей (онлайн и не занятых)
         const driversSnapshot = await db.collection('drivers')
             .where('status', '==', 'online')
             .get();
 
         if (driversSnapshot.empty) {
-            return { success: false, message: 'Нет свободных водителей' };
+            console.log('⚠️ Нет свободных водителей');
+            document.getElementById('autoAssignStatus').innerHTML = '⚠️ Нет свободных водителей';
+            return;
         }
 
-        const driversWithETA = [];
+        const eligibleDrivers = [];
 
         for (const doc of driversSnapshot.docs) {
             const data = doc.data();
             const driverId = doc.id;
 
+            // Проверка: есть ли у водителя активный заказ
             const activeOrder = await db.collection('orders')
                 .where('driverId', '==', driverId)
-                .where('status', 'in', ['assigned', 'accepted', 'en_route', 'started'])
+                .where('status', 'in', ['assigned', 'accepted', 'en_route', 'offering'])
                 .get();
 
             if (!activeOrder.empty) continue;
@@ -699,9 +480,10 @@
             const avgSpeed = 30;
             const timeMinutes = (distance / avgSpeed) * 60;
 
+            // 🚨 Ограничение: только водители в радиусе 10 минут
             if (timeMinutes > 10) continue;
 
-            driversWithETA.push({
+            eligibleDrivers.push({
                 driverId: driverId,
                 fullName: data.fullName || data.email,
                 phone: data.phone,
@@ -709,63 +491,74 @@
                 carNumber: data.carNumber,
                 distance: distance,
                 timeMinutes: timeMinutes,
-                rating: data.rating || 5,
-                totalTrips: data.totalTrips || 0
+                rating: data.rating || 5
             });
         }
 
-        driversWithETA.sort((a, b) => a.timeMinutes - b.timeMinutes);
-
-        if (driversWithETA.length === 0) {
-            return { success: false, message: 'Нет подходящих водителей в радиусе 10 минут' };
+        if (eligibleDrivers.length === 0) {
+            console.log('⚠️ Нет подходящих водителей в радиусе 10 минут');
+            document.getElementById('autoAssignStatus').innerHTML = '⚠️ Нет водителей в зоне (10 мин)';
+            return;
         }
 
-        const bestDriver = driversWithETA[0];
+        // 📢 Отправить заказ ВСЕМ подходящим водителям
+        console.log(`📢 Отправляем заказ ${eligibleDrivers.length} водителям:`);
+        eligibleDrivers.forEach(d => console.log(`   - ${d.fullName} (${Math.round(d.timeMinutes)} мин)`));
 
-        try {
-            await db.collection('orders').doc(orderId).update({
-                driverId: bestDriver.driverId,
-                driverName: bestDriver.fullName,
-                driverPhone: bestDriver.phone,
-                driverCarModel: bestDriver.carModel,
-                driverCarNumber: bestDriver.carNumber,
-                driverDistance: bestDriver.distance,
-                driverETA: Math.round(bestDriver.timeMinutes),
-                status: 'assigned',
-                assignedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                dispatcherNote: `Автоматически назначен на ${bestDriver.fullName} (${Math.round(bestDriver.timeMinutes)} мин)`
-            });
+        // Обновить заказ — статус "offering" и список водителей
+        await db.collection('orders').doc(orderId).update({
+            status: 'offering',
+            offeredTo: eligibleDrivers.map(d => d.driverId),
+            offeredDrivers: eligibleDrivers,
+            offeredAt: firebase.firestore.FieldValue.serverTimestamp(),
+            dispatcherNote: `Автоматически предложен ${eligibleDrivers.length} водителям`
+        });
 
-            await db.collection('drivers').doc(bestDriver.driverId).update({
-                status: 'busy',
-                currentOrderId: orderId,
-                lastOrderTime: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            return { success: true, driver: bestDriver };
-        } catch (error) {
-            return { success: false, message: error.message };
-        }
+        document.getElementById('autoAssignStatus').innerHTML = 
+            `📢 Заказ предложен ${eligibleDrivers.length} водителям (ожидаем ответа)`;
     }
 
     // ============================================================
-    // АВТОМАТИЧЕСКОЕ НАЗНАЧЕНИЕ (ПО КНОПКЕ)
+    // 🔥 СЛУШАТЕЛЬ НОВЫХ ЗАКАЗОВ (автоматическое распределение)
     // ============================================================
-    async function autoAssignOrder(orderId) {
-        if (!confirm('🚗 Автоматически назначить заказ на ближайшего водителя?')) return;
+    function listenForNewOrders() {
+        db.collection('orders')
+            .where('status', '==', 'waiting')
+            .onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        const orderId = change.doc.id;
+                        const order = change.doc.data();
+                        console.log('🆕 Новый заказ:', orderId);
+                        
+                        // Автоматически распределяем заказ
+                        setTimeout(() => {
+                            distributeOrderToDrivers(orderId);
+                        }, 1000);
+                    }
+                });
+            });
+    }
 
-        document.getElementById('autoAssignStatus').innerHTML = '⏳ Ищем водителя...';
-
-        const result = await assignOrderToNearestDriver(orderId);
-
-        if (result.success) {
-            document.getElementById('autoAssignStatus').innerHTML = 
-                `<span style="color:#4ade80;">✅ Назначен на ${result.driver.fullName} (${Math.round(result.driver.timeMinutes)} мин)</span>`;
-            loadAllOrders();
-        } else {
-            document.getElementById('autoAssignStatus').innerHTML = 
-                `<span style="color:#f87171;">❌ ${result.message}</span>`;
-        }
+    // ============================================================
+    // СЛУШАТЕЛЬ ОТВЕТОВ ВОДИТЕЛЕЙ (принятие/отклонение)
+    // ============================================================
+    function listenForDriverResponses() {
+        // Слушаем заказы в статусе "offering"
+        db.collection('orders')
+            .where('status', '==', 'offering')
+            .onSnapshot((snapshot) => {
+                snapshot.forEach((doc) => {
+                    const order = doc.data();
+                    const orderId = doc.id;
+                    
+                    // Проверяем, есть ли уже принявший водитель
+                    if (order.acceptedBy) {
+                        // Уже кто-то принял — блокируем для других
+                        return;
+                    }
+                });
+            });
     }
 
     // ============================================================
@@ -788,6 +581,8 @@
                     document.getElementById('dispatcher-phone-display').textContent = currentUserData.phone || '—';
                     loadAllDrivers();
                     loadAllOrders();
+                    listenForNewOrders();      // 🔥 Автораспределение
+                    listenForDriverResponses(); // 🔥 Отслеживание ответов
                     showTab('drivers');
                 } else {
                     document.getElementById('not-dispatcher-alert').style.display = 'block';
@@ -857,10 +652,8 @@
         });
     }
 
-    // ============================================================
-    // ВКЛАДКИ
-    // ============================================================
     function showTab(tab) {
+        currentTab = tab;
         document.getElementById('tab-drivers').classList.add('hidden');
         document.getElementById('tab-orders').classList.add('hidden');
         document.getElementById('tab-addDriver').classList.add('hidden');
@@ -885,13 +678,11 @@
             const tbody = document.getElementById('drivers-tbody');
             let html = '';
             let count = 0;
-            const driverIds = [];
 
             snapshot.forEach(doc => {
                 const data = doc.data();
                 const driverId = doc.id;
                 count++;
-                driverIds.push(driverId);
 
                 const statusClass = data.status === 'online' ? 'status-online' :
                                    data.status === 'busy' ? 'status-busy' : 'status-offline';
@@ -904,8 +695,7 @@
                     <td>${data.carNumber || '—'}</td>
                     <td>${data.phone || '—'}</td>
                     <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                    <td id="order-${driverId}">Загрузка...</td>
-                    <td id="eta-${driverId}">—</td>
+                    <td id="order-${driverId}">—</td>
                     <td>
                         <button class="btn btn-sm btn-danger" onclick="deleteDriver('${driverId}')"><i class="fas fa-trash"></i></button>
                         <button class="btn btn-sm btn-warning" onclick="toggleDriverStatus('${driverId}')"><i class="fas fa-sync"></i></button>
@@ -913,27 +703,24 @@
                 </tr>`;
             });
 
-            tbody.innerHTML = html || `<tr class="empty-row"><td colspan="8">Нет зарегистрированных водителей</td></tr>`;
+            tbody.innerHTML = html || `<tr class="empty-row"><td colspan="7">Нет зарегистрированных водителей</td></tr>`;
             document.getElementById('stat-drivers').textContent = count;
 
-            driverIds.forEach(id => {
+            // Загружаем активные заказы для каждого водителя
+            snapshot.forEach(doc => {
+                const driverId = doc.id;
                 db.collection('orders')
-                    .where('driverId', '==', id)
-                    .where('status', 'in', ['assigned', 'accepted', 'en_route', 'started'])
+                    .where('driverId', '==', driverId)
+                    .where('status', 'in', ['assigned', 'accepted', 'en_route', 'offering'])
                     .get()
                     .then(snap => {
-                        const cell = document.getElementById('order-' + id);
-                        const etaCell = document.getElementById('eta-' + id);
+                        const cell = document.getElementById('order-' + driverId);
                         if (cell) {
                             if (!snap.empty) {
                                 const order = snap.docs[0].data();
                                 cell.textContent = (order.client?.from?.address || order.from || '?') + ' → ' + (order.destination?.address || order.to || '?');
-                                if (etaCell && order.driverETA) {
-                                    etaCell.textContent = order.driverETA + ' мин';
-                                }
                             } else {
                                 cell.textContent = '—';
-                                if (etaCell) etaCell.textContent = '—';
                             }
                         }
                     });
@@ -952,8 +739,7 @@
         db.collection('drivers').doc(driverId).get().then(doc => {
             if (doc.exists) {
                 const current = doc.data().status || 'offline';
-                const newStatus = current === 'online' ? 'offline' : 
-                                 current === 'busy' ? 'offline' : 'online';
+                const newStatus = current === 'online' ? 'offline' : 'online';
                 db.collection('drivers').doc(driverId).update({ status: newStatus })
                     .then(() => alert(`✅ Статус изменён на ${newStatus}`))
                     .catch(e => alert('❌ Ошибка: ' + e.message));
@@ -975,11 +761,11 @@
         const locationStr = document.getElementById('newDriverLocation').value.trim();
 
         if (!name || !phone || !email || !carModel || !carNumber || !password) {
-            document.getElementById('addDriverResult').innerHTML = '<div class="alert-box alert-danger">⚠️ Все поля обязательны!</div>';
+            document.getElementById('addDriverResult').innerHTML = '<div class="alert-box" style="background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.2); color:#f87171;">⚠️ Все поля обязательны!</div>';
             return;
         }
         if (password.length < 6) {
-            document.getElementById('addDriverResult').innerHTML = '<div class="alert-box alert-danger">⚠️ Пароль минимум 6 символов</div>';
+            document.getElementById('addDriverResult').innerHTML = '<div class="alert-box" style="background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.2); color:#f87171;">⚠️ Пароль минимум 6 символов</div>';
             return;
         }
 
@@ -1025,7 +811,7 @@
                 });
             })
             .then(() => {
-                document.getElementById('addDriverResult').innerHTML = '<div class="alert-box alert-success">✅ Водитель успешно добавлен!</div>';
+                document.getElementById('addDriverResult').innerHTML = '<div class="alert-box" style="background:rgba(34,197,94,0.1); border-color:rgba(34,197,94,0.2); color:#4ade80;">✅ Водитель успешно добавлен!</div>';
                 document.getElementById('newDriverName').value = '';
                 document.getElementById('newDriverPhone').value = '';
                 document.getElementById('newDriverEmail').value = '';
@@ -1036,7 +822,7 @@
                 loadAllDrivers();
             })
             .catch(e => {
-                document.getElementById('addDriverResult').innerHTML = `<div class="alert-box alert-danger">❌ Ошибка: ${e.message}</div>`;
+                document.getElementById('addDriverResult').innerHTML = `<div class="alert-box" style="background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.2); color:#f87171;">❌ Ошибка: ${e.message}</div>`;
             });
     }
 
@@ -1054,18 +840,14 @@
                 const orderId = doc.id;
                 total++;
                 if (data.status === 'completed') completed++;
-                if (['searching', 'offering', 'created', 'waiting', 'assigned', 'accepted', 'started', 'en_route'].includes(data.status)) active++;
+                if (['waiting', 'offering', 'assigned', 'accepted', 'en_route'].includes(data.status)) active++;
 
                 const statusMap = {
-                    'searching': '🔍 Поиск',
-                    'offering': '📨 Предложение',
-                    'created': '🟡 Создан',
                     'waiting': '⏳ Ожидание',
+                    'offering': '📨 Предложение',
                     'assigned': '🔵 Назначен',
                     'accepted': '🟢 Принят',
-                    'started': '🟢 В пути',
                     'en_route': '🟢 В пути',
-                    'arrived': '📍 Прибыл',
                     'completed': '✅ Завершён',
                     'cancelled': '❌ Отменён'
                 };
@@ -1077,30 +859,24 @@
                 const clientName = data.client?.name || data.clientName || '—';
                 const driverName = data.driverName || data.driver?.name || '—';
                 const priceDisplay = data.price?.base || data.price || data.finalPrice || 0;
-                const etaDisplay = data.driverETA ? `${data.driverETA} мин` : '—';
 
                 html += `<tr>
                     <td><strong>${fromDisplay}</strong> → ${toDisplay}</td>
                     <td>${clientName}</td>
                     <td><span class="status-badge ${statusClass}">${statusMap[data.status] || data.status}</span></td>
                     <td>${driverName}</td>
-                    <td>${etaDisplay}</td>
                     <td>${priceDisplay} ₪</td>
                     <td>
-                        <div class="action-buttons">
+                        <div class="action-buttons" style="display:flex; gap:5px;">
                             ${data.status !== 'completed' && data.status !== 'cancelled' ? `
-                                ${data.status === 'waiting' ? `
-                                    <button class="btn btn-sm btn-success" onclick="autoAssignOrder('${orderId}')"><i class="fas fa-robot"></i></button>
-                                ` : ''}
                                 <button class="btn btn-sm btn-danger" onclick="cancelOrder('${orderId}')"><i class="fas fa-times"></i></button>
-                                <button class="btn btn-sm btn-warning" onclick="reassignOrder('${orderId}')"><i class="fas fa-exchange-alt"></i></button>
                             ` : ''}
                         </div>
                     </td>
                 </tr>`;
             });
 
-            tbody.innerHTML = html || `<tr class="empty-row"><td colspan="7">Нет заказов</td></tr>`;
+            tbody.innerHTML = html || `<tr class="empty-row"><td colspan="6">Нет заказов</td></tr>`;
             document.getElementById('stat-orders').textContent = total;
             document.getElementById('stat-active').textContent = active;
             document.getElementById('stat-completed').textContent = completed;
@@ -1116,54 +892,7 @@
         }).then(() => alert('✅ Заказ отменён')).catch(e => alert('❌ Ошибка: ' + e.message));
     }
 
-    function reassignOrder(orderId) {
-        db.collection('drivers')
-            .where('status', '==', 'online')
-            .get()
-            .then(snapshot => {
-                if (snapshot.empty) {
-                    alert('⚠️ Нет свободных водителей');
-                    return;
-                }
-
-                let driverList = '';
-                const drivers = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    drivers.push({ id: doc.id, name: data.fullName || data.email, car: data.carModel || '' });
-                    driverList += `${drivers.length}. ${data.fullName || data.email} (${data.carModel || ''})\n`;
-                });
-
-                const choice = prompt(`Выберите водителя:\n${driverList}\nВведите номер (1-${drivers.length}):`);
-                if (!choice) return;
-                const idx = parseInt(choice) - 1;
-                if (isNaN(idx) || idx < 0 || idx >= drivers.length) {
-                    alert('❌ Неверный выбор');
-                    return;
-                }
-                const selected = drivers[idx];
-
-                db.collection('orders').doc(orderId).update({
-                    driverId: selected.id,
-                    driverName: selected.name,
-                    status: 'assigned',
-                    dispatcherNote: `Переназначен диспетчером на ${selected.name}`,
-                    assignedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    return db.collection('drivers').doc(selected.id).update({
-                        status: 'busy',
-                        currentOrderId: orderId
-                    });
-                }).then(() => {
-                    alert(`✅ Заказ назначен на ${selected.name}`);
-                }).catch(e => alert('❌ Ошибка: ' + e.message));
-            });
-    }
-
-    // ============================================================
-    // ЗАПУСК
-    // ============================================================
-    console.log('🚕 WHEEL Dispatcher loaded');
+    console.log('🚕 WHEEL Dispatcher loaded (автораспределение)');
 </script>
 
 </body>
