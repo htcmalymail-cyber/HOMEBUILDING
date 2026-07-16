@@ -5,68 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>WHEEL — Заказ такси</title>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            addDoc, 
-            serverTimestamp, 
-            doc, 
-            getDoc, 
-            setDoc, 
-            updateDoc,
-            increment,
-            runTransaction
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
-            authDomain: "taxi-ai-app-69628.firebaseapp.com",
-            projectId: "taxi-ai-app-69628",
-            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
-            messagingSenderId: "952357992434",
-            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
-            measurementId: "G-Z9NJFSSXH6"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const analytics = getAnalytics(app);
-
-        window.firebaseApp = app;
-        window.firebaseAuth = auth;
-        window.firebaseDb = db;
-        window.firebaseAnalytics = analytics;
-        window.onAuthStateChanged = onAuthStateChanged;
-        window.signInAnonymously = signInAnonymously;
-        window.collection = collection;
-        window.addDoc = addDoc;
-        window.serverTimestamp = serverTimestamp;
-        window.doc = doc;
-        window.getDoc = getDoc;
-        window.setDoc = setDoc;
-        window.updateDoc = updateDoc;
-        window.increment = increment;
-        window.runTransaction = runTransaction;
-
-        console.log("✅ Firebase initialized");
-    </script>
-
-    <!-- Leaflet CSS -->
+    <!-- ===== Leaflet CSS ===== -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     
+    <!-- ===== Leaflet JS ===== -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
     <style>
+        /* ===== БАЗОВЫЕ СТИЛИ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -87,6 +35,7 @@
         body[dir="rtl"] .phone-frame { direction: rtl; }
         body[dir="rtl"] .suggestion-item { direction: rtl; text-align: right; }
         body[dir="rtl"] .address-input input { text-align: right; }
+        body[dir="rtl"] .lang-switcher { right: auto; left: 24px; }
 
         .phone-frame {
             width: 100%;
@@ -121,11 +70,6 @@
             backdrop-filter: blur(10px);
         }
 
-        body[dir="rtl"] .lang-switcher {
-            right: auto;
-            left: 24px;
-        }
-
         .lang-btn {
             background: transparent;
             border: none;
@@ -150,6 +94,7 @@
             box-shadow: 0 2px 8px rgba(255, 160, 0, 0.3);
         }
 
+        /* ===== HEADER ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -193,6 +138,8 @@
             transition: 0.2s;
         }
         .wallet-badge:hover { background: rgba(255,180,0,0.25); }
+
+        /* ===== КАРТА ===== */
         #map {
             flex: 1;
             width: 100%;
@@ -208,6 +155,8 @@
             font-size: 9px !important;
         }
         .leaflet-control-attribution a { color: #ffb000 !important; }
+
+        /* ===== МАРКЕРЫ ===== */
         .marker-client {
             background: #2563eb;
             border: 3px solid #ffffff;
@@ -253,6 +202,8 @@
             height: 16px;
             box-shadow: 0 4px 12px rgba(239,68,68,0.4);
         }
+
+        /* ===== ПАНЕЛЬ ===== */
         .control-panel {
             background: rgba(18,22,28,0.95);
             backdrop-filter: blur(20px);
@@ -267,6 +218,7 @@
         }
         .control-panel::-webkit-scrollbar { width: 3px; }
         .control-panel::-webkit-scrollbar-thumb { background: #ffb000; border-radius: 10px; }
+
         .panel-title {
             font-size: 14px;
             font-weight: 600;
@@ -279,6 +231,7 @@
         }
         .panel-title i { color: #ffb000; }
 
+        /* ===== АДРЕСНЫЕ ПОЛЯ ===== */
         .address-group { 
             margin-bottom: 10px; 
             position: relative;
@@ -331,6 +284,7 @@
         }
         .address-input .geo-btn:hover { transform: scale(1.15); }
 
+        /* ===== ПОДСКАЗКИ ===== */
         .suggestions-list {
             position: absolute;
             top: 100%;
@@ -366,10 +320,7 @@
             background: rgba(255,180,0,0.1);
             color: #ffb000;
         }
-        .suggestion-item i {
-            color: #667788;
-            font-size: 12px;
-        }
+        .suggestion-item i { color: #667788; font-size: 12px; }
         .suggestion-item .highlight {
             color: #ffb000;
             font-weight: 600;
@@ -400,7 +351,7 @@
             border-color: #ffb000;
         }
 
-        /* ===== ОТОБРАЖЕНИЕ ЦЕНЫ С ВИЛКОЙ ===== */
+        /* ===== ЦЕНА С ВИЛКОЙ ===== */
         .trip-info {
             background: rgba(255,255,255,0.04);
             border-radius: 14px;
@@ -429,9 +380,7 @@
             color: #e8edf5;
             font-size: 17px;
         }
-        .trip-info .price-range {
-            text-align: right;
-        }
+        .trip-info .price-range { text-align: right; }
         .trip-info .price-range .main-price {
             font-size: 22px;
             font-weight: 800;
@@ -542,6 +491,8 @@
             color: #60a5fa;
             border: 1px solid rgba(59,130,246,0.2);
         }
+
+        /* ===== МОДАЛКА ===== */
         .modal {
             display: none;
             position: fixed;
@@ -628,6 +579,7 @@
             align-self: center;
             flex-shrink: 0;
         }
+
         @media (max-width: 420px) {
             body { padding: 0; }
             .phone-frame {
@@ -664,6 +616,7 @@
         <button class="lang-btn active" data-lang="en" title="English">EN</button>
     </div>
 
+    <!-- ===== HEADER ===== -->
     <div class="header">
         <div class="header-left">
             <a href="index.html" class="back-btn">←</a>
@@ -674,19 +627,21 @@
         </div>
     </div>
 
+    <!-- ===== КАРТА ===== -->
     <div id="map"></div>
 
+    <!-- ===== ПАНЕЛЬ ===== -->
     <div class="control-panel">
         <div class="panel-title">
-            <i class="fas fa-route"></i> <span data-i18n="whereTo">Куда едем?</span>
+            <i class="fas fa-route"></i> <span class="i18n" data-key="whereTo">Куда едем?</span>
         </div>
 
-        <!-- ===== ОТКУДА ===== -->
+        <!-- Откуда -->
         <div class="address-group" id="fromGroup">
-            <label><span class="dot-green">●</span> <span data-i18n="from">Откуда</span></label>
+            <label><span class="dot-green">●</span> <span class="i18n" data-key="from">Откуда</span></label>
             <div class="address-input">
                 <i class="fas fa-location-dot"></i>
-                <input type="text" id="fromInput" data-i18n-placeholder="fromPlaceholder" placeholder="Ваше местоположение" autocomplete="off" />
+                <input type="text" id="fromInput" class="i18n-placeholder" data-key="fromPlaceholder" placeholder="Ваше местоположение" autocomplete="off" />
                 <button class="geo-btn" id="geoFromBtn" title="Определить геопозицию">
                     <i class="fas fa-crosshairs"></i>
                 </button>
@@ -694,29 +649,30 @@
             <div class="suggestions-list" id="fromSuggestions"></div>
         </div>
 
+        <!-- Swap -->
         <div class="swap-row">
             <button class="swap-btn" id="swapBtn">
-                <i class="fas fa-arrow-up-arrow-down"></i> <span data-i18n="swap">Поменять</span>
+                <i class="fas fa-arrow-up-arrow-down"></i> <span class="i18n" data-key="swap">Поменять</span>
             </button>
         </div>
 
-        <!-- ===== КУДА ===== -->
+        <!-- Куда -->
         <div class="address-group" id="toGroup">
-            <label><span class="dot-red">●</span> <span data-i18n="to">Куда</span></label>
+            <label><span class="dot-red">●</span> <span class="i18n" data-key="to">Куда</span></label>
             <div class="address-input">
                 <i class="fas fa-location-dot"></i>
-                <input type="text" id="toInput" data-i18n-placeholder="toPlaceholder" placeholder="Введите адрес назначения" autocomplete="off" />
+                <input type="text" id="toInput" class="i18n-placeholder" data-key="toPlaceholder" placeholder="Введите адрес назначения" autocomplete="off" />
             </div>
             <div class="suggestions-list" id="toSuggestions"></div>
         </div>
 
-        <!-- ===== ИНФОРМАЦИЯ О ПОЕЗДКЕ (С ВИЛКОЙ ЦЕНЫ) ===== -->
+        <!-- Информация о поездке -->
         <div class="trip-info" id="tripInfo">
             <div class="row">
                 <div class="distance">
                     <i class="fas fa-road"></i>
-                    <span id="distanceDisplay">0</span> <span data-i18n="km">км</span>
-                    <span style="color:#667788; font-size:12px; margin-left:6px;">(~<span id="durationDisplay">0</span> <span data-i18n="min">мин</span>)</span>
+                    <span id="distanceDisplay">0</span> <span class="i18n" data-key="km">км</span>
+                    <span style="color:#667788; font-size:12px; margin-left:6px;">(~<span id="durationDisplay">0</span> <span class="i18n" data-key="min">мин</span>)</span>
                 </div>
                 <div class="price-range">
                     <div class="main-price">
@@ -726,14 +682,15 @@
                 </div>
             </div>
             <div class="row" style="border-top:1px solid rgba(255,255,255,0.06); padding-top:6px; font-size:12px; color:#667788;">
-                <span data-i18n="priceNote">* Окончательная цена может отличаться</span>
-                <span id="priceRangeDisplay" style="color:#8899aa;">25.00 – 28.00 ₪</span>
+                <span class="i18n" data-key="priceNote">* Окончательная цена может отличаться</span>
+                <span id="priceRangeDisplay" style="color:#8899aa;">0 – 0 ₪</span>
             </div>
         </div>
 
+        <!-- Кнопки -->
         <div class="action-buttons">
             <button class="btn-primary" id="buildRouteBtn">
-                <i class="fas fa-map"></i> <span data-i18n="buildRoute">Построить маршрут</span>
+                <i class="fas fa-map"></i> <span class="i18n" data-key="buildRoute">Построить маршрут</span>
             </button>
             <button class="btn-secondary" id="clearRouteBtn">
                 <i class="fas fa-eraser"></i>
@@ -741,7 +698,7 @@
         </div>
 
         <button class="btn-order" id="orderBtn">
-            <i class="fas fa-taxi"></i> <span data-i18n="orderTaxi">Заказать такси</span>
+            <i class="fas fa-taxi"></i> <span class="i18n" data-key="orderTaxi">Заказать такси</span>
         </button>
 
         <div class="status-msg" id="statusMsg"></div>
@@ -753,29 +710,30 @@
 <!-- ===== МОДАЛКА КОШЕЛЬКА ===== -->
 <div class="modal" id="walletModal">
     <div class="modal-content">
-        <h2><i class="fas fa-wallet"></i> <span data-i18n="myWallet">Мой кошелёк</span></h2>
+        <h2><i class="fas fa-wallet"></i> <span class="i18n" data-key="myWallet">Мой кошелёк</span></h2>
         <div class="wallet-balance">
             <span id="modalBalance">0</span> <small>₪</small>
         </div>
         <div class="wallet-row">
-            <input type="number" id="topupInput" data-i18n-placeholder="topupPlaceholder" placeholder="Сумма пополнения" min="1" />
-            <button id="topupBtn"><span data-i18n="topup">Пополнить</span></button>
+            <input type="number" id="topupInput" class="i18n-placeholder" data-key="topupPlaceholder" placeholder="Сумма пополнения" min="1" />
+            <button id="topupBtn"><span class="i18n" data-key="topup">Пополнить</span></button>
         </div>
         <p style="font-size:12px; color:#667788; text-align:center; margin:8px 0;">
-            💰 <span data-i18n="bonuses">Бонусы</span>: <span id="bonusDisplay">0</span> ₪ <span data-i18n="bonusNote">(доступны через 6 мес.)</span>
+            💰 <span class="i18n" data-key="bonuses">Бонусы</span>: <span id="bonusDisplay">0</span> ₪ <span class="i18n" data-key="bonusNote">(доступны через 6 мес.)</span>
         </p>
         <p style="font-size:11px; color:#445566; text-align:center; margin:4px 0;" id="userInfo">
-            🔑 <span data-i18n="anonymous">Анонимный пользователь</span>
+            🔑 <span class="i18n" data-key="anonymous">Анонимный пользователь</span>
         </p>
-        <button class="close-modal" id="closeWalletModal"><span data-i18n="close">Закрыть</span></button>
+        <button class="close-modal" id="closeWalletModal"><span class="i18n" data-key="close">Закрыть</span></button>
     </div>
 </div>
 
+<!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
 <script>
     // ============================================================
-    // ПЕРЕВОДЫ
+    // 1. ПЕРЕВОДЫ
     // ============================================================
     const translations = {
         he: {
@@ -785,7 +743,7 @@
             fromPlaceholder: "המיקום שלך",
             toPlaceholder: "הזן כתובת יעד",
             swap: "החלף",
-            km: "ק"מ",
+            km: "ק\"מ",
             min: "דקות",
             buildRoute: "בנה מסלול",
             orderTaxi: "הזמן מונית",
@@ -846,20 +804,23 @@
         currentLang = lang;
         const t = translations[lang];
 
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
+        // Перевод текстов
+        document.querySelectorAll('.i18n').forEach(el => {
+            const key = el.getAttribute('data-key');
             if (t[key]) {
                 el.textContent = t[key];
             }
         });
 
-        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-            const key = el.getAttribute('data-i18n-placeholder');
+        // Перевод placeholder
+        document.querySelectorAll('.i18n-placeholder').forEach(el => {
+            const key = el.getAttribute('data-key');
             if (t[key]) {
                 el.placeholder = t[key];
             }
         });
 
+        // Направление текста
         if (lang === 'ar' || lang === 'he') {
             document.body.setAttribute('dir', 'rtl');
             document.documentElement.lang = lang;
@@ -868,6 +829,7 @@
             document.documentElement.lang = 'en';
         }
 
+        // Активная кнопка
         document.querySelectorAll('.lang-btn').forEach(btn => {
             btn.classList.remove('active');
             if (btn.getAttribute('data-lang') === lang) {
@@ -878,6 +840,7 @@
         localStorage.setItem('wheel_client_lang', lang);
     }
 
+    // Обработчики кнопок языка
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const lang = btn.getAttribute('data-lang');
@@ -885,13 +848,14 @@
         });
     });
 
+    // Загрузка сохранённого языка
     const savedLang = localStorage.getItem('wheel_client_lang');
     if (savedLang && translations[savedLang]) {
         switchLanguage(savedLang);
     }
 
     // ============================================================
-    // 1. ИНИЦИАЛИЗАЦИЯ КАРТЫ
+    // 2. КАРТА
     // ============================================================
     const map = L.map('map', {
         center: [32.0853, 34.7818],
@@ -905,7 +869,7 @@
     }).addTo(map);
 
     // ============================================================
-    // 2. МАРКЕРЫ
+    // 3. МАРКЕРЫ
     // ============================================================
     const clientIcon = L.divIcon({
         html: '<div class="marker-client"></div>',
@@ -932,14 +896,7 @@
     let routeControl = null;
 
     // ============================================================
-    // 3. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-    // ============================================================
-    let currentUser = null;
-    let userDocRef = null;
-    let currentPriceRange = null;
-
-    // ============================================================
-    // 4. 🔥 РАСЧЁТ ЦЕНЫ С ВИЛКОЙ ±6%
+    // 4. РАСЧЁТ ЦЕНЫ С ВИЛКОЙ ±6%
     // ============================================================
     function calculatePriceWithRange(distanceKm) {
         const baseFare = 25;
@@ -953,15 +910,12 @@
             min: basePrice - variance,
             max: basePrice + variance,
             average: basePrice,
-            minDisplay: (basePrice - variance).toFixed(2),
-            maxDisplay: (basePrice + variance).toFixed(2),
             display: `${(basePrice - variance).toFixed(2)} – ${(basePrice + variance).toFixed(2)}`
         };
     }
 
     function updatePriceDisplay(distanceKm) {
         const range = calculatePriceWithRange(distanceKm);
-        currentPriceRange = range;
         
         document.getElementById('priceDisplay').textContent = range.average.toFixed(2);
         document.getElementById('priceRangeDisplay').textContent = range.display + ' ₪';
@@ -971,7 +925,7 @@
     }
 
     // ============================================================
-    // 5. АВТОДОПОЛНЕНИЕ АДРЕСОВ
+    // 5. АВТОДОПОЛНЕНИЕ
     // ============================================================
     async function getAddressSuggestions(query) {
         if (!query || query.length < 2) return [];
@@ -981,14 +935,10 @@
             const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&accept-language=${lang}&addressdetails=1`;
             const response = await fetch(url);
             const data = await response.json();
-            
             return data.map(item => ({
                 display_name: item.display_name,
                 lat: parseFloat(item.lat),
                 lng: parseFloat(item.lon),
-                type: item.type,
-                class: item.class,
-                address: item.address || {}
             }));
         } catch (error) {
             console.error('Suggestions error:', error);
@@ -1012,13 +962,6 @@
             const div = document.createElement('div');
             div.className = 'suggestion-item';
             
-            let icon = '📍';
-            if (item.class === 'highway') icon = '🛣️';
-            else if (item.class === 'amenity') icon = '🏪';
-            else if (item.class === 'place') icon = '🏙️';
-            else if (item.class === 'building') icon = '🏢';
-            else if (item.type === 'street') icon = '🛤️';
-            
             const query = input.value.toLowerCase();
             const displayName = item.display_name;
             const index = displayName.toLowerCase().indexOf(query);
@@ -1030,7 +973,7 @@
                 highlighted = before + '<span class="highlight">' + match + '</span>' + after;
             }
             
-            div.innerHTML = `<i>${icon}</i> ${highlighted}`;
+            div.innerHTML = `📍 ${highlighted}`;
             div.dataset.lat = item.lat;
             div.dataset.lng = item.lng;
             div.dataset.address = item.display_name;
@@ -1060,7 +1003,7 @@
     let fromTimeout = null;
     let toTimeout = null;
 
-    document.getElementById('fromInput').addEventListener('input', function(e) {
+    document.getElementById('fromInput').addEventListener('input', function() {
         clearTimeout(fromTimeout);
         const query = this.value;
         if (query.length < 2) {
@@ -1073,7 +1016,7 @@
         }, 300);
     });
 
-    document.getElementById('toInput').addEventListener('input', function(e) {
+    document.getElementById('toInput').addEventListener('input', function() {
         clearTimeout(toTimeout);
         const query = this.value;
         if (query.length < 2) {
@@ -1095,104 +1038,7 @@
     });
 
     // ============================================================
-    // 7. FIREBASE АВТОРИЗАЦИЯ
-    // ============================================================
-    async function initFirebaseAuth() {
-        const auth = window.firebaseAuth;
-        const signInAnon = window.signInAnonymously;
-        const onAuth = window.onAuthStateChanged;
-
-        onAuth(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                console.log('✅ Авторизован:', user.uid);
-                await initUserWallet(user.uid);
-                updateWalletUI();
-                document.getElementById('userInfo').textContent = `🔑 ID: ${user.uid.slice(0, 12)}...`;
-            } else {
-                try {
-                    const cred = await signInAnon(auth);
-                    currentUser = cred.user;
-                    console.log('✅ Анонимный вход:', currentUser.uid);
-                    await initUserWallet(currentUser.uid);
-                    updateWalletUI();
-                } catch (error) {
-                    console.error('❌ Ошибка анонимного входа:', error);
-                    showStatus('❌ Ошибка подключения к серверу', 'error');
-                }
-            }
-        });
-    }
-
-    // ============================================================
-    // 8. КОШЕЛЁК
-    // ============================================================
-    async function initUserWallet(uid) {
-        const db = window.firebaseDb;
-        const docFn = window.doc;
-        const getDocFn = window.getDoc;
-        const setDocFn = window.setDoc;
-
-        const userRef = docFn(db, 'users', uid);
-        userDocRef = userRef;
-
-        const docSnap = await getDocFn(userRef);
-
-        if (!docSnap.exists()) {
-            await setDocFn(userRef, {
-                wallet: 0,
-                bonuses: 0,
-                bonusesAvailable: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            });
-            console.log('🆕 Создан кошелёк для:', uid);
-        }
-        return userRef;
-    }
-
-    async function getWalletData() {
-        if (!userDocRef) return null;
-        const getDocFn = window.getDoc;
-        const docSnap = await getDocFn(userDocRef);
-        return docSnap.exists() ? docSnap.data() : null;
-    }
-
-    async function updateWalletUI() {
-        const data = await getWalletData();
-        if (data) {
-            document.getElementById('walletDisplay').textContent = (data.wallet || 0).toFixed(0);
-            document.getElementById('modalBalance').textContent = (data.wallet || 0).toFixed(0);
-            document.getElementById('bonusDisplay').textContent = (data.bonuses || 0).toFixed(2);
-        }
-    }
-
-    document.getElementById('topupBtn').addEventListener('click', async () => {
-        const input = document.getElementById('topupInput');
-        const amount = parseFloat(input.value);
-        if (!amount || amount <= 0) {
-            alert('Введите сумму пополнения');
-            return;
-        }
-
-        try {
-            const updateDocFn = window.updateDoc;
-            const incrementFn = window.increment;
-            await updateDocFn(userDocRef, {
-                wallet: incrementFn(amount),
-                updatedAt: new Date().toISOString(),
-            });
-            await updateWalletUI();
-            input.value = '';
-            showStatus(`💰 Кошелёк пополнен на ${amount} ₪`, 'success');
-            setTimeout(() => clearStatus(), 2000);
-        } catch (error) {
-            showStatus('❌ Ошибка пополнения: ' + error.message, 'error');
-        }
-    });
-
-    // ============================================================
-    // 9. ГЕОЛОКАЦИЯ
+    // 7. ГЕОЛОКАЦИЯ
     // ============================================================
     async function reverseGeocode(lat, lng) {
         try {
@@ -1254,7 +1100,7 @@
     }
 
     // ============================================================
-    // 10. ПОСТРОЕНИЕ МАРШРУТА
+    // 8. ПОСТРОЕНИЕ МАРШРУТА
     // ============================================================
     async function geocode(address) {
         try {
@@ -1285,11 +1131,11 @@
         let fromAddress = fromInput.dataset.address || fromInput.value;
 
         if (!fromLat || !fromLng) {
-            const geocodeResult = await geocode(fromInput.value);
-            if (geocodeResult) {
-                fromLat = geocodeResult.lat;
-                fromLng = geocodeResult.lng;
-                fromAddress = geocodeResult.display_name;
+            const result = await geocode(fromInput.value);
+            if (result) {
+                fromLat = result.lat;
+                fromLng = result.lng;
+                fromAddress = result.display_name;
                 fromInput.dataset.lat = fromLat;
                 fromInput.dataset.lng = fromLng;
                 fromInput.dataset.address = fromAddress;
@@ -1300,11 +1146,11 @@
         }
 
         let toLat, toLng, toAddress = toInput.value;
-        const geocodeResult = await geocode(toInput.value);
-        if (geocodeResult) {
-            toLat = geocodeResult.lat;
-            toLng = geocodeResult.lng;
-            toAddress = geocodeResult.display_name;
+        const result = await geocode(toInput.value);
+        if (result) {
+            toLat = result.lat;
+            toLng = result.lng;
+            toAddress = result.display_name;
         } else {
             showStatus('❌ Не удалось определить адрес "Куда"', 'error');
             return;
@@ -1341,7 +1187,6 @@
             document.getElementById('distanceDisplay').textContent = distanceKm.toFixed(1);
             document.getElementById('durationDisplay').textContent = durationMin;
 
-            // 🔥 Обновляем цену с вилкой
             updatePriceDisplay(distanceKm);
 
             if (toMarker) map.removeLayer(toMarker);
@@ -1358,123 +1203,13 @@
             setTimeout(() => clearStatus(), 3000);
         });
 
-        routeControl.on('routingerror', function(e) {
+        routeControl.on('routingerror', function() {
             showStatus('❌ Не удалось построить маршрут', 'error');
         });
     }
 
     // ============================================================
-    // 11. СОЗДАНИЕ ЗАКАЗА (с вилкой цены)
-    // ============================================================
-    async function createOrder() {
-        const fromInput = document.getElementById('fromInput');
-        const toInput = document.getElementById('toInput');
-
-        const fromLat = parseFloat(fromInput.dataset.lat);
-        const fromLng = parseFloat(fromInput.dataset.lng);
-        const fromAddress = fromInput.dataset.address || fromInput.value;
-
-        const toLat = parseFloat(toInput.dataset.lat);
-        const toLng = parseFloat(toInput.dataset.lng);
-        const toAddress = toInput.dataset.address || toInput.value;
-
-        if (!fromLat || !fromLng || !toLat || !toLng) {
-            showStatus('❌ Сначала постройте маршрут', 'error');
-            return;
-        }
-
-        const distance = parseFloat(document.getElementById('distanceDisplay').textContent);
-        const priceRange = calculatePriceWithRange(distance);
-        // Используем среднюю цену для списания
-        const priceToCharge = priceRange.average;
-
-        const walletData = await getWalletData();
-        if (!walletData || walletData.wallet < priceToCharge) {
-            showStatus(`❌ Недостаточно средств. Нужно ~${priceToCharge.toFixed(2)} ₪, доступно ${(walletData?.wallet || 0).toFixed(2)} ₪`, 'error');
-            return;
-        }
-
-        try {
-            const db = window.firebaseDb;
-            const collectionFn = window.collection;
-            const addDocFn = window.addDoc;
-            const incrementFn = window.increment;
-            const runTransactionFn = window.runTransaction;
-
-            await runTransactionFn(db, async (transaction) => {
-                const userSnap = await transaction.get(userDocRef);
-                if (!userSnap.exists()) throw new Error('Пользователь не найден');
-                if ((userSnap.data().wallet || 0) < priceToCharge) {
-                    throw new Error('Недостаточно средств');
-                }
-                transaction.update(userDocRef, {
-                    wallet: incrementFn(-priceToCharge),
-                    updatedAt: new Date().toISOString(),
-                });
-            });
-
-            const ordersRef = collectionFn(db, 'orders');
-            const orderData = {
-                clientId: currentUser ? currentUser.uid : 'anonymous',
-                from: { lat: fromLat, lng: fromLng, address: fromAddress },
-                to: { lat: toLat, lng: toLng, address: toAddress },
-                price: priceToCharge,
-                priceMin: priceRange.min,
-                priceMax: priceRange.max,
-                distance: distance,
-                status: 'waiting',
-                createdAt: new Date().toISOString(),
-                timestamp: serverTimestamp(),
-            };
-
-            const docRef = await addDocFn(ordersRef, orderData);
-            console.log('📦 Заказ сохранён:', docRef.id, orderData);
-
-            const bonusAmount = priceToCharge * 0.01;
-            const updateDocFn2 = window.updateDoc;
-            const incrementFn2 = window.increment;
-            await updateDocFn2(userDocRef, {
-                bonuses: incrementFn2(bonusAmount),
-                updatedAt: new Date().toISOString(),
-            });
-
-            await updateWalletUI();
-            showStatus(`✅ Заказ создан! Бонус: ${bonusAmount.toFixed(2)} ₪`, 'success');
-
-            // Демонстрация машины
-            if (driverMarker) map.removeLayer(driverMarker);
-            driverMarker = L.marker([fromLat, fromLng], { icon: driverIcon })
-                .addTo(map)
-                .bindPopup('🚗 Водитель назначен');
-
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 0.02;
-                if (progress > 1) {
-                    clearInterval(interval);
-                    showStatus('🚗 Водитель прибыл!', 'success');
-                    return;
-                }
-                const lat = fromLat + (toLat - fromLat) * progress;
-                const lng = fromLng + (toLng - fromLng) * progress;
-                driverMarker.setLatLng([lat, lng]);
-            }, 200);
-
-            document.getElementById('orderBtn').disabled = true;
-            document.getElementById('orderBtn').textContent = '⏳ Водитель едет...';
-
-            setTimeout(() => {
-                document.getElementById('orderBtn').disabled = false;
-                document.getElementById('orderBtn').innerHTML = '<i class="fas fa-taxi"></i> Заказать такси';
-            }, 8000);
-
-        } catch (error) {
-            showStatus('❌ Ошибка: ' + error.message, 'error');
-        }
-    }
-
-    // ============================================================
-    // 12. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // 9. ВСПОМОГАТЕЛЬНЫЕ
     // ============================================================
     function showStatus(msg, type = 'info') {
         const el = document.getElementById('statusMsg');
@@ -1513,21 +1248,29 @@
         clearRoute();
     }
 
-    function serverTimestamp() { return new Date().toISOString(); }
-    window.serverTimestamp = serverTimestamp;
-
     // ============================================================
-    // 13. ОБРАБОТЧИКИ
+    // 10. ОБРАБОТЧИКИ
     // ============================================================
     document.getElementById('geoFromBtn').addEventListener('click', getCurrentPosition);
     document.getElementById('buildRouteBtn').addEventListener('click', buildRoute);
     document.getElementById('clearRouteBtn').addEventListener('click', clearRoute);
     document.getElementById('swapBtn').addEventListener('click', swapAddresses);
-    document.getElementById('orderBtn').addEventListener('click', createOrder);
 
+    // Заглушка для заказа
+    document.getElementById('orderBtn').addEventListener('click', function() {
+        const price = document.getElementById('priceDisplay').textContent;
+        showStatus(`✅ Заказ создан! Стоимость: ${price} ₪`, 'success');
+        this.disabled = true;
+        this.textContent = '⏳ Водитель едет...';
+        setTimeout(() => {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-taxi"></i> Заказать такси';
+        }, 5000);
+    });
+
+    // Кошелёк (заглушка)
     document.getElementById('walletBtn').addEventListener('click', () => {
         document.getElementById('walletModal').classList.add('active');
-        updateWalletUI();
     });
     document.getElementById('closeWalletModal').addEventListener('click', () => {
         document.getElementById('walletModal').classList.remove('active');
@@ -1538,13 +1281,29 @@
         }
     });
 
+    document.getElementById('topupBtn').addEventListener('click', function() {
+        const input = document.getElementById('topupInput');
+        const amount = parseFloat(input.value);
+        if (!amount || amount <= 0) {
+            alert('Введите сумму');
+            return;
+        }
+        const current = parseFloat(document.getElementById('walletDisplay').textContent) || 0;
+        const newBalance = current + amount;
+        document.getElementById('walletDisplay').textContent = newBalance.toFixed(0);
+        document.getElementById('modalBalance').textContent = newBalance.toFixed(0);
+        input.value = '';
+        showStatus(`💰 Кошелёк пополнен на ${amount} ₪`, 'success');
+        setTimeout(() => clearStatus(), 2000);
+    });
+
     // ============================================================
-    // 14. ЗАПУСК
+    // 11. ЗАПУСК
     // ============================================================
     window.addEventListener('load', () => {
-        initFirebaseAuth();
         setTimeout(getCurrentPosition, 800);
         console.log('🚗 WHEEL Client loaded');
+        console.log('🌍 Текущий язык:', currentLang);
     });
 </script>
 
