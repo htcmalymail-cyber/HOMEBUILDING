@@ -1171,33 +1171,7 @@
                 }
             });
 
-            // ===== ФУНКЦИЯ ОБНОВЛЕНИЯ UI ПОСЛЕ ВХОДА =====
-            async function updateUserUI(user) {
-                authSection.style.display = 'none';
-                userSection.style.display = 'flex';
-
-                try {
-                    const db = window.firebaseDb;
-                    const doc = window.doc;
-                    const getDoc = window.getDoc;
-                    const userDoc = await getDoc(doc(db, 'users', user.uid));
-                    if (userDoc.exists) {
-                        const data = userDoc.data();
-                        userName.textContent = data.fullName || user.displayName || 'Пользователь';
-                        const wallet = data.wallet || 0;
-                        userBalance.textContent = `💰 ${wallet} ₪`;
-                    } else {
-                        userName.textContent = user.displayName || 'Пользователь';
-                        userBalance.textContent = '💰 0 ₪';
-                    }
-                } catch (error) {
-                    console.error('Error loading user data:', error);
-                    userName.textContent = user.displayName || 'Пользователь';
-                    userBalance.textContent = '💰 0 ₪';
-                }
-            }
-
-            // ===== ВХОД (БЕЗ ПЕРЕЗАГРУЗКИ) =====
+            // ===== ВХОД → ПЕРЕХОД НА CLIENT.HTML =====
             document.getElementById('loginSubmit').addEventListener('click', async function() {
                 const email = document.getElementById('loginEmail').value.trim();
                 const password = document.getElementById('loginPassword').value.trim();
@@ -1219,21 +1193,14 @@
 
                     const auth = window.firebaseAuth;
                     const signIn = window.signInWithEmailAndPassword;
-                    const userCredential = await signIn(auth, email, password);
-                    const user = userCredential.user;
+                    await signIn(auth, email, password);
 
-                    successEl.textContent = '✅ Вход выполнен!';
+                    successEl.textContent = '✅ Вход выполнен! Перенаправление...';
                     successEl.classList.add('active');
 
-                    // 🔥 ОБНОВЛЯЕМ UI БЕЗ ПЕРЕЗАГРУЗКИ
-                    await updateUserUI(user);
-
+                    // 🔥 ПЕРЕХОД НА СТРАНИЦУ КЛИЕНТА
                     setTimeout(() => {
-                        authModal.classList.remove('active');
-                        this.disabled = false;
-                        this.textContent = 'Войти';
-                        // Очищаем сообщение успеха
-                        successEl.classList.remove('active');
+                        window.location.href = 'client.html';
                     }, 800);
 
                 } catch (error) {
@@ -1245,7 +1212,7 @@
                 }
             });
 
-            // ===== РЕГИСТРАЦИЯ (БЕЗ ПЕРЕЗАГРУЗКИ) =====
+            // ===== РЕГИСТРАЦИЯ → ПЕРЕХОД НА CLIENT.HTML =====
             document.getElementById('registerSubmit').addEventListener('click', async function() {
                 const name = document.getElementById('regName').value.trim();
                 const phone = document.getElementById('regPhone').value.trim();
@@ -1307,18 +1274,13 @@
                         }
                     });
 
-                    successEl.textContent = '✅ Регистрация успешна! Вход выполнен.';
+                    successEl.textContent = '✅ Регистрация успешна! Перенаправление...';
                     successEl.classList.add('active');
 
-                    // 🔥 ОБНОВЛЯЕМ UI БЕЗ ПЕРЕЗАГРУЗКИ
-                    await updateUserUI(user);
-
+                    // 🔥 ПЕРЕХОД НА СТРАНИЦУ КЛИЕНТА
                     setTimeout(() => {
-                        authModal.classList.remove('active');
-                        this.disabled = false;
-                        this.textContent = 'Зарегистрироваться';
-                        successEl.classList.remove('active');
-                    }, 1200);
+                        window.location.href = 'client.html';
+                    }, 1000);
 
                 } catch (error) {
                     console.error('Register error:', error);
@@ -1340,9 +1302,7 @@
                     const auth = window.firebaseAuth;
                     const signOut = window.signOut;
                     await signOut(auth);
-                    // Обновляем UI
-                    authSection.style.display = 'flex';
-                    userSection.style.display = 'none';
+                    window.location.reload();
                 } catch (error) {
                     console.error('Logout error:', error);
                 }
@@ -1354,7 +1314,45 @@
 
             onAuth(auth, async function(user) {
                 if (user) {
-                    await updateUserUI(user);
+                    authSection.style.display = 'none';
+                    userSection.style.display = 'flex';
+
+                    try {
+                        const db = window.firebaseDb;
+                        const doc = window.doc;
+                        const getDoc = window.getDoc;
+                        const userDoc = await getDoc(doc(db, 'users', user.uid));
+                        if (userDoc.exists) {
+                            const data = userDoc.data();
+                            userName.textContent = data.fullName || user.displayName || 'Пользователь';
+                            const wallet = data.wallet || 0;
+                            userBalance.textContent = `💰 ${wallet} ₪`;
+                        } else {
+                            userName.textContent = user.displayName || 'Пользователь';
+                            userBalance.textContent = '💰 0 ₪';
+                        }
+                    } catch (error) {
+                        console.error('Error loading user data:', error);
+                        userName.textContent = user.displayName || 'Пользователь';
+                        userBalance.textContent = '💰 0 ₪';
+                    }
+
+                    // Проверка на водителя
+                    try {
+                        const db = window.firebaseDb;
+                        const doc = window.doc;
+                        const getDoc = window.getDoc;
+                        const driverDoc = await getDoc(doc(db, 'drivers', user.uid));
+                        if (driverDoc.exists) {
+                            const driverData = driverDoc.data();
+                            document.getElementById('driverStatus').classList.add('active');
+                            document.getElementById('driverEmail').textContent = driverData.fullName || user.email;
+                            document.getElementById('driverBtn').style.display = 'none';
+                        }
+                    } catch (error) {
+                        console.error('Driver check error:', error);
+                    }
+
                 } else {
                     authSection.style.display = 'flex';
                     userSection.style.display = 'none';
@@ -1497,9 +1495,7 @@
                     driverBtn.style.display = 'block';
                     
                     console.log('👋 Driver logged out');
-                    // Обновляем UI
-                    document.getElementById('authSection').style.display = 'flex';
-                    document.getElementById('userSection').style.display = 'none';
+                    window.location.reload();
                 } catch (error) {
                     console.error('Logout error:', error);
                 }
