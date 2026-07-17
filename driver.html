@@ -1,425 +1,721 @@
 <!DOCTYPE html>
 <html lang="ru" dir="ltr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>WHEEL — Панель водителя</title>
-    
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>WHEEL — Водитель</title>
+
     <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
-            authDomain: "taxi-ai-app-69628.firebaseapp.com",
-            projectId: "taxi-ai-app-69628",
-            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
-            messagingSenderId: "952357992434",
-            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
-            measurementId: "G-Z9NJFSSXH6"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        window.firebaseApp = app;
-        window.firebaseAuth = auth;
-        window.firebaseDb = db;
-        window.signOut = signOut;
-        window.onAuthStateChanged = onAuthStateChanged;
-        window.doc = doc;
-        window.getDoc = getDoc;
-        window.updateDoc = updateDoc;
-        window.serverTimestamp = serverTimestamp;
-
-        console.log("✅ Driver panel ready");
-    </script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: #0a0c10;
             min-height: 100vh;
-            color: white;
-            display: flex;
-            flex-direction: column;
+            padding: 16px;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.06) 0%, transparent 40%);
+            background-attachment: fixed;
         }
 
-        body[dir="rtl"] {
-            direction: rtl;
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
         }
 
-        /* Шапка */
         .header {
-            background: rgba(18, 22, 28, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 14px 20px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .logo {
-            display: flex;
             align-items: center;
-            gap: 8px;
-        }
-
-        .logo svg {
-            width: 28px;
-            height: 28px;
-            fill: #ffb000;
-        }
-
-        .logo span {
-            font-weight: 800;
-            font-size: 18px;
-            letter-spacing: 1px;
-            color: #ffb000;
-        }
-
-        .header-right {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        /* Языки */
-        .lang-switcher {
-            display: flex;
-            gap: 3px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            padding: 2px;
-        }
-
-        .lang-btn {
-            background: transparent;
-            border: none;
-            color: #8899aa;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .lang-btn.active {
-            background: #ffb000;
-            color: #0a0c10;
-        }
-
-        .logout-btn {
-            background: rgba(239,68,68,0.15);
-            border: 1px solid rgba(239,68,68,0.3);
-            color: #ef4444;
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 13px;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        /* Основной контент */
-        .main {
-            flex: 1;
-            padding: 24px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-
-        .driver-card {
-            background: rgba(18, 22, 28, 0.9);
-            border-radius: 24px;
-            padding: 32px 24px;
-            width: 100%;
-            max-width: 360px;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-
-        .driver-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #4ade80, #22c55e);
-            margin: 0 auto 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
-            font-weight: 700;
-        }
-
-        .driver-name {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .driver-role {
-            font-size: 13px;
-            color: #4ade80;
-            background: rgba(74,222,128,0.1);
-            padding: 4px 14px;
-            border-radius: 10px;
-            display: inline-block;
+            padding: 14px 20px;
+            background: rgba(18, 22, 28, 0.92);
+            backdrop-filter: blur(25px);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.08);
             margin-bottom: 20px;
         }
 
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            font-size: 14px;
+        .logo {
+            font-size: 20px;
+            font-weight: 800;
+            background: linear-gradient(to right, #ffffff, #ffb000);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .info-label {
+        .back-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            text-decoration: none;
+        }
+        .back-btn:hover {
+            background: rgba(255,180,0,0.15);
+            border-color: #ffb000;
+        }
+
+        .card {
+            background: rgba(18, 22, 28, 0.92);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 20px 24px;
+            border: 1px solid rgba(255,255,255,0.06);
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card-title i { color: #ffb000; }
+
+        .profile-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .profile-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffb000, #ff6a00);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #0a0c10;
+            flex-shrink: 0;
+        }
+        .profile-info {
+            flex: 1;
+        }
+        .profile-info .name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .profile-info .detail {
+            font-size: 13px;
             color: #8899aa;
         }
 
-        .info-value {
-            font-weight: 500;
+        .rating-stars {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        .rating-stars .star {
+            color: #f59e0b;
+            font-size: 18px;
+        }
+        .rating-stars .star.empty {
+            color: #3a4050;
         }
 
-        .status-badge {
-            display: inline-block;
-            padding: 6px 16px;
+        .stats-row {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+        }
+        .stats-row .stat-item {
+            flex: 1;
+            text-align: center;
+            background: rgba(255,255,255,0.04);
+            padding: 10px 8px;
             border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-top: 16px;
+        }
+        .stats-row .stat-item .number {
+            font-size: 22px;
+            font-weight: 800;
+            color: #ffb000;
+            display: block;
+        }
+        .stats-row .stat-item .label {
+            font-size: 11px;
+            color: #667788;
         }
 
-        .status-online {
-            background: rgba(74,222,128,0.15);
+        .status-toggle {
+            display: flex;
+            gap: 12px;
+            margin: 12px 0 8px;
+        }
+        .status-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .status-btn.online {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #ffffff;
+        }
+        .status-btn.offline {
+            background: rgba(255,255,255,0.06);
+            color: #8899aa;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .status-btn.offline:hover {
+            background: rgba(255,255,255,0.1);
+            color: #ffffff;
+        }
+        .status-btn.online:hover {
+            box-shadow: 0 8px 20px rgba(34,197,94,0.3);
+        }
+
+        .order-card {
+            background: rgba(255,180,0,0.06);
+            border: 1px solid rgba(255,180,0,0.1);
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-top: 8px;
+        }
+        .order-card .order-address {
+            color: #e8edf5;
+            font-size: 14px;
+        }
+        .order-card .order-address i {
+            color: #ffb000;
+            width: 20px;
+        }
+        .order-card .order-status {
+            font-size: 13px;
+            color: #ffb000;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .order-card .order-eta {
+            font-size: 13px;
             color: #4ade80;
         }
 
-        .status-offline {
-            background: rgba(239,68,68,0.15);
-            color: #ef4444;
+        .order-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .order-actions .btn-accept {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .order-actions .btn-accept:hover {
+            box-shadow: 0 8px 20px rgba(34,197,94,0.3);
+            transform: scale(1.02);
+        }
+        .order-actions .btn-reject {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .order-actions .btn-reject:hover {
+            box-shadow: 0 8px 20px rgba(239,68,68,0.3);
+            transform: scale(1.02);
+        }
+        .order-actions .btn-pending {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,180,0,0.2);
+            background: rgba(255,180,0,0.05);
+            color: #8899aa;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: default;
+            text-align: center;
         }
 
-        .placeholder-text {
-            margin-top: 24px;
-            font-size: 13px;
-            color: #667788;
+        .empty-state {
+            text-align: center;
+            color: #556677;
+            padding: 30px 10px;
+        }
+        .empty-state i {
+            font-size: 48px;
+            color: #334455;
+            margin-bottom: 12px;
+            display: block;
         }
 
-        /* Заглушка заказов */
-        .no-orders {
-            background: rgba(255,255,255,0.03);
-            border-radius: 16px;
-            padding: 24px;
-            margin-top: 20px;
-            border: 1px dashed rgba(255,255,255,0.1);
-        }
+        .hidden { display: none !important; }
+        .mt-8 { margin-top: 8px; }
+        .text-success { color: #4ade80; }
+        .text-warning { color: #ffb000; }
+        .text-danger { color: #f87171; }
 
-        .no-orders-icon {
-            font-size: 40px;
-            margin-bottom: 10px;
-        }
-
-        .no-orders-text {
-            color: #667788;
+        /* ===== УВЕДОМЛЕНИЕ ===== */
+        .notification {
+            background: rgba(255,180,0,0.1);
+            border: 1px solid rgba(255,180,0,0.2);
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            color: #ffb000;
             font-size: 14px;
+            display: none;
+        }
+        .notification.active { display: block; }
+
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .card { padding: 16px; }
+            .profile-avatar { width: 44px; height: 44px; font-size: 18px; }
+            .profile-info .name { font-size: 16px; }
+            .stats-row .stat-item .number { font-size: 18px; }
         }
     </style>
 </head>
 <body>
-    <!-- Шапка -->
+
+<div class="container">
+
+    <!-- ===== HEADER ===== -->
     <div class="header">
-        <div class="logo">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-            <span>WHEEL</span>
-        </div>
-        <div class="header-right">
-            <div class="lang-switcher">
-                <button class="lang-btn" data-lang="he">עב</button>
-                <button class="lang-btn" data-lang="ar">عرب</button>
-                <button class="lang-btn active" data-lang="en">EN</button>
-            </div>
-            <button class="logout-btn" id="logoutBtn">Выйти</button>
-        </div>
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Назад</a>
+        <div class="logo">WHEEL <span style="color:#ffb000;">TAXI</span></div>
+        <div style="width:72px;"></div>
     </div>
 
-    <!-- Основной контент -->
-    <div class="main">
-        <div class="driver-card">
-            <div class="driver-avatar" id="driverInitial">🚖</div>
-            <div class="driver-name" id="driverName">Загрузка...</div>
-            <div class="driver-role" data-i18n="driverRole">Водитель</div>
+    <!-- ===== УВЕДОМЛЕНИЕ ===== -->
+    <div class="notification" id="notification">
+        <i class="fas fa-info-circle"></i> <span id="notificationText">Загрузка...</span>
+    </div>
 
-            <div class="info-row">
-                <span class="info-label" data-i18n="car">Автомобиль</span>
-                <span class="info-value" id="driverCar">—</span>
+    <!-- ===== ПРОФИЛЬ ===== -->
+    <div class="card" id="profileCard">
+        <div class="profile-row">
+            <div class="profile-avatar" id="driverAvatar">👤</div>
+            <div class="profile-info">
+                <div class="name" id="driverName">Водитель</div>
+                <div class="detail" id="driverCar">🚗 Модель авто</div>
+                <div class="detail" id="driverPhone">📞 Телефон</div>
+                <div class="detail" id="driverStatusText" style="color:#4ade80;">🟢 Онлайн</div>
             </div>
-            <div class="info-row">
-                <span class="info-label" data-i18n="plate">Номер</span>
-                <span class="info-value" id="driverPlate">—</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label" data-i18n="rating">Рейтинг</span>
-                <span class="info-value">⭐ <span id="driverRating">—</span></span>
-            </div>
-            <div class="info-row">
-                <span class="info-label" data-i18n="rides">Поездок</span>
-                <span class="info-value" id="driverRides">—</span>
-            </div>
-
-            <div class="status-badge status-online" id="statusBadge" data-i18n="online">🟢 Онлайн</div>
-
-            <div class="no-orders">
-                <div class="no-orders-icon">📭</div>
-                <div class="no-orders-text" data-i18n="noOrders">Нет активных заказов</div>
-                <div class="placeholder-text" data-i18n="waiting">Ожидайте, заказы появятся здесь</div>
+        </div>
+        <div style="margin-top:10px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="color:#8899aa; font-size:14px;">⭐ Рейтинг:</span>
+                <div class="rating-stars" id="ratingStars">
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                </div>
+                <span style="color:#667788; font-size:14px;" id="ratingValue">5.0</span>
             </div>
         </div>
     </div>
 
-    <script>
-        // ============ ПЕРЕВОДЫ ============
-        const translations = {
-            he: {
-                driverRole: "נהג",
-                car: "רכב",
-                plate: "מספר רכב",
-                rating: "דירוג",
-                rides: "נסיעות",
-                online: "🟢 מחובר",
-                noOrders: "אין הזמנות פעילות",
-                waiting: "המתן, הזמנות יופיעו כאן",
-                notDriver: "אינך נהג. חוזר לדף הבית...",
-                logoutConfirm: "התנתק?"
-            },
-            ar: {
-                driverRole: "سائق",
-                car: "السيارة",
-                plate: "اللوحة",
-                rating: "التقييم",
-                rides: "الرحلات",
-                online: "🟢 متصل",
-                noOrders: "لا توجد طلبات نشطة",
-                waiting: "انتظر، ستظهر الطلبات هنا",
-                notDriver: "لست سائقًا. العودة للصفحة الرئيسية...",
-                logoutConfirm: "تسجيل الخروج؟"
-            },
-            en: {
-                driverRole: "Driver",
-                car: "Car",
-                plate: "Plate",
-                rating: "Rating",
-                rides: "Rides",
-                online: "🟢 Online",
-                noOrders: "No active orders",
-                waiting: "Wait, orders will appear here",
-                notDriver: "Not a driver. Returning to home...",
-                logoutConfirm: "Log out?"
-            }
-        };
+    <!-- ===== СТАТИСТИКА ===== -->
+    <div class="card">
+        <div class="card-title"><i class="fas fa-chart-simple"></i> Статистика</div>
+        <div class="stats-row">
+            <div class="stat-item">
+                <span class="number" id="totalTrips">0</span>
+                <span class="label">🚗 Поездок</span>
+            </div>
+            <div class="stat-item">
+                <span class="number" id="totalEarned">0 ₪</span>
+                <span class="label">💰 Заработано</span>
+            </div>
+            <div class="stat-item">
+                <span class="number" id="driverBalance">0 ₪</span>
+                <span class="label">💳 Баланс</span>
+            </div>
+        </div>
+    </div>
 
-        let currentLang = 'en';
-        function t(key) { return translations[currentLang]?.[key] || translations.en[key] || key; }
+    <!-- ===== СТАТУС ===== -->
+    <div class="card">
+        <div class="card-title"><i class="fas fa-toggle-on"></i> Статус</div>
+        <div class="status-toggle">
+            <button class="status-btn online" id="statusOnlineBtn">🟢 Онлайн</button>
+            <button class="status-btn offline" id="statusOfflineBtn">🔴 Офлайн</button>
+        </div>
+    </div>
 
-        function switchLanguage(lang) {
-            currentLang = lang;
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                el.textContent = t(el.getAttribute('data-i18n'));
-            });
-            if (lang === 'ar' || lang === 'he') {
-                document.body.setAttribute('dir', 'rtl');
+    <!-- ===== ТЕКУЩИЙ ЗАКАЗ ===== -->
+    <div class="card" id="currentOrderCard">
+        <div class="card-title"><i class="fas fa-taxi"></i> Текущий заказ</div>
+        <div id="currentOrderContent">
+            <div class="empty-state">
+                <i class="fas fa-clock"></i>
+                <p>Нет активных заказов</p>
+                <span style="font-size:12px; color:#445566;">Ожидайте назначения</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ============================================================
+    // FIREBASE
+    // ============================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+        authDomain: "taxi-ai-app-69628.firebaseapp.com",
+        projectId: "taxi-ai-app-69628",
+        storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+        messagingSenderId: "952357992434",
+        appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+        measurementId: "G-Z9NJFSSXH6"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    let currentDriverId = null;
+    let driverData = null;
+    let currentOrder = null;
+    let currentOrderId = null;
+
+    // ============================================================
+    // АВТОРИЗАЦИЯ
+    // ============================================================
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentDriverId = user.uid;
+            console.log('✅ Водитель авторизован:', currentDriverId);
+            showNotification('✅ Авторизация успешна', 'success');
+            await loadDriverData();
+            if (driverData) {
+                updateUI();
+                listenForOrders();
             } else {
-                document.body.setAttribute('dir', 'ltr');
+                console.error('❌ Водитель не найден в базе');
+                document.getElementById('driverName').textContent = '⚠️ Водитель не найден';
+                showNotification('⚠️ Водитель не найден в базе данных', 'error');
             }
-            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-            document.querySelector(`.lang-btn[data-lang="${lang}"]`)?.classList.add('active');
-            localStorage.setItem('wheel_lang', lang);
+        } else {
+            console.warn('⏳ Водитель не авторизован, перенаправление...');
+            showNotification('⏳ Перенаправление на главную...', 'info');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
         }
+    });
 
-        document.querySelectorAll('.lang-btn').forEach(btn => {
-            btn.addEventListener('click', () => switchLanguage(btn.dataset.lang));
-        });
+    // ============================================================
+    // ЗАГРУЗКА ДАННЫХ ВОДИТЕЛЯ
+    // ============================================================
+    async function loadDriverData() {
+        try {
+            const doc = await db.collection('drivers').doc(currentDriverId).get();
+            if (doc.exists) {
+                driverData = doc.data();
+                console.log('📋 Данные водителя:', driverData);
+                showNotification('👋 Привет, ' + (driverData.fullName || 'Водитель') + '!', 'success');
+            } else {
+                console.error('❌ Документ водителя не найден');
+                showNotification('❌ Водитель не найден в базе', 'error');
+            }
+        } catch (error) {
+            console.error('❌ Ошибка загрузки:', error);
+            showNotification('❌ Ошибка загрузки данных', 'error');
+        }
+    }
 
-        const savedLang = localStorage.getItem('wheel_lang');
-        if (savedLang && translations[savedLang]) switchLanguage(savedLang);
+    // ============================================================
+    // УВЕДОМЛЕНИЯ
+    // ============================================================
+    function showNotification(text, type = 'info') {
+        const el = document.getElementById('notification');
+        const textEl = document.getElementById('notificationText');
+        textEl.textContent = text;
+        el.className = 'notification active';
+        if (type === 'success') {
+            el.style.borderColor = 'rgba(34,197,94,0.2)';
+            el.style.color = '#4ade80';
+        } else if (type === 'error') {
+            el.style.borderColor = 'rgba(239,68,68,0.2)';
+            el.style.color = '#f87171';
+        } else {
+            el.style.borderColor = 'rgba(255,180,0,0.2)';
+            el.style.color = '#ffb000';
+        }
+        setTimeout(() => {
+            el.classList.remove('active');
+        }, 5000);
+    }
 
-        // ============ ПРОВЕРКА ВОДИТЕЛЯ ============
-        window.addEventListener('load', () => {
-            const auth = window.firebaseAuth;
-            const db = window.firebaseDb;
-            const { doc, getDoc, updateDoc, serverTimestamp } = window;
-            const { onAuthStateChanged, signOut } = window;
+    // ============================================================
+    // ОБНОВЛЕНИЕ UI
+    // ============================================================
+    function updateUI() {
+        if (!driverData) return;
 
-            onAuthStateChanged(auth, async (user) => {
-                if (!user) {
-                    // Нет пользователя — редирект на главную
-                    window.location.href = 'index.html';
+        const name = driverData.fullName || driverData.email || 'Водитель';
+        const car = driverData.carModel || 'Модель не указана';
+        const phone = driverData.phone || 'Телефон не указан';
+        const rating = driverData.rating || 5.0;
+        const totalTrips = driverData.totalTrips || 0;
+        const balance = driverData.balance || 0;
+        const earned = (driverData.totalEarned || 0);
+        const status = driverData.status || 'offline';
+
+        document.getElementById('driverName').textContent = name;
+        document.getElementById('driverCar').textContent = '🚗 ' + car;
+        document.getElementById('driverPhone').textContent = '📞 ' + phone;
+        document.getElementById('driverAvatar').textContent = name.charAt(0).toUpperCase();
+
+        updateRating(rating);
+        document.getElementById('totalTrips').textContent = totalTrips;
+        document.getElementById('totalEarned').textContent = earned + ' ₪';
+        document.getElementById('driverBalance').textContent = balance + ' ₪';
+        updateStatusUI(status);
+    }
+
+    function updateRating(rating) {
+        const stars = document.getElementById('ratingStars');
+        const fullStars = Math.round(rating);
+        let html = '';
+        for (let i = 1; i <= 5; i++) {
+            html += `<span class="star ${i <= fullStars ? '' : 'empty'}">★</span>`;
+        }
+        stars.innerHTML = html;
+        document.getElementById('ratingValue').textContent = rating.toFixed(1);
+    }
+
+    function updateStatusUI(status) {
+        const statusText = document.getElementById('driverStatusText');
+        const onlineBtn = document.getElementById('statusOnlineBtn');
+        const offlineBtn = document.getElementById('statusOfflineBtn');
+
+        if (status === 'online') {
+            statusText.innerHTML = '🟢 Онлайн';
+            statusText.style.color = '#4ade80';
+            onlineBtn.className = 'status-btn online';
+            offlineBtn.className = 'status-btn offline';
+        } else {
+            statusText.innerHTML = '🔴 Офлайн';
+            statusText.style.color = '#f87171';
+            onlineBtn.className = 'status-btn offline';
+            offlineBtn.className = 'status-btn online';
+        }
+    }
+
+    document.getElementById('statusOnlineBtn').addEventListener('click', async () => {
+        await updateDriverStatus('online');
+        showNotification('🟢 Статус изменён на Онлайн', 'success');
+    });
+
+    document.getElementById('statusOfflineBtn').addEventListener('click', async () => {
+        await updateDriverStatus('offline');
+        showNotification('🔴 Статус изменён на Офлайн', 'info');
+    });
+
+    async function updateDriverStatus(status) {
+        try {
+            await db.collection('drivers').doc(currentDriverId).update({
+                status: status,
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            driverData.status = status;
+            updateStatusUI(status);
+            console.log(`✅ Статус обновлён: ${status}`);
+        } catch (error) {
+            console.error('❌ Ошибка обновления статуса:', error);
+            showNotification('❌ Ошибка обновления статуса', 'error');
+        }
+    }
+
+    // ============================================================
+    // СЛУШАТЕЛЬ ЗАКАЗОВ
+    // ============================================================
+    function listenForOrders() {
+        db.collection('orders')
+            .where('driverId', '==', currentDriverId)
+            .where('status', 'in', ['assigned', 'offering', 'accepted', 'en_route', 'arrived'])
+            .onSnapshot((snapshot) => {
+                if (snapshot.empty) {
+                    currentOrder = null;
+                    currentOrderId = null;
+                    showNoOrder();
                     return;
                 }
 
-                // Проверка: водитель ли?
-                const driverDocRef = doc(db, 'drivers', user.uid);
-                const driverDoc = await getDoc(driverDocRef);
-
-                if (!driverDoc.exists()) {
-                    // Не водитель — выйти и редирект
-                    await signOut(auth);
-                    alert(t('notDriver'));
-                    window.location.href = 'index.html';
-                    return;
-                }
-
-                // ✅ Водитель найден
-                const data = driverDoc.data();
-
-                document.getElementById('driverInitial').textContent = (data.fullName || 'D').charAt(0).toUpperCase();
-                document.getElementById('driverName').textContent = data.fullName || 'Driver';
-                document.getElementById('driverCar').textContent = data.carModel || '—';
-                document.getElementById('driverPlate').textContent = data.carNumber || '—';
-                document.getElementById('driverRating').textContent = data.rating || '—';
-                document.getElementById('driverRides').textContent = data.totalRides || '0';
-
-                // Обновить статус
-                await updateDoc(driverDocRef, {
-                    status: 'online',
-                    lastUpdated: serverTimestamp()
+                let order = null;
+                let orderId = null;
+                snapshot.forEach(doc => {
+                    order = doc.data();
+                    orderId = doc.id;
                 });
 
-                console.log('✅ Водитель в панели:', data.fullName);
-            });
-
-            // Выход
-            document.getElementById('logoutBtn').addEventListener('click', async () => {
-                if (!confirm(t('logoutConfirm'))) return;
-
-                const user = auth.currentUser;
-                if (user) {
-                    const driverDocRef = doc(db, 'drivers', user.uid);
-                    await updateDoc(driverDocRef, {
-                        status: 'offline',
-                        lastUpdated: serverTimestamp()
-                    });
+                if (order) {
+                    currentOrder = order;
+                    currentOrderId = orderId;
+                    showOrder(order, orderId);
+                    showNotification('📦 Новый заказ!', 'success');
+                } else {
+                    showNoOrder();
                 }
-
-                await signOut(auth);
-                window.location.href = 'index.html';
             });
-        });
-    </script>
+    }
+
+    // ============================================================
+    // ОТОБРАЖЕНИЕ ЗАКАЗА
+    // ============================================================
+    function showOrder(order, orderId) {
+        const container = document.getElementById('currentOrderContent');
+        const from = order.client?.from?.address || order.from || 'Неизвестно';
+        const to = order.destination?.address || order.to || 'Неизвестно';
+        const price = order.price?.base || order.price || 0;
+        const eta = order.driverETA ? `${order.driverETA} мин` : '—';
+
+        let actionsHtml = '';
+
+        if (order.status === 'offering' || order.status === 'assigned') {
+            actionsHtml = `
+                <div class="order-actions">
+                    <button class="btn-accept" onclick="acceptOrder('${orderId}')">
+                        ✅ Принять
+                    </button>
+                    <button class="btn-reject" onclick="rejectOrder('${orderId}')">
+                        ❌ Отклонить
+                    </button>
+                </div>
+            `;
+        } else if (order.status === 'accepted' || order.status === 'en_route') {
+            actionsHtml = `
+                <div class="order-actions">
+                    <div class="btn-pending">🟢 В пути...</div>
+                </div>
+            `;
+        } else if (order.status === 'arrived') {
+            actionsHtml = `
+                <div class="order-actions">
+                    <div class="btn-pending">📍 Прибыл</div>
+                </div>
+            `;
+        }
+
+        const statusMap = {
+            'offering': '📨 Предложение',
+            'assigned': '🔵 Назначен',
+            'accepted': '🟢 Принят',
+            'en_route': '🟢 В пути',
+            'arrived': '📍 Прибыл'
+        };
+        const statusText = statusMap[order.status] || order.status;
+
+        container.innerHTML = `
+            <div class="order-card">
+                <div class="order-address">
+                    <i class="fas fa-location-dot" style="color:#22c55e;"></i>
+                    <strong>Откуда:</strong> ${from}
+                </div>
+                <div class="order-address" style="margin-top:6px;">
+                    <i class="fas fa-flag-checkered" style="color:#ef4444;"></i>
+                    <strong>Куда:</strong> ${to}
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                    <span class="order-status">${statusText}</span>
+                    <span class="order-eta">⏱️ ${eta}</span>
+                </div>
+                <div style="margin-top:8px; font-size:13px; color:#667788;">
+                    💰 ${price} ₪
+                </div>
+                ${actionsHtml}
+            </div>
+        `;
+    }
+
+    function showNoOrder() {
+        const container = document.getElementById('currentOrderContent');
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-clock"></i>
+                <p>Нет активных заказов</p>
+                <span style="font-size:12px; color:#445566;">Ожидайте назначения</span>
+            </div>
+        `;
+    }
+
+    // ============================================================
+    // ПРИНЯТЬ / ОТКЛОНИТЬ ЗАКАЗ
+    // ============================================================
+    async function acceptOrder(orderId) {
+        try {
+            await db.collection('orders').doc(orderId).update({
+                status: 'accepted',
+                acceptedBy: currentDriverId,
+                acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                dispatcherNote: 'Принят водителем ' + (driverData?.fullName || '')
+            });
+            await db.collection('drivers').doc(currentDriverId).update({
+                status: 'busy',
+                currentOrderId: orderId
+            });
+            showNotification('✅ Заказ принят!', 'success');
+        } catch (error) {
+            console.error('❌ Ошибка принятия заказа:', error);
+            showNotification('❌ Ошибка принятия заказа', 'error');
+        }
+    }
+
+    async function rejectOrder(orderId) {
+        if (!confirm('❌ Отклонить заказ?')) return;
+        try {
+            await db.collection('orders').doc(orderId).update({
+                status: 'waiting',
+                driverId: null,
+                driverName: null,
+                dispatcherNote: 'Отклонён водителем ' + (driverData?.fullName || ''),
+                offeredTo: firebase.firestore.FieldValue.arrayRemove(currentDriverId)
+            });
+            showNotification('❌ Заказ отклонён', 'info');
+        } catch (error) {
+            console.error('❌ Ошибка отклонения заказа:', error);
+            showNotification('❌ Ошибка отклонения заказа', 'error');
+        }
+    }
+
+    // ============================================================
+    // ЗАПУСК
+    // ============================================================
+    console.log('🚗 WHEEL Driver loaded');
+</script>
+
 </body>
 </html>
