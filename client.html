@@ -772,7 +772,14 @@
 
 <script>
     // ============================================================
-    // 1. ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ (ИМЯ + БАЛАНС)
+    // 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+    // ============================================================
+    let currentUser = null;
+    let currentUserData = null;
+    let userDocRef = null;
+
+    // ============================================================
+    // 2. ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ
     // ============================================================
     async function loadUserData() {
         const auth = window.firebaseAuth;
@@ -782,38 +789,53 @@
         const userBalanceDisplay = document.getElementById('userBalanceDisplay');
         const userInfoDisplay = document.getElementById('userInfoDisplay');
 
-        if (user) {
-            try {
-                const db = window.firebaseDb;
-                const doc = window.doc;
-                const getDoc = window.getDoc;
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
-                
-                if (userDoc.exists) {
-                    const data = userDoc.data();
-                    const name = data.fullName || user.displayName || 'Пользователь';
-                    const wallet = data.wallet || 0;
-                    
-                    userNameDisplay.textContent = '👋 ' + name;
-                    userBalanceDisplay.textContent = '💰 ' + wallet + ' ₪';
-                    userInfoDisplay.style.display = 'flex';
-                } else {
-                    userNameDisplay.textContent = '👋 Гость';
-                    userBalanceDisplay.textContent = '💰 0 ₪';
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки данных пользователя:', error);
-                userNameDisplay.textContent = '👋 Гость';
-                userBalanceDisplay.textContent = '💰 0 ₪';
-            }
-        } else {
+        if (!user) {
             userNameDisplay.textContent = '👋 Гость';
             userBalanceDisplay.textContent = '💰 0 ₪';
+            userInfoDisplay.style.display = 'none';
+            return;
+        }
+
+        try {
+            const db = window.firebaseDb;
+            const doc = window.doc;
+            const getDoc = window.getDoc;
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            
+            if (userDoc.exists) {
+                const data = userDoc.data();
+                currentUserData = data;
+                const name = data.fullName || user.displayName || 'Пользователь';
+                const wallet = data.wallet || 0;
+                
+                userNameDisplay.textContent = '👋 ' + name;
+                userBalanceDisplay.textContent = '💰 ' + wallet + ' ₪';
+                userInfoDisplay.style.display = 'flex';
+                userDocRef = doc(db, 'users', user.uid);
+                
+                // Обновляем кошелёк
+                document.getElementById('walletDisplay').textContent = wallet.toFixed(0);
+                document.getElementById('modalBalance').textContent = wallet.toFixed(0);
+                document.getElementById('bonusDisplay').textContent = (data.bonuses || 0).toFixed(2);
+                document.getElementById('userInfo').textContent = '👤 ' + name;
+                
+                console.log('✅ Данные пользователя загружены:', data);
+            } else {
+                userNameDisplay.textContent = '👋 Гость';
+                userBalanceDisplay.textContent = '💰 0 ₪';
+                userInfoDisplay.style.display = 'none';
+                console.warn('⚠️ Документ пользователя не найден');
+            }
+        } catch (error) {
+            console.error('❌ Ошибка загрузки данных пользователя:', error);
+            userNameDisplay.textContent = '👋 Гость';
+            userBalanceDisplay.textContent = '💰 0 ₪';
+            userInfoDisplay.style.display = 'none';
         }
     }
 
     // ============================================================
-    // 2. ВЫХОД
+    // 3. ВЫХОД
     // ============================================================
     document.getElementById('logoutBtn').addEventListener('click', async function() {
         try {
@@ -822,12 +844,12 @@
             await signOut(auth);
             window.location.href = 'index.html';
         } catch (error) {
-            console.error('Ошибка выхода:', error);
+            console.error('❌ Ошибка выхода:', error);
         }
     });
 
     // ============================================================
-    // 3. КАРТА
+    // 4. КАРТА
     // ============================================================
     const map = L.map('map', {
         center: [32.0853, 34.7818],
@@ -841,7 +863,7 @@
     }).addTo(map);
 
     // ============================================================
-    // 4. МАРКЕРЫ
+    // 5. МАРКЕРЫ
     // ============================================================
     const clientIcon = L.divIcon({
         html: '<div class="marker-client"></div>',
@@ -868,7 +890,7 @@
     let routeControl = null;
 
     // ============================================================
-    // 5. ГЕОЛОКАЦИЯ
+    // 6. ГЕОЛОКАЦИЯ
     // ============================================================
     function getCurrentPosition() {
         showStatus('⏳ Определяем ваше местоположение...', 'info');
@@ -908,7 +930,7 @@
     document.getElementById('geoFromBtn').addEventListener('click', getCurrentPosition);
 
     // ============================================================
-    // 6. ПОСТРОЕНИЕ МАРШРУТА
+    // 7. ПОСТРОЕНИЕ МАРШРУТА
     // ============================================================
     function calculatePriceWithRange(distanceKm) {
         const baseFare = 25;
@@ -996,7 +1018,7 @@
     document.getElementById('swapBtn').addEventListener('click', swapAddresses);
 
     // ============================================================
-    // 7. ПОСТРОЕНИЕ МАРШРУТА (ПРОДОЛЖЕНИЕ)
+    // 8. ПОСТРОЕНИЕ МАРШРУТА (ПРОДОЛЖЕНИЕ)
     // ============================================================
     document.getElementById('buildRouteBtn').addEventListener('click', function() {
         const fromInput = document.getElementById('fromInput');
@@ -1074,36 +1096,8 @@
     });
 
     // ============================================================
-    // 8. КОШЕЛЁК
+    // 9. КОШЕЛЁК
     // ============================================================
-    let currentUser = null;
-    let userDocRef = null;
-
-    async function initUserWallet(uid) {
-        const db = window.firebaseDb;
-        const docFn = window.doc;
-        const getDocFn = window.getDoc;
-        const setDocFn = window.setDoc;
-
-        const userRef = docFn(db, 'users', uid);
-        userDocRef = userRef;
-
-        const docSnap = await getDocFn(userRef);
-
-        if (!docSnap.exists()) {
-            await setDocFn(userRef, {
-                wallet: 0,
-                bonuses: 0,
-                bonusesAvailable: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            });
-            console.log('🆕 Создан кошелёк для:', uid);
-        }
-
-        return userRef;
-    }
-
     async function getWalletData() {
         if (!userDocRef) return null;
         const getDocFn = window.getDoc;
@@ -1175,7 +1169,7 @@
     });
 
     // ============================================================
-    // 9. СОЗДАНИЕ ЗАКАЗА
+    // 10. СОЗДАНИЕ ЗАКАЗА
     // ============================================================
     document.getElementById('orderBtn').addEventListener('click', async function() {
         const fromInput = document.getElementById('fromInput');
@@ -1236,8 +1230,8 @@
                 status: 'waiting',
                 clientId: user ? user.uid : 'anonymous',
                 client: {
-                    name: user ? (await getWalletData())?.fullName || 'Гость' : 'Гость',
-                    phone: null,
+                    name: currentUserData?.fullName || 'Гость',
+                    phone: currentUserData?.phone || null,
                     from: {
                         lat: fromLat,
                         lng: fromLng,
@@ -1281,7 +1275,7 @@
             const docRef = await addDocFn(ordersRef, orderData);
 
             // Начисляем бонус (если пользователь зарегистрирован)
-            if (user) {
+            if (user && currentUserData) {
                 const bonusAmount = price * 0.01;
                 const updateDocFn2 = window.updateDoc;
                 const incrementFn2 = window.increment;
@@ -1331,7 +1325,7 @@
     });
 
     // ============================================================
-    // 10. АВТОРИЗАЦИЯ
+    // 11. АВТОРИЗАЦИЯ
     // ============================================================
     async function initFirebaseAuth() {
         const auth = window.firebaseAuth;
@@ -1341,22 +1335,24 @@
             if (user) {
                 currentUser = user;
                 console.log('✅ Авторизован:', user.uid);
-                await initUserWallet(user.uid);
+                userDocRef = window.doc(window.firebaseDb, 'users', user.uid);
                 await loadUserData();
                 await updateWalletUI();
-                document.getElementById('userInfo').textContent = `🔑 ID: ${user.uid.slice(0, 12)}...`;
             } else {
                 currentUser = null;
+                currentUserData = null;
+                userDocRef = null;
                 console.log('❌ Не авторизован');
                 document.getElementById('userNameDisplay').textContent = '👋 Гость';
                 document.getElementById('userBalanceDisplay').textContent = '💰 0 ₪';
                 document.getElementById('userInfo').textContent = '🔑 Анонимный пользователь';
+                document.getElementById('userInfoDisplay').style.display = 'none';
             }
         });
     }
 
     // ============================================================
-    // 11. ЗАПУСК
+    // 12. ЗАПУСК
     // ============================================================
     window.addEventListener('load', () => {
         initFirebaseAuth();
