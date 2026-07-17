@@ -97,6 +97,18 @@
             margin-left: 6px;
         }
 
+        body[dir="rtl"] .top-bar {
+            flex-direction: row-reverse;
+        }
+
+        body[dir="rtl"] .lang-dropdown {
+            left: 50%;
+            transform: translateX(50%);
+        }
+        body[dir="rtl"] .lang-dropdown.active {
+            transform: translateX(50%) translateY(0);
+        }
+
         .phone-frame {
             width: 100%;
             max-width: 400px;
@@ -117,55 +129,140 @@
             position: relative;
         }
 
-        /* ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== */
-        .lang-switcher {
-            position: absolute;
-            top: 20px;
-            right: 24px;
-            z-index: 10;
+        /* ===== ВЕРХНЯЯ ПАНЕЛЬ ===== */
+        .top-bar {
             display: flex;
-            gap: 4px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 3px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 20;
+        }
+
+        .top-bar .auth-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #8899aa;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            text-decoration: none;
+        }
+
+        .top-bar .auth-btn:hover {
+            background: rgba(255,180,0,0.15);
+            border-color: #ffb000;
+            color: #ffb000;
+        }
+
+        .top-bar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #8899aa;
+            font-size: 13px;
+        }
+
+        .top-bar .user-info .name {
+            color: #ffb000;
+            font-weight: 600;
+        }
+
+        /* ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== */
+        .lang-toggle {
+            position: relative;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .lang-toggle-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #ffffff;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
             backdrop-filter: blur(10px);
         }
 
-        body[dir="rtl"] .lang-switcher {
-            right: auto;
-            left: 24px;
+        .lang-toggle-btn:hover {
+            background: rgba(255, 180, 0, 0.15);
+            border-color: #ffb000;
+            transform: scale(1.05);
         }
 
-        .lang-btn {
-            background: transparent;
-            border: none;
-            color: #8899aa;
-            font-size: 12px;
-            font-weight: 600;
-            padding: 6px 10px;
+        .lang-dropdown {
+            position: absolute;
+            top: 42px;
+            right: 0;
+            background: rgba(18,22,28,0.96);
+            backdrop-filter: blur(20px);
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            padding: 6px;
+            min-width: 120px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+        }
+
+        .lang-dropdown.active {
+            display: flex;
+            animation: dropIn 0.2s ease;
+        }
+
+        @keyframes dropIn {
+            from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .lang-dropdown-item {
+            padding: 8px 16px;
             border-radius: 10px;
+            color: #8899aa;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
-            letter-spacing: 0.5px;
+            transition: all 0.15s ease;
+            border: none;
+            background: transparent;
+            text-align: center;
             white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
-        .lang-btn:hover {
+        .lang-dropdown-item:hover {
+            background: rgba(255,255,255,0.06);
             color: #ffffff;
-            background: rgba(255, 255, 255, 0.08);
         }
 
-        .lang-btn.active {
+        .lang-dropdown-item.active {
             background: linear-gradient(135deg, #ffb000, #ff6a00);
             color: #0a0c10;
             font-weight: 700;
-            box-shadow: 0 2px 8px rgba(255, 160, 0, 0.3);
         }
+
+        .lang-dropdown-item .flag { font-size: 16px; }
 
         /* ===== ЛОГОТИП ===== */
         .logo-icon {
-            margin-top: 50px;
+            margin-top: 20px;
             margin-bottom: 12px;
             width: 80px;
             height: 80px;
@@ -344,50 +441,6 @@
             to { transform: translateY(-3px); }
         }
 
-        /* ===== ВЕРХНЯЯ ПАНЕЛЬ (ВХОД) ===== */
-        .top-bar {
-            display: flex;
-            justify-content: flex-end;
-            width: 100%;
-            margin-bottom: 8px;
-            gap: 10px;
-            position: relative;
-            z-index: 5;
-        }
-
-        .top-bar .auth-btn {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.08);
-            color: #8899aa;
-            padding: 6px 16px;
-            border-radius: 30px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            text-decoration: none;
-        }
-
-        .top-bar .auth-btn:hover {
-            background: rgba(255,180,0,0.15);
-            border-color: #ffb000;
-            color: #ffb000;
-        }
-
-        .top-bar .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #8899aa;
-            font-size: 13px;
-        }
-
-        .top-bar .user-info .name {
-            color: #ffb000;
-            font-weight: 600;
-        }
-
-        /* ===== CTA КНОПКИ ===== */
         .cta-button {
             width: 100%;
             background: linear-gradient(135deg, #ffb000, #ff6a00);
@@ -486,7 +539,6 @@
             background: rgba(255,180,0,0.08);
         }
 
-        /* ===== МОДАЛКА ВХОДА/РЕГИСТРАЦИИ ===== */
         .modal {
             display: none;
             position: fixed;
@@ -674,40 +726,64 @@
                 box-shadow: none;
                 border: none;
             }
-            .lang-switcher {
-                top: 16px;
-                right: 20px;
+            .lang-toggle-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
             }
-            body[dir="rtl"] .lang-switcher {
-                right: auto;
-                left: 20px;
+            .lang-dropdown {
+                min-width: 100px;
+                top: 38px;
+            }
+            .lang-dropdown-item {
+                font-size: 12px;
+                padding: 6px 12px;
             }
             .top-bar .auth-btn {
                 font-size: 11px;
                 padding: 4px 12px;
+            }
+            .logo-icon {
+                margin-top: 10px;
+                width: 64px;
+                height: 64px;
+            }
+            .logo-icon svg {
+                width: 38px;
+                height: 38px;
+            }
+            h1 {
+                font-size: 26px;
             }
         }
     </style>
 </head>
 <body>
     <div class="phone-frame">
-        <!-- ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== -->
-        <div class="lang-switcher">
-            <button class="lang-btn" data-lang="he" title="עברית">עב</button>
-            <button class="lang-btn" data-lang="ar" title="العربية">عرب</button>
-            <button class="lang-btn active" data-lang="en" title="English">EN</button>
-        </div>
-
         <!-- ===== ВЕРХНЯЯ ПАНЕЛЬ ===== -->
         <div class="top-bar">
-            <div id="authSection">
+            <!-- ЛЕВАЯ ЧАСТЬ: ВХОД -->
+            <div id="authSection" style="display:flex; align-items:center; gap:10px;">
                 <button class="auth-btn" id="loginBtn">🔑 Войти</button>
             </div>
-            <div id="userSection" style="display:none;">
-                <div class="user-info">
-                    <span>👋</span>
-                    <span class="name" id="userName">Гость</span>
-                    <button class="auth-btn" id="logoutBtn" style="font-size:11px; padding:4px 12px;">Выйти</button>
+            <div id="userSection" style="display:none; display:flex; align-items:center; gap:10px;">
+                <span style="color:#8899aa; font-size:13px;">👋 <span class="name" id="userName" style="color:#ffb000; font-weight:600;">Гость</span></span>
+                <button class="auth-btn" id="logoutBtn" style="font-size:11px; padding:4px 12px;">Выйти</button>
+            </div>
+
+            <!-- ПРАВАЯ ЧАСТЬ: ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ -->
+            <div class="lang-toggle">
+                <button class="lang-toggle-btn" id="langToggleBtn">🌐</button>
+                <div class="lang-dropdown" id="langDropdown">
+                    <button class="lang-dropdown-item active" data-lang="en">
+                        <span class="flag">🇬🇧</span> English
+                    </button>
+                    <button class="lang-dropdown-item" data-lang="he">
+                        <span class="flag">🇮🇱</span> עברית
+                    </button>
+                    <button class="lang-dropdown-item" data-lang="ar">
+                        <span class="flag">🇸🇦</span> العربية
+                    </button>
                 </div>
             </div>
         </div>
@@ -784,7 +860,6 @@
                 <button data-tab="register">📝 Регистрация</button>
             </div>
 
-            <!-- Вкладка: Вход -->
             <div class="tab-content active" id="tab-login">
                 <h2>Войти в аккаунт</h2>
                 <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
@@ -794,7 +869,6 @@
                 <div class="success-msg" id="loginSuccess"></div>
             </div>
 
-            <!-- Вкладка: Регистрация -->
             <div class="tab-content" id="tab-register">
                 <h2>Создать аккаунт</h2>
                 <input type="text" id="regName" placeholder="Ваше имя" autocomplete="name">
@@ -813,7 +887,7 @@
         </div>
     </div>
 
-    <!-- ===== МОДАЛКА ВОДИТЕЛЯ (существующая) ===== -->
+    <!-- ===== МОДАЛКА ВОДИТЕЛЯ ===== -->
     <div class="modal" id="loginModal">
         <div class="modal-content">
             <h2 data-i18n="loginTitle">🚖 Вход для водителей</h2>
@@ -927,6 +1001,13 @@
                 document.documentElement.lang = 'en';
             }
 
+            document.querySelectorAll('.lang-dropdown-item').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-lang') === lang) {
+                    btn.classList.add('active');
+                }
+            });
+
             document.querySelectorAll('.lang-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.getAttribute('data-lang') === lang) {
@@ -935,8 +1016,28 @@
             });
 
             localStorage.setItem('wheel_lang', lang);
+            document.getElementById('langDropdown').classList.remove('active');
         }
 
+        // ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ =====
+        document.getElementById('langToggleBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('langDropdown').classList.toggle('active');
+        });
+
+        document.addEventListener('click', () => {
+            document.getElementById('langDropdown').classList.remove('active');
+        });
+
+        document.querySelectorAll('.lang-dropdown-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const lang = btn.getAttribute('data-lang');
+                switchLanguage(lang);
+            });
+        });
+
+        // ==== СТАРЫЕ КНОПКИ ЯЗЫКОВ (для совместимости) ====
         document.querySelectorAll('.lang-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const lang = btn.getAttribute('data-lang');
@@ -1040,13 +1141,11 @@
                     this.classList.add('active');
                     tabContents.forEach(c => c.classList.remove('active'));
                     document.getElementById('tab-' + tab).classList.add('active');
-                    // Очищаем ошибки
                     document.getElementById('loginError').classList.remove('active');
                     document.getElementById('registerError').classList.remove('active');
                 });
             });
 
-            // Открытие модалки
             loginBtn.addEventListener('click', function() {
                 authModal.classList.add('active');
                 document.getElementById('loginError').classList.remove('active');
@@ -1055,7 +1154,6 @@
                 document.getElementById('registerSuccess').classList.remove('active');
             });
 
-            // Закрытие модалки
             closeAuthModal.addEventListener('click', function() {
                 authModal.classList.remove('active');
             });
@@ -1145,16 +1243,13 @@
                     const doc = window.doc;
                     const serverTimestamp = window.serverTimestamp;
 
-                    // Создаём пользователя
                     const userCredential = await createUser(auth, email, password);
                     const user = userCredential.user;
 
-                    // Обновляем профиль (имя)
                     await updateProfile(user, {
                         displayName: name
                     });
 
-                    // Создаём документ в Firestore
                     await setDoc(doc(db, 'users', user.uid), {
                         uid: user.uid,
                         email: email,
@@ -1216,11 +1311,9 @@
 
             onAuth(auth, async function(user) {
                 if (user) {
-                    // Пользователь авторизован
                     authSection.style.display = 'none';
-                    userSection.style.display = 'block';
+                    userSection.style.display = 'flex';
 
-                    // Получаем данные из Firestore
                     try {
                         const db = window.firebaseDb;
                         const doc = window.doc;
@@ -1237,7 +1330,6 @@
                         userName.textContent = user.displayName || 'Пользователь';
                     }
 
-                    // Проверяем, не водитель ли это
                     try {
                         const db = window.firebaseDb;
                         const doc = window.doc;
@@ -1254,8 +1346,7 @@
                     }
 
                 } else {
-                    // Пользователь не авторизован
-                    authSection.style.display = 'block';
+                    authSection.style.display = 'flex';
                     userSection.style.display = 'none';
                     document.getElementById('driverStatus').classList.remove('active');
                     document.getElementById('driverEmail').textContent = '';
@@ -1264,7 +1355,7 @@
             });
         });
 
-        // ============ FIREBASE AUTH + DRIVER CHECK (существующий код) ============
+        // ============ ВХОД ВОДИТЕЛЯ ============
         window.addEventListener('load', () => {
             const driverBtn = document.getElementById('driverBtn');
             const loginModal = document.getElementById('loginModal');
@@ -1275,7 +1366,6 @@
             const driverStatus = document.getElementById('driverStatus');
             const driverEmail = document.getElementById('driverEmail');
             const logoutDriverBtn = document.getElementById('logoutDriverBtn');
-            const clientOrder = document.getElementById('clientOrder');
             const loginError = document.getElementById('loginErrorDriver');
 
             driverBtn.addEventListener('click', () => {
@@ -1294,7 +1384,6 @@
                 }
             });
 
-            // ========== ВХОД ВОДИТЕЛЯ ==========
             loginSubmit.addEventListener('click', async () => {
                 const email = emailInput.value.trim();
                 const password = passwordInput.value.trim();
@@ -1349,7 +1438,6 @@
                         lastUpdated: serverTimestampFn()
                     });
 
-                    // Перенаправление на страницу водителя
                     window.location.href = 'driver.html';
 
                 } catch (error) {
@@ -1373,7 +1461,6 @@
                 }
             });
 
-            // ========== ВЫХОД ВОДИТЕЛЯ ==========
             logoutDriverBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 try {
@@ -1406,13 +1493,11 @@
                 }
             });
 
-            // ========== ПРОВЕРКА ПРИ ЗАГРУЗКЕ ==========
             const auth = window.firebaseAuth;
             const onAuth = window.onAuthStateChanged;
             
             onAuth(auth, async (user) => {
                 if (user) {
-                    // Проверяем, водитель ли это
                     try {
                         const db = window.firebaseDb;
                         const docFn = window.doc;
@@ -1427,7 +1512,6 @@
                             driverEmail.textContent = driverData.fullName || user.email;
                             driverBtn.style.display = 'none';
                         } else {
-                            // Не водитель — выходим
                             await window.signOut(auth);
                             driverStatus.classList.remove('active');
                             driverEmail.textContent = '';
