@@ -166,7 +166,6 @@
         }
         .leaflet-control-attribution a { color: #ffb000 !important; }
 
-        /* ===== МАРКЕРЫ ===== */
         .marker-client {
             background: #2563eb;
             border: 3px solid #ffffff;
@@ -215,7 +214,6 @@
             box-shadow: 0 4px 12px rgba(239,68,68,0.4);
         }
 
-        /* ===== ПАНЕЛЬ ===== */
         .control-panel {
             background: rgba(18,22,28,0.95);
             backdrop-filter: blur(20px);
@@ -295,7 +293,6 @@
         }
         .address-input .geo-btn:hover { transform: scale(1.15); }
 
-        /* ===== ПОДСКАЗКИ ===== */
         .suggestions-list {
             position: absolute;
             top: 100%;
@@ -861,16 +858,30 @@
             div.dataset.lng = item.lng;
             div.dataset.address = item.display_name;
             
-            div.addEventListener('click', () => {
+            div.addEventListener('click', function() {
+                // Записываем координаты в поле
                 input.value = item.display_name;
                 input.dataset.lat = item.lat;
                 input.dataset.lng = item.lng;
                 input.dataset.address = item.display_name;
+                
                 list.classList.remove('active');
                 list.innerHTML = '';
                 
+                // Если это поле "Куда" — сразу строим маршрут
                 if (inputId === 'toInput') {
                     buildRoute();
+                } else if (inputId === 'fromInput') {
+                    // Если выбрали "Откуда" — просто обновляем маркер
+                    if (fromMarker) {
+                        map.removeLayer(fromMarker);
+                    }
+                    fromMarker = L.marker([item.lat, item.lng], { icon: clientIcon })
+                        .addTo(map)
+                        .bindPopup('📍 Вы здесь');
+                    map.setView([item.lat, item.lng], 15);
+                    showStatus('✅ Адрес "Откуда" выбран', 'success');
+                    setTimeout(() => clearStatus(), 2000);
                 }
             });
             
@@ -921,7 +932,100 @@
     });
 
     // ============================================================
-    // 6. ПОСТРОЕНИЕ МАРШРУТА
+    // 6. ПОСТРОЕНИЕ МАРШРУТА (исправленная)
+    // ============================================================
+    async function buildRoute() {
+        const fromInput = document.getElementById('fromInput');
+        const toInput = document.getElementById('toInput');
+
+        // Пытаемся получить координаты из dataset
+        let fromLat = parseFloat(fromInput.dataset.lat);
+        let fromLng = parseFloat(fromInput.dataset.lng);
+
+        // Если dataset пустой — пробуем распарсить из текста
+        if (!fromLat || !fromLng) {
+            const coords = parseCoordinates(fromInput.value);
+            if (coords) {
+                fromLat = coords.lat;
+                fromLng = coords.lng;
+                fromInput.dataset.lat = fromLat;
+                fromInput.dataset.lng = fromLng;
+            } else {
+                showStatus('❌ Укажите адрес "Откуда" (выберите из подсказок)', 'error');
+                return;
+            }
+        }
+
+        // Координаты "Куда"
+        let toLat = parseFloat(toInput.dataset.lat);
+        let toLng = parseFloat(toInput.dataset.lng);
+
+        if (!toLat || !toLng) {
+            const toCoords = parseCoordinates(toInput.value);
+            if (toCoords) {
+                toLat = toCoords.lat;
+                toLng = toCoords.lng;
+                toInput.dataset.lat = toLat;
+                toInput.dataset.lng = toLng;
+            } else {
+                showStatus('❌ Укажите адрес "Куда" (выберите из подсказок)', 'error');
+                return;
+            }
+        }
+
+        showStatus('⏳ Строим маршрут...', 'info');
+
+        if (routeControl) {
+            map.removeControl(routeControl);
+            routeControl = null;
+        }
+
+        routeControl = L.Routing.control({
+            waypoints: [
+                L.latLng(fromLat, fromLng),
+                L.latLng(toLat, toLng)
+            ],
+            routeWhileDragging: false,
+            showAlternatives: false,
+            lineOptions: {
+                styles: [{ color: '#ffb000', weight: 4, opacity: 0.9 }],
+                extendToWaypoints: true,
+                missingRouteTolerance: 10,
+            },
+            addWaypoints: false,
+            draggableWaypoints: false,
+            fitSelectedRoutes: true,
+            show: false,
+        }).addTo(map);
+
+        routeControl.on('routesfound', function(e) {
+            const routes = e.routes;
+            const summary = routes[0].summary;
+            const distanceKm = summary.totalDistance / 1000;
+            const durationMin = Math.round(summary.totalTime / 60);
+
+            document.getElementById('distanceDisplay').textContent = distanceKm.toFixed(1);
+            document.getElementById('durationDisplay').textContent = durationMin;
+
+            updatePriceDisplay(distanceKm);
+
+            if (toMarker) map.removeLayer(toMarker);
+            toMarker = L.marker([toLat, toLng], { icon: endIcon })
+                .addTo(map)
+                .bindPopup('📍 Назначение');
+
+            showStatus(`✅ Маршрут построен! ${distanceKm.toFixed(1)} км, ~${durationMin} мин`, 'success');
+            setTimeout(() => clearStatus(), 3000);
+        });
+
+        routeControl.on('routingerror', function(e) {
+            showStatus('❌ Не удалось построить маршрут. Проверьте адреса.', 'error');
+            console.error('Routing error:', e);
+        });
+    }
+
+    // ============================================================
+    // 7. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
     // ============================================================
     function calculatePriceWithRange(distanceKm) {
         const baseFare = 25;
@@ -1007,85 +1111,6 @@
 
     document.getElementById('clearRouteBtn').addEventListener('click', clearRoute);
     document.getElementById('swapBtn').addEventListener('click', swapAddresses);
-
-    // ============================================================
-    // 7. ПОСТРОЕНИЕ МАРШРУТА (ГЛАВНАЯ ФУНКЦИЯ)
-    // ============================================================
-    async function buildRoute() {
-        const fromInput = document.getElementById('fromInput');
-        const toInput = document.getElementById('toInput');
-
-        let fromLat = parseFloat(fromInput.dataset.lat);
-        let fromLng = parseFloat(fromInput.dataset.lng);
-
-        if (!fromLat || !fromLng) {
-            const coords = parseCoordinates(fromInput.value);
-            if (coords) {
-                fromLat = coords.lat;
-                fromLng = coords.lng;
-            } else {
-                showStatus('❌ Укажите координаты "Откуда"', 'error');
-                return;
-            }
-        }
-
-        const toCoords = parseCoordinates(toInput.value);
-        if (!toCoords) {
-            showStatus('❌ Укажите координаты "Куда"', 'error');
-            return;
-        }
-
-        showStatus('⏳ Строим маршрут...', 'info');
-
-        if (routeControl) {
-            map.removeControl(routeControl);
-            routeControl = null;
-        }
-
-        routeControl = L.Routing.control({
-            waypoints: [
-                L.latLng(fromLat, fromLng),
-                L.latLng(toCoords.lat, toCoords.lng)
-            ],
-            routeWhileDragging: false,
-            showAlternatives: false,
-            lineOptions: {
-                styles: [{ color: '#ffb000', weight: 4, opacity: 0.9 }],
-                extendToWaypoints: true,
-                missingRouteTolerance: 10,
-            },
-            addWaypoints: false,
-            draggableWaypoints: false,
-            fitSelectedRoutes: true,
-            show: false,
-        }).addTo(map);
-
-        routeControl.on('routesfound', function(e) {
-            const routes = e.routes;
-            const summary = routes[0].summary;
-            const distanceKm = summary.totalDistance / 1000;
-            const durationMin = Math.round(summary.totalTime / 60);
-
-            document.getElementById('distanceDisplay').textContent = distanceKm.toFixed(1);
-            document.getElementById('durationDisplay').textContent = durationMin;
-
-            updatePriceDisplay(distanceKm);
-
-            if (toMarker) map.removeLayer(toMarker);
-            toMarker = L.marker([toCoords.lat, toCoords.lng], { icon: endIcon })
-                .addTo(map)
-                .bindPopup('📍 Назначение');
-
-            showStatus(`✅ Маршрут построен! ${distanceKm.toFixed(1)} км, ~${durationMin} мин`, 'success');
-            setTimeout(() => clearStatus(), 3000);
-        });
-
-        routeControl.on('routingerror', function(e) {
-            showStatus('❌ Не удалось построить маршрут', 'error');
-            console.error('Routing error:', e);
-        });
-    }
-
     document.getElementById('buildRouteBtn').addEventListener('click', buildRoute);
 
     // ============================================================
@@ -1218,7 +1243,6 @@
             const incrementFn = window.increment;
             const runTransactionFn = window.runTransaction;
 
-            // Транзакция для списания средств
             await runTransactionFn(db, async (transaction) => {
                 const userSnap = await transaction.get(userDocRef);
                 if (!userSnap.exists()) {
@@ -1234,7 +1258,6 @@
                 });
             });
 
-            // Создаём заказ
             const ordersRef = collectionFn(db, 'orders');
             const auth = window.firebaseAuth;
             const user = auth.currentUser;
@@ -1288,7 +1311,6 @@
 
             const docRef = await addDocFn(ordersRef, orderData);
 
-            // Начисляем бонус (если пользователь зарегистрирован)
             if (user) {
                 const bonusAmount = price * 0.01;
                 const updateDocFn2 = window.updateDoc;
@@ -1304,7 +1326,6 @@
             showStatus(`✅ Заказ создан! ID: ${docRef.id.slice(0, 8)}`, 'success');
             console.log('✅ Order created:', docRef.id, orderData);
 
-            // Демонстрация — машина на карте
             if (driverMarker) map.removeLayer(driverMarker);
             const fromLatLng = [fromLat, fromLng];
             driverMarker = L.marker(fromLatLng, { icon: driverIcon })
