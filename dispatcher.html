@@ -120,6 +120,7 @@
         .btn-secondary { background: rgba(255,255,255,0.06); color: #8899aa; border: 1px solid rgba(255,255,255,0.08); }
         .btn-secondary:hover { background: rgba(255,255,255,0.1); color: #ffffff; }
         .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .btn-sm i { font-size: 12px; }
 
         .stats {
             display: flex;
@@ -197,6 +198,7 @@
         .status-offering { background: rgba(59,130,246,0.2); color: #60a5fa; }
         .status-assigned { background: rgba(59,130,246,0.2); color: #60a5fa; }
         .status-accepted { background: rgba(34,197,94,0.2); color: #4ade80; }
+        .status-en_route { background: rgba(139,92,246,0.2); color: #a78bfa; }
         .status-completed { background: rgba(107,114,128,0.2); color: #9ca3af; }
         .status-cancelled { background: rgba(239,68,68,0.2); color: #f87171; }
 
@@ -333,6 +335,7 @@
                     <button class="btn btn-success btn-sm" onclick="showTab('addDriver')"><i class="fas fa-user-plus"></i> ➕ Добавить водителя</button>
                 </div>
 
+                <!-- ===== ВКЛАДКА: ВОДИТЕЛИ ===== -->
                 <div id="tab-drivers">
                     <div class="card-title" style="font-size:16px;"><i class="fas fa-users"></i> Все зарегистрированные водители</div>
                     <div class="table-wrap">
@@ -350,6 +353,7 @@
                     </div>
                 </div>
 
+                <!-- ===== ВКЛАДКА: ЗАКАЗЫ ===== -->
                 <div id="tab-orders" class="hidden">
                     <div class="card-title" style="font-size:16px;"><i class="fas fa-list"></i> Все заказы</div>
                     <div id="autoAssignStatus" style="margin-bottom:12px; color:#4ade80; font-size:14px;"></div>
@@ -368,6 +372,7 @@
                     </div>
                 </div>
 
+                <!-- ===== ВКЛАДКА: ДОБАВИТЬ ВОДИТЕЛЯ ===== -->
                 <div id="tab-addDriver" class="hidden">
                     <div class="card-title" style="font-size:16px;"><i class="fas fa-user-plus"></i> Добавить нового водителя</div>
                     <div class="form-row">
@@ -387,6 +392,7 @@
                     <button class="btn btn-success" onclick="addNewDriver()"><i class="fas fa-save"></i> Сохранить водителя</button>
                     <div id="addDriverResult" style="margin-top:12px;"></div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -415,7 +421,7 @@
     let currentTab = 'drivers';
 
     // ============================================================
-    // РАСЧЁТ РАССТОЯНИЯ (Гаверсин)
+    // РАСЧЁТ РАССТОЯНИЯ
     // ============================================================
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371;
@@ -429,7 +435,7 @@
     }
 
     // ============================================================
-    // 🔥 АВТОМАТИЧЕСКОЕ РАСПРЕДЕЛЕНИЕ ЗАКАЗОВ (без диспетчера)
+    // 🔥 АВТОМАТИЧЕСКОЕ РАСПРЕДЕЛЕНИЕ ЗАКАЗОВ
     // ============================================================
     async function distributeOrderToDrivers(orderId) {
         console.log('📡 Распределяем заказ:', orderId);
@@ -446,7 +452,6 @@
             return;
         }
 
-        // Найти всех свободных водителей (онлайн и не занятых)
         const driversSnapshot = await db.collection('drivers')
             .where('status', '==', 'online')
             .get();
@@ -463,7 +468,6 @@
             const data = doc.data();
             const driverId = doc.id;
 
-            // Проверка: есть ли у водителя активный заказ
             const activeOrder = await db.collection('orders')
                 .where('driverId', '==', driverId)
                 .where('status', 'in', ['assigned', 'accepted', 'en_route', 'offering'])
@@ -480,7 +484,6 @@
             const avgSpeed = 30;
             const timeMinutes = (distance / avgSpeed) * 60;
 
-            // 🚨 Ограничение: только водители в радиусе 10 минут
             if (timeMinutes > 10) continue;
 
             eligibleDrivers.push({
@@ -501,11 +504,9 @@
             return;
         }
 
-        // 📢 Отправить заказ ВСЕМ подходящим водителям
         console.log(`📢 Отправляем заказ ${eligibleDrivers.length} водителям:`);
         eligibleDrivers.forEach(d => console.log(`   - ${d.fullName} (${Math.round(d.timeMinutes)} мин)`));
 
-        // Обновить заказ — статус "offering" и список водителей
         await db.collection('orders').doc(orderId).update({
             status: 'offering',
             offeredTo: eligibleDrivers.map(d => d.driverId),
@@ -519,7 +520,7 @@
     }
 
     // ============================================================
-    // 🔥 СЛУШАТЕЛЬ НОВЫХ ЗАКАЗОВ (автоматическое распределение)
+    // 🔥 СЛУШАТЕЛЬ НОВЫХ ЗАКАЗОВ
     // ============================================================
     function listenForNewOrders() {
         db.collection('orders')
@@ -528,10 +529,7 @@
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === 'added') {
                         const orderId = change.doc.id;
-                        const order = change.doc.data();
                         console.log('🆕 Новый заказ:', orderId);
-                        
-                        // Автоматически распределяем заказ
                         setTimeout(() => {
                             distributeOrderToDrivers(orderId);
                         }, 1000);
@@ -541,24 +539,70 @@
     }
 
     // ============================================================
-    // СЛУШАТЕЛЬ ОТВЕТОВ ВОДИТЕЛЕЙ (принятие/отклонение)
+    // 🖐️ РУЧНОЕ НАЗНАЧЕНИЕ (диспетчер выбирает водителя)
     // ============================================================
-    function listenForDriverResponses() {
-        // Слушаем заказы в статусе "offering"
-        db.collection('orders')
-            .where('status', '==', 'offering')
-            .onSnapshot((snapshot) => {
-                snapshot.forEach((doc) => {
-                    const order = doc.data();
-                    const orderId = doc.id;
-                    
-                    // Проверяем, есть ли уже принявший водитель
-                    if (order.acceptedBy) {
-                        // Уже кто-то принял — блокируем для других
-                        return;
-                    }
+    function reassignOrder(orderId) {
+        db.collection('drivers')
+            .where('status', '==', 'online')
+            .get()
+            .then(snapshot => {
+                if (snapshot.empty) {
+                    alert('⚠️ Нет свободных водителей');
+                    return;
+                }
+
+                let driverList = '';
+                const drivers = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    drivers.push({ 
+                        id: doc.id, 
+                        name: data.fullName || data.email, 
+                        car: data.carModel || '' 
+                    });
+                    driverList += `${drivers.length}. ${data.fullName || data.email} (${data.carModel || ''})\n`;
                 });
+
+                const choice = prompt(`Выберите водителя:\n${driverList}\nВведите номер (1-${drivers.length}):`);
+                if (!choice) return;
+                const idx = parseInt(choice) - 1;
+                if (isNaN(idx) || idx < 0 || idx >= drivers.length) {
+                    alert('❌ Неверный выбор');
+                    return;
+                }
+                const selected = drivers[idx];
+
+                db.collection('orders').doc(orderId).update({
+                    driverId: selected.id,
+                    driverName: selected.name,
+                    status: 'assigned',
+                    dispatcherNote: `Ручное назначение диспетчером на ${selected.name}`,
+                    assignedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    return db.collection('drivers').doc(selected.id).update({
+                        status: 'busy',
+                        currentOrderId: orderId
+                    });
+                }).then(() => {
+                    alert(`✅ Заказ назначен на ${selected.name}`);
+                    loadAllOrders();
+                }).catch(e => alert('❌ Ошибка: ' + e.message));
             });
+    }
+
+    // ============================================================
+    // ОТМЕНА ЗАКАЗА
+    // ============================================================
+    function cancelOrder(orderId) {
+        if (!confirm('⚠️ Отменить заказ?')) return;
+        db.collection('orders').doc(orderId).update({
+            status: 'cancelled',
+            cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+            dispatcherNote: 'Отменён диспетчером'
+        }).then(() => {
+            alert('✅ Заказ отменён');
+            loadAllOrders();
+        }).catch(e => alert('❌ Ошибка: ' + e.message));
     }
 
     // ============================================================
@@ -581,8 +625,7 @@
                     document.getElementById('dispatcher-phone-display').textContent = currentUserData.phone || '—';
                     loadAllDrivers();
                     loadAllOrders();
-                    listenForNewOrders();      // 🔥 Автораспределение
-                    listenForDriverResponses(); // 🔥 Отслеживание ответов
+                    listenForNewOrders();
                     showTab('drivers');
                 } else {
                     document.getElementById('not-dispatcher-alert').style.display = 'block';
@@ -706,7 +749,6 @@
             tbody.innerHTML = html || `<tr class="empty-row"><td colspan="7">Нет зарегистрированных водителей</td></tr>`;
             document.getElementById('stat-drivers').textContent = count;
 
-            // Загружаем активные заказы для каждого водителя
             snapshot.forEach(doc => {
                 const driverId = doc.id;
                 db.collection('orders')
@@ -867,9 +909,16 @@
                     <td>${driverName}</td>
                     <td>${priceDisplay} ₪</td>
                     <td>
-                        <div class="action-buttons" style="display:flex; gap:5px;">
+                        <div class="action-buttons" style="display:flex; gap:5px; flex-wrap:wrap;">
                             ${data.status !== 'completed' && data.status !== 'cancelled' ? `
-                                <button class="btn btn-sm btn-danger" onclick="cancelOrder('${orderId}')"><i class="fas fa-times"></i></button>
+                                ${data.status === 'waiting' || data.status === 'offering' ? `
+                                    <button class="btn btn-sm btn-warning" onclick="reassignOrder('${orderId}')">
+                                        🔄 Назначить
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-danger" onclick="cancelOrder('${orderId}')">
+                                    ❌ Отменить
+                                </button>
                             ` : ''}
                         </div>
                     </td>
@@ -883,16 +932,7 @@
         });
     }
 
-    function cancelOrder(orderId) {
-        if (!confirm('⚠️ Отменить заказ?')) return;
-        db.collection('orders').doc(orderId).update({
-            status: 'cancelled',
-            cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
-            dispatcherNote: 'Отменён диспетчером'
-        }).then(() => alert('✅ Заказ отменён')).catch(e => alert('❌ Ошибка: ' + e.message));
-    }
-
-    console.log('🚕 WHEEL Dispatcher loaded (автораспределение)');
+    console.log('🚕 WHEEL Dispatcher loaded');
 </script>
 
 </body>
