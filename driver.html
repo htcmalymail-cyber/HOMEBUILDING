@@ -100,6 +100,37 @@
             border-radius: 14px;
             background: #1a1e26;
             overflow: hidden;
+            position: relative;
+        }
+
+        .map-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .map-controls .btn-center {
+            background: rgba(18, 22, 28, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #ffffff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .map-controls .btn-center:hover {
+            background: rgba(255,180,0,0.2);
+            border-color: #ffb000;
         }
 
         .profile-row {
@@ -262,7 +293,7 @@
 
         .hidden { display: none !important; }
 
-        /* Маркеры Leaflet */
+        /* Маркеры */
         .marker-driver {
             background: #3b82f6;
             border: 3px solid #ffffff;
@@ -321,8 +352,13 @@
     </div>
 
     <!-- ===== КАРТА ===== -->
-    <div class="card" style="padding: 0; overflow: hidden; border-radius: 16px;">
+    <div class="card" style="padding: 0; overflow: hidden; border-radius: 16px; position: relative;">
         <div id="map"></div>
+        <div class="map-controls">
+            <button class="btn-center" id="centerMapBtn" title="Центрировать карту">
+                <i class="fas fa-crosshairs"></i>
+            </button>
+        </div>
     </div>
 
     <!-- ===== ПРОФИЛЬ ===== -->
@@ -396,7 +432,7 @@
     const auth = firebase.auth();
 
     // ============================================================
-    // КАРТА (LEAFLET + OSM)
+    // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
     // ============================================================
     let map = null;
     let fromMarker = null;
@@ -408,6 +444,8 @@
     let currentDriverId = null;
     let driverData = null;
     let watchId = null;
+    let lastLocationUpdate = 0;
+    const LOCATION_UPDATE_INTERVAL = 30000; // 30 секунд
 
     // Иконки
     const driverIcon = L.divIcon({
@@ -448,13 +486,22 @@
             maxZoom: 19,
         }).addTo(map);
 
-        // Маркер водителя
         driverMarker = L.marker([32.0853, 34.7818], { icon: driverIcon })
             .addTo(map)
             .bindPopup('🚗 Вы здесь');
 
         console.log('🗺️ Карта инициализирована');
     }
+
+    // ============================================================
+    // КНОПКА ЦЕНТРИРОВАНИЯ
+    // ============================================================
+    document.getElementById('centerMapBtn').addEventListener('click', () => {
+        if (driverMarker) {
+            const pos = driverMarker.getLatLng();
+            map.setView(pos, 15);
+        }
+    });
 
     // ============================================================
     // АВТОРИЗАЦИЯ
@@ -591,7 +638,7 @@
     }
 
     // ============================================================
-    // ОТСЛЕЖИВАНИЕ ГЕОПОЗИЦИИ
+    // ОТСЛЕЖИВАНИЕ ГЕОПОЗИЦИИ (КАЖДЫЕ 30-40 СЕКУНД)
     // ============================================================
     function startTrackingLocation() {
         if (!navigator.geolocation) {
@@ -599,33 +646,50 @@
             return;
         }
 
-        watchId = navigator.geolocation.watchPosition(
-            async (position) => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
+        let firstUpdate = true;
 
-                driverMarker.setLatLng([lat, lng]);
-                map.setView([lat, lng], 15);
+        // Функция обновления позиции
+        const updatePosition = () => {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
 
-                await db.collection('drivers').doc(currentDriverId).update({
-                    'location.lat': lat,
-                    'location.lng': lng,
-                    'location.updatedAt': firebase.firestore.FieldValue.serverTimestamp()
-                });
+                    console.log(`📍 Обновление позиции: ${lat}, ${lng}`);
 
-                if (currentOrder && currentOrder.status !== 'completed') {
-                    updateRoute();
+                    driverMarker.setLatLng([lat, lng]);
+
+                    if (firstUpdate) {
+                        map.setView([lat, lng], 15);
+                        firstUpdate = false;
+                    }
+
+                    await db.collection('drivers').doc(currentDriverId).update({
+                        'location.lat': lat,
+                        'location.lng': lng,
+                        'location.updatedAt': firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    if (currentOrder && currentOrder.status !== 'completed') {
+                        updateRoute();
+                    }
+                },
+                (error) => {
+                    console.warn('⚠️ Ошибка геолокации:', error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 30000
                 }
-            },
-            (error) => {
-                console.warn('⚠️ Ошибка геолокации:', error);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 5000
-            }
-        );
+            );
+        };
+
+        // Первое обновление
+        updatePosition();
+
+        // Интервал 30 секунд
+        watchId = setInterval(updatePosition, LOCATION_UPDATE_INTERVAL);
     }
 
     // ============================================================
@@ -691,7 +755,7 @@
             actionsHtml = `
                 <div class="order-actions">
                     <button class="btn-action btn-navigate" onclick="navigateToClient()">
-                        🧭 Навигатор
+                        🧭 Навигатор (к клиенту)
                     </button>
                     <button class="btn-action btn-arrived" onclick="arrivedToClient()">
                         📍 Прибыл
@@ -856,6 +920,54 @@
     }
 
     // ============================================================
+    // НАВИГАЦИЯ ЧЕРЕЗ WAZE
+    // ============================================================
+    function openWaze(lat, lng, address) {
+        let url;
+        if (lat && lng) {
+            // По геокоординатам
+            url = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+        } else if (address) {
+            // По адресу
+            url = `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
+        } else {
+            alert('❌ Не удалось определить местоположение');
+            return;
+        }
+        window.open(url, '_blank');
+    }
+
+    function navigateToClient() {
+        if (!currentOrder) return;
+        const fromLat = currentOrder.client?.from?.lat || currentOrder.fromLat;
+        const fromLng = currentOrder.client?.from?.lng || currentOrder.fromLng;
+        const fromAddress = currentOrder.client?.from?.address || currentOrder.from;
+
+        if (fromLat && fromLng) {
+            openWaze(fromLat, fromLng, null);
+        } else if (fromAddress) {
+            openWaze(null, null, fromAddress);
+        } else {
+            alert('❌ Нет данных о местоположении клиента');
+        }
+    }
+
+    function navigateToDestination() {
+        if (!currentOrder) return;
+        const toLat = currentOrder.destination?.lat || currentOrder.toLat;
+        const toLng = currentOrder.destination?.lng || currentOrder.toLng;
+        const toAddress = currentOrder.destination?.address || currentOrder.to;
+
+        if (toLat && toLng) {
+            openWaze(toLat, toLng, null);
+        } else if (toAddress) {
+            openWaze(null, null, toAddress);
+        } else {
+            alert('❌ Нет данных о месте назначения');
+        }
+    }
+
+    // ============================================================
     // КНОПКИ ДЕЙСТВИЙ
     // ============================================================
 
@@ -891,28 +1003,6 @@
         }
     }
 
-    function navigateToClient() {
-        if (!currentOrder) return;
-        const fromLat = currentOrder.client?.from?.lat || currentOrder.fromLat;
-        const fromLng = currentOrder.client?.from?.lng || currentOrder.fromLng;
-
-        if (fromLat && fromLng) {
-            const url = `https://www.google.com/maps/dir/?api=1&destination=${fromLat},${fromLng}`;
-            window.open(url, '_blank');
-        }
-    }
-
-    function navigateToDestination() {
-        if (!currentOrder) return;
-        const toLat = currentOrder.destination?.lat || currentOrder.toLat;
-        const toLng = currentOrder.destination?.lng || currentOrder.toLng;
-
-        if (toLat && toLng) {
-            const url = `https://www.google.com/maps/dir/?api=1&destination=${toLat},${toLng}`;
-            window.open(url, '_blank');
-        }
-    }
-
     async function arrivedToClient() {
         if (!currentOrderId) return;
 
@@ -923,13 +1013,14 @@
                 dispatcherNote: 'Водитель прибыл к клиенту'
             });
             console.log('✅ Водитель прибыл к клиенту');
+            alert('✅ Вы прибыли к клиенту! Теперь следуйте к месту назначения.');
         } catch (error) {
             console.error('❌ Ошибка:', error);
         }
     }
 
     // ============================================================
-    // ЗАКАЗ ВЫПОЛНЕН
+    // ЗАКАЗ ВЫПОЛНЕН (списание, начисление, бонусы, комиссия)
     // ============================================================
     async function completeOrder() {
         if (!currentOrderId || !currentOrder) return;
@@ -938,10 +1029,13 @@
 
         try {
             const price = currentOrder.price?.base || currentOrder.price || 0;
-            const commission = price * 0.1;
+            const commission = price * 0.1; // 10% комиссия
             const driverEarn = price - commission;
+            const bonusPercent = 0.01; // 1% бонус для клиента
+            const bonusAmount = price * bonusPercent;
 
             await db.runTransaction(async (transaction) => {
+                // 1. КЛИЕНТ
                 const clientId = currentOrder.clientId;
                 const clientRef = db.collection('users').doc(clientId);
                 const clientDoc = await transaction.get(clientRef);
@@ -952,17 +1046,31 @@
                     throw new Error('Недостаточно средств у клиента');
                 }
 
+                // 2. ВОДИТЕЛЬ
                 const driverRef = db.collection('drivers').doc(currentDriverId);
                 const driverDoc = await transaction.get(driverRef);
                 if (!driverDoc.exists) return;
 
                 const driverBalance = driverDoc.data().balance || 0;
 
-                transaction.update(clientRef, {
+                // 3. ОБНОВЛЯЕМ КЛИЕНТА (списание)
+                const updateData = {
                     wallet: clientBalance - price,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                };
 
+                // Если клиент зарегистрирован (есть email) → начисляем бонус
+                if (clientDoc.data().email) {
+                    const currentBonuses = clientDoc.data().bonuses || 0;
+                    updateData.bonuses = currentBonuses + bonusAmount;
+                    updateData.bonusesAvailable = true;
+                    updateData.bonusesActivateAt = firebase.firestore.FieldValue.serverTimestamp();
+                    console.log(`💰 Бонус ${bonusAmount} ₪ начислен клиенту`);
+                }
+
+                transaction.update(clientRef, updateData);
+
+                // 4. ОБНОВЛЯЕМ ВОДИТЕЛЯ
                 transaction.update(driverRef, {
                     balance: driverBalance + driverEarn,
                     totalTrips: (driverDoc.data().totalTrips || 0) + 1,
@@ -972,6 +1080,7 @@
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
+                // 5. ТРАНЗАКЦИЯ
                 const txRef = db.collection('transactions').doc();
                 transaction.set(txRef, {
                     userId: clientId,
@@ -983,21 +1092,24 @@
                     status: 'completed',
                     commission: commission,
                     driverEarn: driverEarn,
+                    bonusAmount: clientDoc.data().email ? bonusAmount : 0,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
             });
 
+            // 6. ОБНОВЛЯЕМ СТАТУС ЗАКАЗА
             await db.collection('orders').doc(currentOrderId).update({
                 status: 'completed',
                 completedAt: firebase.firestore.FieldValue.serverTimestamp(),
                 finalPrice: price,
                 commission: commission,
                 driverEarn: driverEarn,
+                bonusAmount: bonusAmount,
                 dispatcherNote: 'Заказ выполнен'
             });
 
-            console.log(`✅ Заказ выполнен! Сумма: ${price} ₪, Комиссия: ${commission} ₪, Водитель: ${driverEarn} ₪`);
-            alert(`✅ Заказ выполнен!\n💰 Сумма: ${price} ₪\n📊 Комиссия: ${commission.toFixed(2)} ₪\n🚗 Водитель: ${driverEarn.toFixed(2)} ₪`);
+            console.log(`✅ Заказ выполнен! Сумма: ${price} ₪, Комиссия: ${commission} ₪, Водитель: ${driverEarn} ₪, Бонус: ${bonusAmount} ₪`);
+            alert(`✅ Заказ выполнен!\n💰 Сумма: ${price} ₪\n📊 Комиссия: ${commission.toFixed(2)} ₪\n🚗 Водитель: ${driverEarn.toFixed(2)} ₪\n🎁 Бонус клиенту: ${bonusAmount.toFixed(2)} ₪`);
 
         } catch (error) {
             console.error('❌ Ошибка выполнения заказа:', error);
@@ -1010,7 +1122,7 @@
     // ============================================================
     document.addEventListener('DOMContentLoaded', () => {
         initMap();
-        console.log('🚗 WHEEL Driver loaded with OpenStreetMap');
+        console.log('🚗 WHEEL Driver loaded');
     });
 </script>
 
