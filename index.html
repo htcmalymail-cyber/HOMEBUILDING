@@ -172,6 +172,12 @@
             font-weight: 600;
         }
 
+        .top-bar .user-balance {
+            color: #4ade80;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
         /* ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== */
         .lang-toggle {
             position: relative;
@@ -743,6 +749,9 @@
                 font-size: 11px;
                 padding: 4px 12px;
             }
+            .top-bar .user-balance {
+                font-size: 11px;
+            }
             .logo-icon {
                 margin-top: 10px;
                 width: 64px;
@@ -762,12 +771,13 @@
     <div class="phone-frame">
         <!-- ===== ВЕРХНЯЯ ПАНЕЛЬ ===== -->
         <div class="top-bar">
-            <!-- ЛЕВАЯ ЧАСТЬ: ВХОД -->
+            <!-- ЛЕВАЯ ЧАСТЬ: ВХОД / ИМЯ + БАЛАНС -->
             <div id="authSection" style="display:flex; align-items:center; gap:10px;">
                 <button class="auth-btn" id="loginBtn">🔑 Войти</button>
             </div>
-            <div id="userSection" style="display:none; display:flex; align-items:center; gap:10px;">
+            <div id="userSection" style="display:none; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                 <span style="color:#8899aa; font-size:13px;">👋 <span class="name" id="userName" style="color:#ffb000; font-weight:600;">Гость</span></span>
+                <span class="user-balance" id="userBalance">💰 0 ₪</span>
                 <button class="auth-btn" id="logoutBtn" style="font-size:11px; padding:4px 12px;">Выйти</button>
             </div>
 
@@ -1037,7 +1047,6 @@
             });
         });
 
-        // ==== СТАРЫЕ КНОПКИ ЯЗЫКОВ (для совместимости) ====
         document.querySelectorAll('.lang-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const lang = btn.getAttribute('data-lang');
@@ -1128,9 +1137,9 @@
             const authSection = document.getElementById('authSection');
             const userSection = document.getElementById('userSection');
             const userName = document.getElementById('userName');
+            const userBalance = document.getElementById('userBalance');
             const logoutBtn = document.getElementById('logoutBtn');
 
-            // Вкладки
             const tabBtns = document.querySelectorAll('.tabs button');
             const tabContents = document.querySelectorAll('.tab-content');
 
@@ -1186,7 +1195,7 @@
 
                     const auth = window.firebaseAuth;
                     const signIn = window.signInWithEmailAndPassword;
-                    const result = await signIn(auth, email, password);
+                    await signIn(auth, email, password);
 
                     successEl.textContent = '✅ Вход выполнен!';
                     successEl.classList.add('active');
@@ -1322,12 +1331,17 @@
                         if (userDoc.exists) {
                             const data = userDoc.data();
                             userName.textContent = data.fullName || user.displayName || 'Пользователь';
+                            // 🔥 ОТОБРАЖАЕМ БАЛАНС
+                            const wallet = data.wallet || 0;
+                            userBalance.textContent = `💰 ${wallet} ₪`;
                         } else {
                             userName.textContent = user.displayName || 'Пользователь';
+                            userBalance.textContent = '💰 0 ₪';
                         }
                     } catch (error) {
                         console.error('Error loading user data:', error);
                         userName.textContent = user.displayName || 'Пользователь';
+                        userBalance.textContent = '💰 0 ₪';
                     }
 
                     try {
