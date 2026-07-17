@@ -771,6 +771,7 @@
     <div class="phone-frame">
         <!-- ===== ВЕРХНЯЯ ПАНЕЛЬ ===== -->
         <div class="top-bar">
+            <!-- ЛЕВАЯ ЧАСТЬ: ВХОД/ВЫХОД -->
             <div id="authSection" style="display:flex; align-items:center; gap:10px;">
                 <button class="auth-btn" id="loginBtn">🔑 Войти</button>
             </div>
@@ -780,6 +781,7 @@
                 <button class="auth-btn" id="logoutBtn" style="font-size:11px; padding:4px 12px;">Выйти</button>
             </div>
 
+            <!-- ПРАВАЯ ЧАСТЬ: ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ -->
             <div class="lang-toggle">
                 <button class="lang-toggle-btn" id="langToggleBtn">🌐</button>
                 <div class="lang-dropdown" id="langDropdown">
@@ -1171,6 +1173,41 @@
                 }
             });
 
+            // ===== ФУНКЦИЯ ОБНОВЛЕНИЯ UI =====
+            async function updateUserUI(user) {
+                if (!user) {
+                    authSection.style.display = 'flex';
+                    userSection.style.display = 'none';
+                    return;
+                }
+
+                try {
+                    const db = window.firebaseDb;
+                    const doc = window.doc;
+                    const getDoc = window.getDoc;
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    
+                    if (userDoc.exists) {
+                        const data = userDoc.data();
+                        userName.textContent = data.fullName || user.displayName || 'Пользователь';
+                        userBalance.textContent = '💰 ' + (data.wallet || 0) + ' ₪';
+                        authSection.style.display = 'none';
+                        userSection.style.display = 'flex';
+                    } else {
+                        userName.textContent = user.displayName || 'Пользователь';
+                        userBalance.textContent = '💰 0 ₪';
+                        authSection.style.display = 'none';
+                        userSection.style.display = 'flex';
+                    }
+                } catch (error) {
+                    console.error('Error loading user data:', error);
+                    userName.textContent = user.displayName || 'Пользователь';
+                    userBalance.textContent = '💰 0 ₪';
+                    authSection.style.display = 'none';
+                    userSection.style.display = 'flex';
+                }
+            }
+
             // ===== ВХОД → ПЕРЕХОД НА CLIENT.HTML =====
             document.getElementById('loginSubmit').addEventListener('click', async function() {
                 const email = document.getElementById('loginEmail').value.trim();
@@ -1193,7 +1230,8 @@
 
                     const auth = window.firebaseAuth;
                     const signIn = window.signInWithEmailAndPassword;
-                    await signIn(auth, email, password);
+                    const userCredential = await signIn(auth, email, password);
+                    const user = userCredential.user;
 
                     successEl.textContent = '✅ Вход выполнен! Перенаправление...';
                     successEl.classList.add('active');
@@ -1314,45 +1352,7 @@
 
             onAuth(auth, async function(user) {
                 if (user) {
-                    authSection.style.display = 'none';
-                    userSection.style.display = 'flex';
-
-                    try {
-                        const db = window.firebaseDb;
-                        const doc = window.doc;
-                        const getDoc = window.getDoc;
-                        const userDoc = await getDoc(doc(db, 'users', user.uid));
-                        if (userDoc.exists) {
-                            const data = userDoc.data();
-                            userName.textContent = data.fullName || user.displayName || 'Пользователь';
-                            const wallet = data.wallet || 0;
-                            userBalance.textContent = `💰 ${wallet} ₪`;
-                        } else {
-                            userName.textContent = user.displayName || 'Пользователь';
-                            userBalance.textContent = '💰 0 ₪';
-                        }
-                    } catch (error) {
-                        console.error('Error loading user data:', error);
-                        userName.textContent = user.displayName || 'Пользователь';
-                        userBalance.textContent = '💰 0 ₪';
-                    }
-
-                    // Проверка на водителя
-                    try {
-                        const db = window.firebaseDb;
-                        const doc = window.doc;
-                        const getDoc = window.getDoc;
-                        const driverDoc = await getDoc(doc(db, 'drivers', user.uid));
-                        if (driverDoc.exists) {
-                            const driverData = driverDoc.data();
-                            document.getElementById('driverStatus').classList.add('active');
-                            document.getElementById('driverEmail').textContent = driverData.fullName || user.email;
-                            document.getElementById('driverBtn').style.display = 'none';
-                        }
-                    } catch (error) {
-                        console.error('Driver check error:', error);
-                    }
-
+                    await updateUserUI(user);
                 } else {
                     authSection.style.display = 'flex';
                     userSection.style.display = 'none';
