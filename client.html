@@ -8,7 +8,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { 
             getFirestore, 
             collection, 
@@ -43,7 +43,7 @@
         window.firebaseDb = db;
         window.firebaseAnalytics = analytics;
         window.onAuthStateChanged = onAuthStateChanged;
-        window.signOut = signOut;
+        window.signInAnonymously = signInAnonymously;
         window.collection = collection;
         window.addDoc = addDoc;
         window.serverTimestamp = serverTimestamp;
@@ -112,7 +112,7 @@
         }
         .header-left { display: flex; align-items: center; gap: 10px; }
         .header-center { flex: 1; display: flex; justify-content: center; }
-        .header-right { display: flex; align-items: center; gap: 12px; }
+        .header-right { display: flex; align-items: center; gap: 10px; }
 
         .back-btn {
             background: rgba(255,255,255,0.08);
@@ -138,38 +138,6 @@
             letter-spacing: 0.5px;
         }
         .header-title span { color: #ffb000; }
-
-        /* ===== ИМЯ И БАЛАНС ПОЛЬЗОВАТЕЛЯ ===== */
-        .user-info-display {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-        }
-        .user-info-display .user-name {
-            color: #ffb000;
-            font-weight: 600;
-        }
-        .user-info-display .user-balance {
-            color: #4ade80;
-            font-weight: 600;
-        }
-        .user-info-display .logout-btn {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.08);
-            color: #8899aa;
-            padding: 4px 12px;
-            border-radius: 30px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .user-info-display .logout-btn:hover {
-            background: rgba(255,180,0,0.15);
-            border-color: #ffb000;
-            color: #ffb000;
-        }
 
         .wallet-badge {
             background: rgba(255,180,0,0.15);
@@ -645,8 +613,6 @@
             }
             .header-title { font-size: 16px; }
             .wallet-badge { font-size: 12px; padding: 4px 12px; }
-            .user-info-display { font-size: 11px; gap: 6px; }
-            .user-info-display .logout-btn { font-size: 10px; padding: 3px 8px; }
         }
     </style>
 </head>
@@ -662,12 +628,6 @@
         </div>
         <div class="header-center"></div>
         <div class="header-right">
-            <!-- ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ (появляется после входа) -->
-            <div class="user-info-display" id="userInfoDisplay">
-                <span class="user-name" id="userNameDisplay">👋 Гость</span>
-                <span class="user-balance" id="userBalanceDisplay">💰 0 ₪</span>
-                <button class="logout-btn" id="logoutBtn">Выйти</button>
-            </div>
             <div class="wallet-badge" id="walletBtn">
                 <i>💰</i> <span id="walletDisplay">0</span> ₪
             </div>
@@ -772,84 +732,7 @@
 
 <script>
     // ============================================================
-    // 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-    // ============================================================
-    let currentUser = null;
-    let currentUserData = null;
-    let userDocRef = null;
-
-    // ============================================================
-    // 2. ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ
-    // ============================================================
-    async function loadUserData() {
-        const auth = window.firebaseAuth;
-        const user = auth.currentUser;
-        
-        const userNameDisplay = document.getElementById('userNameDisplay');
-        const userBalanceDisplay = document.getElementById('userBalanceDisplay');
-        const userInfoDisplay = document.getElementById('userInfoDisplay');
-
-        if (!user) {
-            userNameDisplay.textContent = '👋 Гость';
-            userBalanceDisplay.textContent = '💰 0 ₪';
-            userInfoDisplay.style.display = 'none';
-            return;
-        }
-
-        try {
-            const db = window.firebaseDb;
-            const doc = window.doc;
-            const getDoc = window.getDoc;
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            
-            if (userDoc.exists) {
-                const data = userDoc.data();
-                currentUserData = data;
-                const name = data.fullName || user.displayName || 'Пользователь';
-                const wallet = data.wallet || 0;
-                
-                userNameDisplay.textContent = '👋 ' + name;
-                userBalanceDisplay.textContent = '💰 ' + wallet + ' ₪';
-                userInfoDisplay.style.display = 'flex';
-                userDocRef = doc(db, 'users', user.uid);
-                
-                // Обновляем кошелёк
-                document.getElementById('walletDisplay').textContent = wallet.toFixed(0);
-                document.getElementById('modalBalance').textContent = wallet.toFixed(0);
-                document.getElementById('bonusDisplay').textContent = (data.bonuses || 0).toFixed(2);
-                document.getElementById('userInfo').textContent = '👤 ' + name;
-                
-                console.log('✅ Данные пользователя загружены:', data);
-            } else {
-                userNameDisplay.textContent = '👋 Гость';
-                userBalanceDisplay.textContent = '💰 0 ₪';
-                userInfoDisplay.style.display = 'none';
-                console.warn('⚠️ Документ пользователя не найден');
-            }
-        } catch (error) {
-            console.error('❌ Ошибка загрузки данных пользователя:', error);
-            userNameDisplay.textContent = '👋 Гость';
-            userBalanceDisplay.textContent = '💰 0 ₪';
-            userInfoDisplay.style.display = 'none';
-        }
-    }
-
-    // ============================================================
-    // 3. ВЫХОД
-    // ============================================================
-    document.getElementById('logoutBtn').addEventListener('click', async function() {
-        try {
-            const auth = window.firebaseAuth;
-            const signOut = window.signOut;
-            await signOut(auth);
-            window.location.href = 'index.html';
-        } catch (error) {
-            console.error('❌ Ошибка выхода:', error);
-        }
-    });
-
-    // ============================================================
-    // 4. КАРТА
+    // 1. КАРТА
     // ============================================================
     const map = L.map('map', {
         center: [32.0853, 34.7818],
@@ -863,7 +746,7 @@
     }).addTo(map);
 
     // ============================================================
-    // 5. МАРКЕРЫ
+    // 2. МАРКЕРЫ
     // ============================================================
     const clientIcon = L.divIcon({
         html: '<div class="marker-client"></div>',
@@ -890,7 +773,7 @@
     let routeControl = null;
 
     // ============================================================
-    // 6. ГЕОЛОКАЦИЯ
+    // 3. ГЕОЛОКАЦИЯ
     // ============================================================
     function getCurrentPosition() {
         showStatus('⏳ Определяем ваше местоположение...', 'info');
@@ -930,7 +813,7 @@
     document.getElementById('geoFromBtn').addEventListener('click', getCurrentPosition);
 
     // ============================================================
-    // 7. ПОСТРОЕНИЕ МАРШРУТА
+    // 4. ПОСТРОЕНИЕ МАРШРУТА
     // ============================================================
     function calculatePriceWithRange(distanceKm) {
         const baseFare = 25;
@@ -1018,7 +901,7 @@
     document.getElementById('swapBtn').addEventListener('click', swapAddresses);
 
     // ============================================================
-    // 8. ПОСТРОЕНИЕ МАРШРУТА (ПРОДОЛЖЕНИЕ)
+    // 5. ПОСТРОЕНИЕ МАРШРУТА (ПРОДОЛЖЕНИЕ)
     // ============================================================
     document.getElementById('buildRouteBtn').addEventListener('click', function() {
         const fromInput = document.getElementById('fromInput');
@@ -1096,8 +979,36 @@
     });
 
     // ============================================================
-    // 9. КОШЕЛЁК
+    // 6. КОШЕЛЁК (Firebase)
     // ============================================================
+    let currentUser = null;
+    let userDocRef = null;
+
+    async function initUserWallet(uid) {
+        const db = window.firebaseDb;
+        const docFn = window.doc;
+        const getDocFn = window.getDoc;
+        const setDocFn = window.setDoc;
+
+        const userRef = docFn(db, 'users', uid);
+        userDocRef = userRef;
+
+        const docSnap = await getDocFn(userRef);
+
+        if (!docSnap.exists()) {
+            await setDocFn(userRef, {
+                wallet: 0,
+                bonuses: 0,
+                bonusesAvailable: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            });
+            console.log('🆕 Создан кошелёк для:', uid);
+        }
+
+        return userRef;
+    }
+
     async function getWalletData() {
         if (!userDocRef) return null;
         const getDocFn = window.getDoc;
@@ -1116,13 +1027,6 @@
             document.getElementById('walletDisplay').textContent = wallet.toFixed(0);
             document.getElementById('modalBalance').textContent = wallet.toFixed(0);
             document.getElementById('bonusDisplay').textContent = bonuses.toFixed(2);
-            
-            // Обновляем отображение в верхней панели
-            const auth = window.firebaseAuth;
-            const user = auth.currentUser;
-            if (user) {
-                document.getElementById('userBalanceDisplay').textContent = '💰 ' + wallet.toFixed(0) + ' ₪';
-            }
         }
     }
 
@@ -1169,7 +1073,7 @@
     });
 
     // ============================================================
-    // 10. СОЗДАНИЕ ЗАКАЗА
+    // 7. СОЗДАНИЕ ЗАКАЗА
     // ============================================================
     document.getElementById('orderBtn').addEventListener('click', async function() {
         const fromInput = document.getElementById('fromInput');
@@ -1230,8 +1134,8 @@
                 status: 'waiting',
                 clientId: user ? user.uid : 'anonymous',
                 client: {
-                    name: currentUserData?.fullName || 'Гость',
-                    phone: currentUserData?.phone || null,
+                    name: 'Гость',
+                    phone: null,
                     from: {
                         lat: fromLat,
                         lng: fromLng,
@@ -1275,7 +1179,7 @@
             const docRef = await addDocFn(ordersRef, orderData);
 
             // Начисляем бонус (если пользователь зарегистрирован)
-            if (user && currentUserData) {
+            if (user) {
                 const bonusAmount = price * 0.01;
                 const updateDocFn2 = window.updateDoc;
                 const incrementFn2 = window.increment;
@@ -1325,7 +1229,7 @@
     });
 
     // ============================================================
-    // 11. АВТОРИЗАЦИЯ
+    // 8. АВТОРИЗАЦИЯ
     // ============================================================
     async function initFirebaseAuth() {
         const auth = window.firebaseAuth;
@@ -1335,24 +1239,19 @@
             if (user) {
                 currentUser = user;
                 console.log('✅ Авторизован:', user.uid);
-                userDocRef = window.doc(window.firebaseDb, 'users', user.uid);
-                await loadUserData();
+                await initUserWallet(user.uid);
                 await updateWalletUI();
+                document.getElementById('userInfo').textContent = `🔑 ID: ${user.uid.slice(0, 12)}...`;
             } else {
                 currentUser = null;
-                currentUserData = null;
-                userDocRef = null;
                 console.log('❌ Не авторизован');
-                document.getElementById('userNameDisplay').textContent = '👋 Гость';
-                document.getElementById('userBalanceDisplay').textContent = '💰 0 ₪';
                 document.getElementById('userInfo').textContent = '🔑 Анонимный пользователь';
-                document.getElementById('userInfoDisplay').style.display = 'none';
             }
         });
     }
 
     // ============================================================
-    // 12. ЗАПУСК
+    // 9. ЗАПУСК
     // ============================================================
     window.addEventListener('load', () => {
         initFirebaseAuth();
