@@ -101,7 +101,6 @@
             overflow: hidden;
         }
 
-        /* ===== HEADER ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -111,9 +110,13 @@
             z-index: 20;
         }
         .header-left { display: flex; align-items: center; gap: 10px; }
-        .header-center { flex: 1; display: flex; justify-content: center; }
-        .header-right { display: flex; align-items: center; gap: 10px; }
-
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
+        .header-title span { color: #ffb000; }
         .back-btn {
             background: rgba(255,255,255,0.08);
             border: none;
@@ -131,14 +134,6 @@
         }
         .back-btn:hover { background: rgba(255,255,255,0.15); }
 
-        .header-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 0.5px;
-        }
-        .header-title span { color: #ffb000; }
-
         .wallet-badge {
             background: rgba(255,180,0,0.15);
             border: 1px solid rgba(255,180,0,0.2);
@@ -155,7 +150,6 @@
         }
         .wallet-badge:hover { background: rgba(255,180,0,0.25); }
 
-        /* ===== КАРТА ===== */
         #map {
             flex: 1;
             width: 100%;
@@ -301,6 +295,7 @@
         }
         .address-input .geo-btn:hover { transform: scale(1.15); }
 
+        /* ===== ПОДСКАЗКИ ===== */
         .suggestions-list {
             position: absolute;
             top: 100%;
@@ -626,11 +621,8 @@
             <a href="index.html" class="back-btn">←</a>
             <div class="header-title">WHEEL <span>TAXI</span></div>
         </div>
-        <div class="header-center"></div>
-        <div class="header-right">
-            <div class="wallet-badge" id="walletBtn">
-                <i>💰</i> <span id="walletDisplay">0</span> ₪
-            </div>
+        <div class="wallet-badge" id="walletBtn">
+            <i>💰</i> <span id="walletDisplay">0</span> ₪
         </div>
     </div>
 
@@ -643,6 +635,7 @@
             <i class="fas fa-route"></i> Куда едем?
         </div>
 
+        <!-- Откуда -->
         <div class="address-group" id="fromGroup">
             <label><span class="dot-green">●</span> Откуда</label>
             <div class="address-input">
@@ -655,12 +648,14 @@
             <div class="suggestions-list" id="fromSuggestions"></div>
         </div>
 
+        <!-- Swap -->
         <div class="swap-row">
             <button class="swap-btn" id="swapBtn">
                 <i class="fas fa-arrow-up-arrow-down"></i> Поменять
             </button>
         </div>
 
+        <!-- Куда -->
         <div class="address-group" id="toGroup">
             <label><span class="dot-red">●</span> Куда</label>
             <div class="address-input">
@@ -670,6 +665,7 @@
             <div class="suggestions-list" id="toSuggestions"></div>
         </div>
 
+        <!-- Информация о поездке -->
         <div class="trip-info" id="tripInfo">
             <div class="row">
                 <div class="distance">
@@ -690,6 +686,7 @@
             </div>
         </div>
 
+        <!-- Кнопки -->
         <div class="action-buttons">
             <button class="btn-primary" id="buildRouteBtn">
                 <i class="fas fa-map"></i> Построить маршрут
@@ -813,7 +810,118 @@
     document.getElementById('geoFromBtn').addEventListener('click', getCurrentPosition);
 
     // ============================================================
-    // 4. ПОСТРОЕНИЕ МАРШРУТА
+    // 4. АВТОДОПОЛНЕНИЕ АДРЕСОВ (Nominatim)
+    // ============================================================
+    async function getAddressSuggestions(query) {
+        if (!query || query.length < 2) return [];
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&accept-language=ru&addressdetails=1`;
+            const response = await fetch(url);
+            const data = await response.json();
+            return data.map(item => ({
+                display_name: item.display_name,
+                lat: parseFloat(item.lat),
+                lng: parseFloat(item.lon),
+            }));
+        } catch (error) {
+            console.error('Suggestions error:', error);
+            return [];
+        }
+    }
+
+    function showSuggestions(inputId, suggestions) {
+        const listId = inputId === 'fromInput' ? 'fromSuggestions' : 'toSuggestions';
+        const list = document.getElementById(listId);
+        const input = document.getElementById(inputId);
+        
+        if (!suggestions || suggestions.length === 0) {
+            list.classList.remove('active');
+            list.innerHTML = '';
+            return;
+        }
+
+        list.innerHTML = '';
+        suggestions.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'suggestion-item';
+            
+            const query = input.value.toLowerCase();
+            const displayName = item.display_name;
+            const index = displayName.toLowerCase().indexOf(query);
+            let highlighted = displayName;
+            if (index !== -1 && query.length > 1) {
+                const before = displayName.substring(0, index);
+                const match = displayName.substring(index, index + query.length);
+                const after = displayName.substring(index + query.length);
+                highlighted = before + '<span class="highlight">' + match + '</span>' + after;
+            }
+            
+            div.innerHTML = `📍 ${highlighted}`;
+            div.dataset.lat = item.lat;
+            div.dataset.lng = item.lng;
+            div.dataset.address = item.display_name;
+            
+            div.addEventListener('click', () => {
+                input.value = item.display_name;
+                input.dataset.lat = item.lat;
+                input.dataset.lng = item.lng;
+                input.dataset.address = item.display_name;
+                list.classList.remove('active');
+                list.innerHTML = '';
+                
+                if (inputId === 'toInput') {
+                    buildRoute();
+                }
+            });
+            
+            list.appendChild(div);
+        });
+        
+        list.classList.add('active');
+    }
+
+    // ============================================================
+    // 5. ОБРАБОТЧИКИ ВВОДА
+    // ============================================================
+    let fromTimeout = null;
+    let toTimeout = null;
+
+    document.getElementById('fromInput').addEventListener('input', function() {
+        clearTimeout(fromTimeout);
+        const query = this.value;
+        if (query.length < 2) {
+            document.getElementById('fromSuggestions').classList.remove('active');
+            return;
+        }
+        fromTimeout = setTimeout(async () => {
+            const suggestions = await getAddressSuggestions(query);
+            showSuggestions('fromInput', suggestions);
+        }, 300);
+    });
+
+    document.getElementById('toInput').addEventListener('input', function() {
+        clearTimeout(toTimeout);
+        const query = this.value;
+        if (query.length < 2) {
+            document.getElementById('toSuggestions').classList.remove('active');
+            return;
+        }
+        toTimeout = setTimeout(async () => {
+            const suggestions = await getAddressSuggestions(query);
+            showSuggestions('toInput', suggestions);
+        }, 300);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.address-group')) {
+            document.querySelectorAll('.suggestions-list').forEach(el => {
+                el.classList.remove('active');
+            });
+        }
+    });
+
+    // ============================================================
+    // 6. ПОСТРОЕНИЕ МАРШРУТА
     // ============================================================
     function calculatePriceWithRange(distanceKm) {
         const baseFare = 25;
@@ -901,9 +1009,9 @@
     document.getElementById('swapBtn').addEventListener('click', swapAddresses);
 
     // ============================================================
-    // 5. ПОСТРОЕНИЕ МАРШРУТА (ПРОДОЛЖЕНИЕ)
+    // 7. ПОСТРОЕНИЕ МАРШРУТА (ГЛАВНАЯ ФУНКЦИЯ)
     // ============================================================
-    document.getElementById('buildRouteBtn').addEventListener('click', function() {
+    async function buildRoute() {
         const fromInput = document.getElementById('fromInput');
         const toInput = document.getElementById('toInput');
 
@@ -976,10 +1084,12 @@
             showStatus('❌ Не удалось построить маршрут', 'error');
             console.error('Routing error:', e);
         });
-    });
+    }
+
+    document.getElementById('buildRouteBtn').addEventListener('click', buildRoute);
 
     // ============================================================
-    // 6. КОШЕЛЁК (Firebase)
+    // 8. КОШЕЛЁК
     // ============================================================
     let currentUser = null;
     let userDocRef = null;
@@ -1073,7 +1183,7 @@
     });
 
     // ============================================================
-    // 7. СОЗДАНИЕ ЗАКАЗА
+    // 9. СОЗДАНИЕ ЗАКАЗА
     // ============================================================
     document.getElementById('orderBtn').addEventListener('click', async function() {
         const fromInput = document.getElementById('fromInput');
@@ -1229,7 +1339,7 @@
     });
 
     // ============================================================
-    // 8. АВТОРИЗАЦИЯ
+    // 10. АВТОРИЗАЦИЯ
     // ============================================================
     async function initFirebaseAuth() {
         const auth = window.firebaseAuth;
@@ -1251,7 +1361,7 @@
     }
 
     // ============================================================
-    // 9. ЗАПУСК
+    // 11. ЗАПУСК
     // ============================================================
     window.addEventListener('load', () => {
         initFirebaseAuth();
