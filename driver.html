@@ -4,13 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🚕 Taxi – Водитель</title>
-  <!-- Google Maps API (вставьте ваш ключ) -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE&libraries=places&callback=initMap" async defer></script>
-  <!-- Firebase -->
+  <!-- ===== ВСТАВЬТЕ ВАШ API-КЛЮЧ ===== -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvhiWw94K3ysl0QIMMhtzd0uAk2cgcGYQ" async defer></script>
+  <!-- ================================= -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <style>
+    /* Ваш дизайн (оставьте как есть) — я привожу минимальный набор стилей,
+       но вы можете использовать свои. */
     * { box-sizing: border-box; }
     body { font-family: 'Segoe UI', system-ui, sans-serif; margin:0; padding:20px; background:#f0f2f5; color:#1b2a3a; }
     .container { max-width:1300px; margin:0 auto; }
@@ -55,7 +57,6 @@
 </head>
 <body>
 <div class="container">
-  <!-- Навигация -->
   <div class="nav">
     <a href="index.html">🏠 Главная</a>
     <a href="client.html">🚕 Клиент</a>
@@ -65,7 +66,6 @@
   </div>
   <h1>🚗 Водитель</h1>
 
-  <!-- Регистрация/вход -->
   <div id="auth-section" class="card">
     <h3>📝 Регистрация / Вход</h3>
     <div class="flex-row">
@@ -88,7 +88,6 @@
     </div>
   </div>
 
-  <!-- Интерфейс водителя -->
   <div id="driver-section" class="hidden">
     <div class="card">
       <div class="driver-info-card">
@@ -153,17 +152,13 @@
   let directionsRenderer = null;
   let watchId = null;
   let orderUnsubscribe = null;
-  let currentClientLat = null;
-  let currentClientLng = null;
-  let currentDriverLat = 32.0853;
-  let currentDriverLng = 34.7818;
-  let currentRouteToLat = null;
-  let currentRouteToLng = null;
+  let currentClientLat = null, currentClientLng = null;
+  let currentDriverLat = 32.0853, currentDriverLng = 34.7818;
+  let currentRouteToLat = null, currentRouteToLng = null;
   let activeOrderId = null;
 
-  // ========== НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ПРИБЫТИЯ ==========
+  // Для прибытия
   let arrivalWatchId = null;
-  let arrivalOrderId = null;
   let waitingTimerId = null;
   const ARRIVAL_THRESHOLD = 100; // метров
 
@@ -173,7 +168,6 @@
       currentUser = user;
       document.getElementById('user-status').innerHTML = '✅ Вошёл: ' + user.email;
       document.getElementById('user-email').textContent = '👤 ' + user.email;
-      
       try {
         await loadUserData();
         if (currentUserData && currentUserData.role === 'driver') {
@@ -222,8 +216,8 @@
               available: data.available !== undefined ? data.available : true,
               lat: data.lat || 32.0853,
               lng: data.lng || 34.7818,
-              role: 'driver',
-              balance: 0
+              balance: 0,
+              role: 'driver'
             });
           } else {
             currentUserData = { role: 'client' };
@@ -240,7 +234,6 @@
     document.getElementById('driver-phone-display').textContent = currentUserData.phone || '—';
     updateDriverStatusDisplay();
     updateDriverLocationDisplay();
-    
     setTimeout(() => {
       initMap();
       listenDriverOrders();
@@ -270,15 +263,9 @@
     auth.createUserWithEmailAndPassword(email, password)
       .then(cred => {
         return db.collection('drivers').doc(cred.user.uid).set({
-          email: email,
-          fullName: fullName,
-          passportId: passportId,
-          carModel: carModel,
-          carNumber: carNumber,
-          phone: phone,
+          email, fullName, passportId, carModel, carNumber, phone,
           available: true,
-          lat: 32.0853,
-          lng: 34.7818,
+          lat: 32.0853, lng: 34.7818,
           balance: 0,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           role: 'driver'
@@ -328,7 +315,7 @@
       updateDriverMarker(currentUserData.lat, currentUserData.lng);
       map.setCenter({ lat: currentUserData.lat, lng: currentUserData.lng });
     }
-    console.log('🗺️ Google Maps для водителя инициализирована');
+    console.log('🗺️ Карта водителя инициализирована');
   };
 
   function updateDriverMarker(lat, lng) {
@@ -355,7 +342,6 @@
     });
     currentClientLat = lat;
     currentClientLng = lng;
-    // Показываем маршрут к клиенту
     showRouteToClient(lat, lng);
   }
 
@@ -475,7 +461,6 @@
     if (orderUnsubscribe) orderUnsubscribe();
     if (!currentUser) return;
 
-    // Активные заказы
     orderUnsubscribe = db.collection('orders')
       .where('driverId', '==', currentUser.uid)
       .where('status', 'in', ['assigned', 'accepted', 'started', 'arrived'])
@@ -483,7 +468,6 @@
         renderOrders(snapshot);
       }, error => console.error('Ошибка прослушки активных заказов:', error));
 
-    // Предложения
     db.collection('orders')
       .where('status', '==', 'offering')
       .onSnapshot(snapshot => {
@@ -499,7 +483,6 @@
   }
 
   function renderOrders(snapshot) {
-    // Очищаем список заказов
     const container = document.getElementById('driver-orders-list');
     container.innerHTML = '<div style="font-weight:600; margin:5px 0;">📋 Активные заказы</div>';
     let hasActive = false;
@@ -520,7 +503,7 @@
         ${data.aiNote ? ' | ' + data.aiNote : ''}
       `;
 
-      // ===== НОВЫЙ БЛОК ДЛЯ ПРИБЫТИЯ =====
+      // Место для кнопки прибытия и таймера
       if (data.status === 'accepted') {
         html += `<div id="arrival-container-${orderId}"></div>`;
       }
@@ -531,17 +514,15 @@
       orderDiv.innerHTML = html;
       container.appendChild(orderDiv);
 
-      // ===== ЗАПУСК ОТСЛЕЖИВАНИЯ ДЛЯ accepted =====
+      // Запуск отслеживания прибытия
       if (data.status === 'accepted') {
         startArrivalTracking(orderId, data.fromLat, data.fromLng);
       }
-
-      // ===== ЗАПУСК ТАЙМЕРА ДЛЯ arrived =====
       if (data.status === 'arrived') {
         startWaitingTimer(orderId);
       }
 
-      // Показываем клиента на карте
+      // Обновление маркера клиента
       if (data.fromLat && data.fromLng) {
         updateClientMarker(data.fromLat, data.fromLng, data.clientName || data.clientEmail);
         if (data.toLat && data.toLng) {
@@ -560,7 +541,6 @@
       document.getElementById('waze-to-client').style.display = 'none';
       document.getElementById('waze-to-route').style.display = 'none';
       if (directionsRenderer) directionsRenderer.setMap(null);
-      // Остановить отслеживание и таймеры, если они есть
       if (arrivalWatchId) { navigator.geolocation.clearWatch(arrivalWatchId); arrivalWatchId = null; }
       if (waitingTimerId) { clearInterval(waitingTimerId); waitingTimerId = null; }
     }
@@ -589,7 +569,6 @@
   // ==================== ПРИНЯТЬ ЗАКАЗ ====================
   function acceptOrder(orderId) {
     if (!currentUser) { alert('Войдите!'); return; }
-
     db.collection('orders').doc(orderId).get()
       .then(doc => {
         if (!doc.exists) { alert('❌ Заказ не найден'); return; }
@@ -602,7 +581,6 @@
           alert('❌ Вам не предложен этот заказ');
           return;
         }
-
         return db.collection('orders').doc(orderId).update({
           status: 'accepted',
           driverId: currentUser.uid,
@@ -615,9 +593,7 @@
         });
       })
       .then(() => {
-        return db.collection('drivers').doc(currentUser.uid).update({
-          available: false
-        });
+        return db.collection('drivers').doc(currentUser.uid).update({ available: false });
       })
       .then(() => {
         alert('✅ Заказ принят! Поездка началась.');
@@ -630,7 +606,6 @@
   // ==================== ЗАВЕРШИТЬ ЗАКАЗ ====================
   function completeOrder() {
     if (!currentUser) { alert('Войдите!'); return; }
-
     db.collection('orders')
       .where('driverId', '==', currentUser.uid)
       .where('status', 'in', ['assigned', 'accepted', 'started'])
@@ -642,28 +617,21 @@
         const doc = snapshot.docs[0];
         const orderData = doc.data();
         const orderId = doc.id;
-
         return db.collection('orders').doc(orderId).update({
           status: 'completed',
           aiNote: 'Завершён водителем',
           completedAt: firebase.firestore.FieldValue.serverTimestamp()
         })
-        .then(() => {
-          return db.collection('drivers').doc(currentUser.uid).update({
-            available: true
-          });
-        })
+        .then(() => db.collection('drivers').doc(currentUser.uid).update({ available: true }))
         .then(() => {
           if (currentUserData) currentUserData.available = true;
           updateDriverStatusDisplay();
-          return calculateAndAddBonus(orderId, orderData);
-        })
-        .then(() => {
+          // Бонус клиенту
+          calculateAndAddBonus(orderId, orderData);
           alert('✅ Заказ завершён! Бонус начислен клиенту.');
           document.getElementById('waze-to-client').style.display = 'none';
           document.getElementById('waze-to-route').style.display = 'none';
           if (directionsRenderer) directionsRenderer.setMap(null);
-          // Остановить отслеживание и таймеры
           if (arrivalWatchId) { navigator.geolocation.clearWatch(arrivalWatchId); arrivalWatchId = null; }
           if (waitingTimerId) { clearInterval(waitingTimerId); waitingTimerId = null; }
         });
@@ -672,20 +640,18 @@
   }
 
   // ============================================================
-  // ФУНКЦИИ ДЛЯ ПРИБЫТИЯ ВОДИТЕЛЯ
+  // ПРИБЫТИЕ ВОДИТЕЛЯ (гибридное)
   // ============================================================
-
   function startArrivalTracking(orderId, targetLat, targetLng) {
     if (arrivalWatchId) {
       navigator.geolocation.clearWatch(arrivalWatchId);
       arrivalWatchId = null;
     }
-    arrivalOrderId = orderId;
 
     function checkDistance(position) {
       const driverLat = position.coords.latitude;
       const driverLng = position.coords.longitude;
-      const distance = getDistance(driverLat, driverLng, targetLat, targetLng) * 1000; // в метрах
+      const distance = getDistance(driverLat, driverLng, targetLat, targetLng) * 1000; // метры
 
       const container = document.getElementById('arrival-container-' + orderId);
       if (!container) return;
@@ -812,9 +778,8 @@
   }
 
   // ============================================================
-  // ТАЙМЕР ОЖИДАНИЯ КЛИЕНТА И АВТООТМЕНА
+  // ТАЙМЕР ОЖИДАНИЯ И АВТООТМЕНА
   // ============================================================
-
   function startWaitingTimer(orderId) {
     const WAITING_TIME = 5 * 60; // 5 минут
     let remaining = WAITING_TIME;
@@ -855,7 +820,6 @@
             alert('⏰ Клиент не появился. Заказ отменён. Компенсация начислена.');
             const timerDisplay = document.getElementById('timer-' + orderId);
             if (timerDisplay) timerDisplay.remove();
-            // Убираем кнопку прибытия, если осталась
             const btn = document.getElementById('arrive-btn-' + orderId);
             if (btn) btn.style.display = 'none';
           });
@@ -897,7 +861,7 @@
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 
-  // Бонус (существующая функция, оставлена для полноты)
+  // Бонус (существующая функция)
   async function calculateAndAddBonus(orderId, orderData) {
     const clientId = orderData.clientId;
     if (!clientId || clientId.startsWith('guest-')) return;
@@ -909,7 +873,7 @@
     }
     if (distanceKm < MIN_DISTANCE) {
       await db.collection('ai_logs').add({
-        orderId: orderId,
+        orderId,
         decision: `Бонус не начислен (дистанция ${distanceKm.toFixed(2)} км < ${MIN_DISTANCE} км)`,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -932,17 +896,14 @@
         }, { merge: true });
         const transRef = db.collection('bonus_transactions').doc();
         transaction.set(transRef, {
-          clientId: clientId,
-          orderId: orderId,
-          type: 'earned',
-          amount: bonusAmount,
+          clientId, orderId, type: 'earned', amount: bonusAmount,
           description: `2% бонус за поездку (${distanceKm.toFixed(1)} км, ${orderData.price}₪)`,
           timestamp: firebase.firestore.FieldValue.serverTimestamp(),
           status: 'completed'
         });
       });
       await db.collection('ai_logs').add({
-        orderId: orderId,
+        orderId,
         decision: `Начислен бонус ${bonusAmount}₪ клиенту (2% от ${orderData.price}₪)`,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
