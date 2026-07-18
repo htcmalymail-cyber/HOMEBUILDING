@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
@@ -22,7 +21,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
     <style>
-        /* ... (стили без изменений, оставьте как было) ... */
+        /* (стили без изменений) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -419,58 +418,30 @@
     let currentDriverId = null;
     let driverData = null;
     let watchId = null;
-    let orderUnsubscribe = null;   // для отписки от слушателей
+    let orderUnsubscribe = null;
 
     const LOCATION_UPDATE_INTERVAL = 30000;
 
-    // Иконки
-    const driverIcon = L.divIcon({
-        html: '🚗',
-        className: '',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-    });
-    const clientIcon = L.divIcon({
-        html: '<div class="marker-client"></div>',
-        className: '',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
-    });
-    const destinationIcon = L.divIcon({
-        html: '<div class="marker-destination"></div>',
-        className: '',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-    });
+    const driverIcon = L.divIcon({ html: '🚗', className: '', iconSize: [32, 32], iconAnchor: [16, 16] });
+    const clientIcon = L.divIcon({ html: '<div class="marker-client"></div>', className: '', iconSize: [20, 20], iconAnchor: [10, 10] });
+    const destinationIcon = L.divIcon({ html: '<div class="marker-destination"></div>', className: '', iconSize: [16, 16], iconAnchor: [8, 8] });
 
     // ============================================================
     // ИНИЦИАЛИЗАЦИЯ КАРТЫ
     // ============================================================
     function initMap() {
-        map = L.map('map', {
-            center: [32.0853, 34.7818],
-            zoom: 13,
-            zoomControl: false,
-        });
+        map = L.map('map', { center: [32.0853, 34.7818], zoom: 13, zoomControl: false });
         L.control.zoom({ position: 'bottomright' }).addTo(map);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap',
-            maxZoom: 19,
-        }).addTo(map);
-
-        driverMarker = L.marker([32.0853, 34.7818], { icon: driverIcon })
-            .addTo(map)
-            .bindPopup('🚗 Вы здесь');
-
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(map);
+        driverMarker = L.marker([32.0853, 34.7818], { icon: driverIcon }).addTo(map).bindPopup('🚗 Вы здесь');
+        document.getElementById('centerMapBtn').addEventListener('click', () => {
+            if (driverMarker) {
+                const pos = driverMarker.getLatLng();
+                map.setView(pos, 15);
+            }
+        });
         console.log('🗺️ Карта инициализирована');
     }
-
-    document.getElementById('centerMapBtn').addEventListener('click', () => {
-        if (driverMarker) {
-            const pos = driverMarker.getLatLng();
-            map.setView(pos, 15);
-        }
-    });
 
     // ============================================================
     // АВТОРИЗАЦИЯ
@@ -482,7 +453,7 @@
             await loadDriverData();
             if (driverData) {
                 updateUI();
-                listenForOrders();    // <- теперь слушаем все заказы
+                listenForOrders();
                 startTrackingLocation();
             } else {
                 console.error('❌ Водитель не найден в базе');
@@ -490,9 +461,7 @@
             }
         } else {
             console.warn('⏳ Водитель не авторизован, перенаправление...');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 2000);
+            setTimeout(() => window.location.href = 'index.html', 2000);
         }
     });
 
@@ -581,7 +550,7 @@
     }
 
     // ============================================================
-    // СТАТУС (с обновлением available)
+    // СТАТУС
     // ============================================================
     document.getElementById('statusOnlineBtn').addEventListener('click', async () => {
         await updateDriverStatus('online', true);
@@ -614,7 +583,6 @@
             console.warn('⚠️ Геолокация не поддерживается');
             return;
         }
-
         let firstUpdate = true;
         const updatePosition = () => {
             navigator.geolocation.getCurrentPosition(
@@ -645,36 +613,23 @@
     }
 
     // ============================================================
-    // СЛУШАТЕЛЬ ЗАКАЗОВ (исправлен)
+    // СЛУШАТЕЛЬ ЗАКАЗОВ
     // ============================================================
     function listenForOrders() {
-        // Отписываемся от старых слушателей
         if (orderUnsubscribe) {
             orderUnsubscribe();
             orderUnsubscribe = null;
         }
 
-        // Слушаем заказы, где:
-        // 1) driverId == currentDriverId (уже назначенные)
-        // 2) offeredTo содержит currentDriverId (предложения)
-        // 3) driverId == null (свободные, но не предлагаемые – не будем их слушать, иначе много лишних)
-        // Вместо сложных запросов с OR используем два слушателя и объединяем результаты.
-        // Это проще и не требует индексов.
-
-        let ordersMap = new Map(); // ключ - orderId, значение - данные
+        let ordersMap = new Map();
 
         function updateOrder(orderId, data) {
-            if (data) {
-                ordersMap.set(orderId, data);
-            } else {
-                ordersMap.delete(orderId);
-            }
-            // Выбираем самый приоритетный заказ (если есть назначенный – его, иначе первое предложение)
+            if (data) ordersMap.set(orderId, data);
+            else ordersMap.delete(orderId);
             let selectedOrder = null;
             let selectedId = null;
             for (let [id, order] of ordersMap) {
                 if (order.driverId === currentDriverId) {
-                    // Если есть заказ, где driverId = мы – он главный
                     selectedOrder = order;
                     selectedId = id;
                     break;
@@ -698,43 +653,27 @@
             }
         }
 
-        // Слушатель 1: заказы, где driverId == currentDriverId
         const unsub1 = db.collection('orders')
             .where('driverId', '==', currentDriverId)
             .onSnapshot(snapshot => {
                 snapshot.docChanges().forEach(change => {
                     const id = change.doc.id;
                     const data = change.doc.data();
-                    if (change.type === 'removed') {
-                        updateOrder(id, null);
-                    } else {
-                        updateOrder(id, data);
-                    }
+                    updateOrder(id, change.type === 'removed' ? null : data);
                 });
             }, error => console.error('❌ Ошибка слушателя driverId:', error));
 
-        // Слушатель 2: заказы, где offeredTo содержит currentDriverId (массив)
-        // В Firestore нет прямого оператора "array-contains" для поля, но можно использовать
-        // where('offeredTo', 'array-contains', currentDriverId)
         const unsub2 = db.collection('orders')
             .where('offeredTo', 'array-contains', currentDriverId)
             .onSnapshot(snapshot => {
                 snapshot.docChanges().forEach(change => {
                     const id = change.doc.id;
                     const data = change.doc.data();
-                    if (change.type === 'removed') {
-                        updateOrder(id, null);
-                    } else {
-                        updateOrder(id, data);
-                    }
+                    updateOrder(id, change.type === 'removed' ? null : data);
                 });
             }, error => console.error('❌ Ошибка слушателя offeredTo:', error));
 
-        // Сохраняем обе функции отписки
-        orderUnsubscribe = () => {
-            unsub1();
-            unsub2();
-        };
+        orderUnsubscribe = () => { unsub1(); unsub2(); };
     }
 
     // ============================================================
@@ -750,48 +689,33 @@
 
         let actionsHtml = '';
 
-        // Проверяем, является ли заказ предложением (driverId == null, но offeredTo содержит нас)
         const isOffering = order.driverId == null && order.offeredTo && order.offeredTo.includes(currentDriverId);
 
         if (isOffering || order.status === 'offering' || order.status === 'assigned') {
             actionsHtml = `
                 <div class="order-actions">
-                    <button class="btn-action btn-accept" onclick="acceptOrder('${orderId}')">
-                        ✅ Принять
-                    </button>
-                    <button class="btn-action btn-reject" onclick="rejectOrder('${orderId}')">
-                        ❌ Отклонить
-                    </button>
+                    <button class="btn-action btn-accept" onclick="acceptOrder('${orderId}')">✅ Принять</button>
+                    <button class="btn-action btn-reject" onclick="rejectOrder('${orderId}')">❌ Отклонить</button>
                 </div>
             `;
         } else if (order.status === 'accepted') {
             actionsHtml = `
                 <div class="order-actions">
-                    <button class="btn-action btn-navigate" onclick="navigateToClient()">
-                        🧭 Навигатор (к клиенту)
-                    </button>
-                    <button class="btn-action btn-arrived" onclick="arrivedToClient()">
-                        📍 Прибыл
-                    </button>
+                    <button class="btn-action btn-navigate" onclick="navigateToClient()">🧭 Навигатор (к клиенту)</button>
+                    <button class="btn-action btn-arrived" onclick="arrivedToClient()">📍 Прибыл</button>
                 </div>
             `;
         } else if (order.status === 'en_route') {
             actionsHtml = `
                 <div class="order-actions">
-                    <button class="btn-action btn-navigate" onclick="navigateToDestination()">
-                        🧭 К назначению
-                    </button>
-                    <button class="btn-action btn-complete" onclick="completeOrder()">
-                        ✅ Заказ выполнен
-                    </button>
+                    <button class="btn-action btn-navigate" onclick="navigateToDestination()">🧭 К назначению</button>
+                    <button class="btn-action btn-complete" onclick="completeOrder()">✅ Заказ выполнен</button>
                 </div>
             `;
         } else if (order.status === 'arrived') {
             actionsHtml = `
                 <div class="order-actions">
-                    <button class="btn-action btn-complete" onclick="completeOrder()">
-                        ✅ Заказ выполнен
-                    </button>
+                    <button class="btn-action btn-complete" onclick="completeOrder()">✅ Заказ выполнен</button>
                 </div>
             `;
         }
@@ -819,9 +743,7 @@
                     <span style="font-size:13px; color:#ffb000; font-weight:600;">${statusText}</span>
                     <span style="font-size:13px; color:#4ade80;">⏱️ ${eta}</span>
                 </div>
-                <div style="margin-top:6px; font-size:13px; color:#667788;">
-                    💰 ${price} ₪
-                </div>
+                <div style="margin-top:6px; font-size:13px; color:#667788;">💰 ${price} ₪</div>
                 ${actionsHtml}
             </div>
         `;
@@ -839,7 +761,7 @@
     }
 
     // ============================================================
-    // ОТОБРАЖЕНИЕ МАРКЕРОВ НА КАРТЕ
+    // МАРКЕРЫ И МАРШРУТЫ
     // ============================================================
     function showMapMarkers(order) {
         const fromLat = order.client?.from?.lat || order.fromLat;
@@ -851,15 +773,10 @@
         if (toMarker) { map.removeLayer(toMarker); toMarker = null; }
 
         if (fromLat && fromLng) {
-            fromMarker = L.marker([fromLat, fromLng], { icon: clientIcon })
-                .addTo(map)
-                .bindPopup('📍 Клиент');
+            fromMarker = L.marker([fromLat, fromLng], { icon: clientIcon }).addTo(map).bindPopup('📍 Клиент');
         }
-
         if (toLat && toLng) {
-            toMarker = L.marker([toLat, toLng], { icon: destinationIcon })
-                .addTo(map)
-                .bindPopup('🏁 Назначение');
+            toMarker = L.marker([toLat, toLng], { icon: destinationIcon }).addTo(map).bindPopup('🏁 Назначение');
         }
 
         const bounds = L.latLngBounds();
@@ -874,15 +791,9 @@
     function clearMapMarkers() {
         if (fromMarker) { map.removeLayer(fromMarker); fromMarker = null; }
         if (toMarker) { map.removeLayer(toMarker); toMarker = null; }
-        if (routeControl) {
-            map.removeControl(routeControl);
-            routeControl = null;
-        }
+        if (routeControl) { map.removeControl(routeControl); routeControl = null; }
     }
 
-    // ============================================================
-    // ПОСТРОЕНИЕ МАРШРУТА (OSRM)
-    // ============================================================
     function updateRoute() {
         if (!currentOrder || !map) return;
 
@@ -890,14 +801,12 @@
         const fromLng = currentOrder.client?.from?.lng || currentOrder.fromLng;
         const toLat = currentOrder.destination?.lat || currentOrder.toLat;
         const toLng = currentOrder.destination?.lng || currentOrder.toLng;
-
         if (!fromLat || !fromLng) return;
 
         const driverPos = driverMarker.getLatLng();
         if (!driverPos) return;
 
         let origin, destination;
-
         if (currentOrder.status === 'accepted') {
             origin = [driverPos.lat, driverPos.lng];
             destination = [fromLat, fromLng];
@@ -908,23 +817,13 @@
             return;
         }
 
-        if (routeControl) {
-            map.removeControl(routeControl);
-            routeControl = null;
-        }
+        if (routeControl) { map.removeControl(routeControl); routeControl = null; }
 
         routeControl = L.Routing.control({
-            waypoints: [
-                L.latLng(origin[0], origin[1]),
-                L.latLng(destination[0], destination[1])
-            ],
+            waypoints: [L.latLng(origin[0], origin[1]), L.latLng(destination[0], destination[1])],
             routeWhileDragging: false,
             showAlternatives: false,
-            lineOptions: {
-                styles: [{ color: '#ffb000', weight: 4, opacity: 0.9 }],
-                extendToWaypoints: true,
-                missingRouteTolerance: 10,
-            },
+            lineOptions: { styles: [{ color: '#ffb000', weight: 4, opacity: 0.9 }], extendToWaypoints: true, missingRouteTolerance: 10 },
             addWaypoints: false,
             draggableWaypoints: false,
             fitSelectedRoutes: true,
@@ -933,18 +832,13 @@
     }
 
     // ============================================================
-    // НАВИГАЦИЯ ЧЕРЕЗ WAZE
+    // НАВИГАЦИЯ WAZE
     // ============================================================
     function openWaze(lat, lng, address) {
         let url;
-        if (lat && lng) {
-            url = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
-        } else if (address) {
-            url = `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
-        } else {
-            alert('❌ Не удалось определить местоположение');
-            return;
-        }
+        if (lat && lng) url = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+        else if (address) url = `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
+        else { alert('❌ Не удалось определить местоположение'); return; }
         window.open(url, '_blank');
     }
 
@@ -953,14 +847,9 @@
         const fromLat = currentOrder.client?.from?.lat || currentOrder.fromLat;
         const fromLng = currentOrder.client?.from?.lng || currentOrder.fromLng;
         const fromAddress = currentOrder.client?.from?.address || currentOrder.from;
-
-        if (fromLat && fromLng) {
-            openWaze(fromLat, fromLng, null);
-        } else if (fromAddress) {
-            openWaze(null, null, fromAddress);
-        } else {
-            alert('❌ Нет данных о местоположении клиента');
-        }
+        if (fromLat && fromLng) openWaze(fromLat, fromLng, null);
+        else if (fromAddress) openWaze(null, null, fromAddress);
+        else alert('❌ Нет данных о местоположении клиента');
     }
 
     function navigateToDestination() {
@@ -968,20 +857,14 @@
         const toLat = currentOrder.destination?.lat || currentOrder.toLat;
         const toLng = currentOrder.destination?.lng || currentOrder.toLng;
         const toAddress = currentOrder.destination?.address || currentOrder.to;
-
-        if (toLat && toLng) {
-            openWaze(toLat, toLng, null);
-        } else if (toAddress) {
-            openWaze(null, null, toAddress);
-        } else {
-            alert('❌ Нет данных о месте назначения');
-        }
+        if (toLat && toLng) openWaze(toLat, toLng, null);
+        else if (toAddress) openWaze(null, null, toAddress);
+        else alert('❌ Нет данных о месте назначения');
     }
 
     // ============================================================
     // ДЕЙСТВИЯ С ЗАКАЗАМИ
     // ============================================================
-
     async function acceptOrder(orderId) {
         try {
             await db.collection('orders').doc(orderId).update({
@@ -1003,7 +886,6 @@
     async function rejectOrder(orderId) {
         if (!confirm('❌ Отклонить заказ?')) return;
         try {
-            // Удаляем водителя из массива offeredTo и, если остался пустым, меняем статус
             const orderRef = db.collection('orders').doc(orderId);
             const doc = await orderRef.get();
             if (!doc.exists) return;
@@ -1038,7 +920,7 @@
     }
 
     // ============================================================
-    // ЗАКАЗ ВЫПОЛНЕН (с корректным кошельком)
+    // ЗАКАЗ ВЫПОЛНЕН — ИСПРАВЛЕННАЯ ТРАНЗАКЦИЯ
     // ============================================================
     async function completeOrder() {
         if (!currentOrderId || !currentOrder) return;
@@ -1051,35 +933,32 @@
             const bonusPercent = 0.01;
             const bonusAmount = price * bonusPercent;
 
+            // Транзакция: только чтения и записи для клиента и водителя
             await db.runTransaction(async (transaction) => {
-                // 1. КЛИЕНТ – используем поле balance, как в клиентской части
+                // 1. Читаем клиента
                 const clientId = currentOrder.clientId;
                 const clientRef = db.collection('users').doc(clientId);
                 const clientDoc = await transaction.get(clientRef);
                 if (!clientDoc.exists) {
                     throw new Error('Клиент не найден');
                 }
-                // Если у клиента нет поля balance, создаём его
-                let clientBalance = clientDoc.data().balance || 0;
-                if (clientBalance < price) {
+                let clientWallet = clientDoc.data().wallet || 0;
+                if (clientWallet < price) {
                     throw new Error('Недостаточно средств у клиента');
                 }
-                // Списываем
                 const updateClient = {
-                    balance: clientBalance - price,
+                    wallet: clientWallet - price,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
-                // Если клиент зарегистрирован (есть email) – начисляем бонус
                 if (clientDoc.data().email) {
                     const currentBonuses = clientDoc.data().bonuses || 0;
                     updateClient.bonuses = currentBonuses + bonusAmount;
                     updateClient.bonusesAvailable = true;
                     updateClient.bonusesActivateAt = firebase.firestore.FieldValue.serverTimestamp();
-                    console.log(`💰 Бонус ${bonusAmount} ₪ начислен клиенту`);
                 }
                 transaction.update(clientRef, updateClient);
 
-                // 2. ВОДИТЕЛЬ
+                // 2. Читаем водителя
                 const driverRef = db.collection('drivers').doc(currentDriverId);
                 const driverDoc = await transaction.get(driverRef);
                 if (!driverDoc.exists) throw new Error('Водитель не найден');
@@ -1093,26 +972,9 @@
                     currentOrderId: null,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-
-                // 3. ТРАНЗАКЦИЯ (история)
-                const txRef = db.collection('transactions').doc();
-                transaction.set(txRef, {
-                    userId: clientId,
-                    driverId: currentDriverId,
-                    type: 'payment',
-                    amount: price,
-                    currency: 'ILS',
-                    description: `Оплата поездки ${currentOrderId}`,
-                    orderId: currentOrderId,
-                    status: 'completed',
-                    commission: commission,
-                    driverEarn: driverEarn,
-                    bonusAmount: clientDoc.data().email ? bonusAmount : 0,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
             });
 
-            // 4. Обновляем статус заказа
+            // После успешной транзакции обновляем статус заказа
             await db.collection('orders').doc(currentOrderId).update({
                 status: 'completed',
                 completedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1121,6 +983,22 @@
                 driverEarn: driverEarn,
                 bonusAmount: bonusAmount,
                 dispatcherNote: 'Заказ выполнен'
+            });
+
+            // Создаём запись транзакции (вне транзакции)
+            await db.collection('transactions').add({
+                userId: currentOrder.clientId,
+                driverId: currentDriverId,
+                type: 'payment',
+                amount: price,
+                currency: 'ILS',
+                description: `Оплата поездки ${currentOrderId}`,
+                orderId: currentOrderId,
+                status: 'completed',
+                commission: commission,
+                driverEarn: driverEarn,
+                bonusAmount: bonusAmount,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
             console.log(`✅ Заказ выполнен! Сумма: ${price} ₪, Комиссия: ${commission} ₪, Водитель: ${driverEarn} ₪, Бонус: ${bonusAmount} ₪`);
@@ -1137,7 +1015,7 @@
     // ============================================================
     document.addEventListener('DOMContentLoaded', () => {
         initMap();
-        console.log('🚗 WHEEL Driver v2.0 (исправлен)');
+        console.log('🚗 WHEEL Driver v2.1 (исправленная транзакция)');
     });
 </script>
 </body>
