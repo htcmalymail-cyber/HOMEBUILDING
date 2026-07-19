@@ -8,22 +8,8 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { 
-            getAuth, 
-            signInWithEmailAndPassword, 
-            onAuthStateChanged, 
-            signOut,
-            createUserWithEmailAndPassword,
-            updateProfile
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            getDoc, 
-            updateDoc, 
-            setDoc,
-            serverTimestamp 
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
 
         const firebaseConfig = {
@@ -48,15 +34,12 @@
         window.signInWithEmailAndPassword = signInWithEmailAndPassword;
         window.signOut = signOut;
         window.onAuthStateChanged = onAuthStateChanged;
-        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
-        window.updateProfile = updateProfile;
         window.doc = doc;
         window.getDoc = getDoc;
         window.updateDoc = updateDoc;
-        window.setDoc = setDoc;
         window.serverTimestamp = serverTimestamp;
 
-        console.log("✅ Firebase initialized");
+        console.log("✅ Firebase initialized with Firestore");
     </script>
 
     <style>
@@ -97,18 +80,6 @@
             margin-left: 6px;
         }
 
-        body[dir="rtl"] .top-bar {
-            flex-direction: row-reverse;
-        }
-
-        body[dir="rtl"] .lang-dropdown {
-            left: 50%;
-            transform: translateX(50%);
-        }
-        body[dir="rtl"] .lang-dropdown.active {
-            transform: translateX(50%) translateY(0);
-        }
-
         .phone-frame {
             width: 100%;
             max-width: 400px;
@@ -129,146 +100,55 @@
             position: relative;
         }
 
-        /* ===== ВЕРХНЯЯ ПАНЕЛЬ ===== */
-        .top-bar {
+        /* ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ */
+        .lang-switcher {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            z-index: 10;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            margin-bottom: 8px;
-            position: relative;
-            z-index: 20;
-        }
-
-        .top-bar .auth-btn {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.08);
-            color: #8899aa;
-            padding: 6px 16px;
-            border-radius: 30px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            text-decoration: none;
-        }
-
-        .top-bar .auth-btn:hover {
-            background: rgba(255,180,0,0.15);
-            border-color: #ffb000;
-            color: #ffb000;
-        }
-
-        .top-bar .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #8899aa;
-            font-size: 13px;
-        }
-
-        .top-bar .user-info .name {
-            color: #ffb000;
-            font-weight: 600;
-        }
-
-        .top-bar .user-balance {
-            color: #4ade80;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        /* ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ===== */
-        .lang-toggle {
-            position: relative;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .lang-toggle-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #ffffff;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(10px);
         }
 
-        .lang-toggle-btn:hover {
-            background: rgba(255, 180, 0, 0.15);
-            border-color: #ffb000;
-            transform: scale(1.05);
+        body[dir="rtl"] .lang-switcher {
+            right: auto;
+            left: 24px;
         }
 
-        .lang-dropdown {
-            position: absolute;
-            top: 42px;
-            right: 0;
-            background: rgba(18,22,28,0.96);
-            backdrop-filter: blur(20px);
-            border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            padding: 6px;
-            min-width: 120px;
-            display: none;
-            flex-direction: column;
-            gap: 2px;
-            overflow: hidden;
-        }
-
-        .lang-dropdown.active {
-            display: flex;
-            animation: dropIn 0.2s ease;
-        }
-
-        @keyframes dropIn {
-            from { opacity: 0; transform: translateY(-10px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        .lang-dropdown-item {
-            padding: 8px 16px;
-            border-radius: 10px;
-            color: #8899aa;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            border: none;
+        .lang-btn {
             background: transparent;
-            text-align: center;
+            border: none;
+            color: #8899aa;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.5px;
             white-space: nowrap;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
         }
 
-        .lang-dropdown-item:hover {
-            background: rgba(255,255,255,0.06);
+        .lang-btn:hover {
             color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
         }
 
-        .lang-dropdown-item.active {
+        .lang-btn.active {
             background: linear-gradient(135deg, #ffb000, #ff6a00);
             color: #0a0c10;
             font-weight: 700;
+            box-shadow: 0 2px 8px rgba(255, 160, 0, 0.3);
         }
 
-        .lang-dropdown-item .flag { font-size: 16px; }
-
-        /* ===== ЛОГОТИП ===== */
+        /* Логотип */
         .logo-icon {
-            margin-top: 20px;
+            margin-top: 50px;
             margin-bottom: 12px;
             width: 80px;
             height: 80px;
@@ -279,13 +159,6 @@
             justify-content: center;
             box-shadow: 0 15px 30px rgba(255, 160, 0, 0.3);
             position: relative;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            user-select: none;
-        }
-
-        .logo-icon:hover {
-            transform: scale(1.05);
         }
 
         .logo-icon::after {
@@ -307,105 +180,6 @@
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
         }
 
-        /* ===== СКРЫТАЯ ФОРМА ДЛЯ ДИСПЕТЧЕРА ===== */
-        .secret-form {
-            display: none;
-            margin: 16px 0 10px;
-            width: 100%;
-            padding: 16px;
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            animation: fadeIn 0.3s ease;
-        }
-
-        .secret-form.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .secret-form label {
-            display: block;
-            font-size: 13px;
-            color: #8899aa;
-            margin-bottom: 8px;
-            text-align: left;
-            font-weight: 600;
-        }
-
-        .secret-form .input-row {
-            display: flex;
-            gap: 10px;
-        }
-
-        .secret-form input {
-            flex: 1;
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.05);
-            color: #ffffff;
-            font-size: 16px;
-            outline: none;
-            transition: 0.2s;
-        }
-
-        .secret-form input:focus {
-            border-color: #ffb000;
-            box-shadow: 0 0 0 4px rgba(255,180,0,0.08);
-        }
-
-        .secret-form input::placeholder {
-            color: #556677;
-        }
-
-        .secret-form .btn-secret {
-            padding: 12px 24px;
-            border-radius: 12px;
-            border: none;
-            background: linear-gradient(135deg, #ffb000, #ff6a00);
-            color: #0a0c10;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
-        }
-
-        .secret-form .btn-secret:hover {
-            transform: scale(1.02);
-            box-shadow: 0 8px 20px rgba(255,140,0,0.3);
-        }
-
-        .secret-form .secret-error {
-            color: #ef4444;
-            font-size: 13px;
-            margin-top: 8px;
-            display: none;
-            text-align: left;
-        }
-
-        .secret-form .secret-error.active {
-            display: block;
-        }
-
-        .secret-form .secret-success {
-            color: #4ade80;
-            font-size: 13px;
-            margin-top: 8px;
-            display: none;
-            text-align: left;
-        }
-
-        .secret-form .secret-success.active {
-            display: block;
-        }
-
-        /* ===== ОСНОВНЫЕ СТИЛИ ===== */
         h1 {
             font-size: 32px;
             font-weight: 800;
@@ -573,46 +347,10 @@
             box-shadow: 0 30px 60px rgba(0,0,0,0.8);
         }
 
-        .modal-content .tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 20px;
-            background: rgba(255,255,255,0.04);
-            border-radius: 12px;
-            padding: 4px;
-        }
-
-        .modal-content .tabs button {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 10px;
-            background: transparent;
-            color: #8899aa;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .modal-content .tabs button.active {
-            background: linear-gradient(135deg, #ffb000, #ff6a00);
-            color: #0a0c10;
-        }
-
-        .modal-content .tab-content {
-            display: none;
-        }
-
-        .modal-content .tab-content.active {
-            display: block;
-        }
-
         .modal-content h2 {
-            font-size: 20px;
-            margin-bottom: 16px;
-            color: #ffffff;
-            text-align: center;
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: white;
         }
 
         .modal-content input {
@@ -625,6 +363,7 @@
             color: white;
             font-size: 16px;
             outline: none;
+            text-align: left;
         }
 
         body[dir="rtl"] .modal-content input {
@@ -635,7 +374,7 @@
             border-color: #ffb000;
         }
 
-        .modal-content .btn-submit {
+        .modal-content button {
             width: 100%;
             padding: 14px;
             border-radius: 14px;
@@ -648,33 +387,6 @@
             margin-top: 8px;
         }
 
-        .modal-content .btn-submit:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .modal-content .error-msg {
-            color: #ef4444;
-            font-size: 13px;
-            margin-top: 8px;
-            display: none;
-        }
-
-        .modal-content .error-msg.active {
-            display: block;
-        }
-
-        .modal-content .success-msg {
-            color: #4ade80;
-            font-size: 13px;
-            margin-top: 8px;
-            display: none;
-        }
-
-        .modal-content .success-msg.active {
-            display: block;
-        }
-
         .close-modal {
             background: transparent;
             color: #8899aa;
@@ -683,11 +395,6 @@
             cursor: pointer;
             font-size: 14px;
             width: 100%;
-            padding: 8px;
-        }
-
-        .close-modal:hover {
-            color: #ffffff;
         }
 
         .driver-status {
@@ -701,26 +408,24 @@
             display: block;
         }
 
+        /* Сообщение об ошибке */
+        .error-msg {
+            color: #ef4444;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .error-msg.active {
+            display: block;
+        }
+
         .home-indicator {
             margin-top: 12px;
             width: 130px;
             height: 5px;
             background: rgba(255, 255, 255, 0.3);
             border-radius: 20px;
-        }
-
-        .secret-hint {
-            font-size: 10px;
-            color: #334455;
-            margin-top: 8px;
-            opacity: 0.3;
-            transition: opacity 0.3s;
-            cursor: default;
-            user-select: none;
-        }
-
-        .secret-hint:hover {
-            opacity: 0.6;
         }
 
         @media (max-width: 420px) {
@@ -732,88 +437,30 @@
                 box-shadow: none;
                 border: none;
             }
-            .lang-toggle-btn {
-                width: 32px;
-                height: 32px;
-                font-size: 14px;
+            .lang-switcher {
+                top: 16px;
+                right: 20px;
             }
-            .lang-dropdown {
-                min-width: 100px;
-                top: 38px;
-            }
-            .lang-dropdown-item {
-                font-size: 12px;
-                padding: 6px 12px;
-            }
-            .top-bar .auth-btn {
-                font-size: 11px;
-                padding: 4px 12px;
-            }
-            .top-bar .user-balance {
-                font-size: 11px;
-            }
-            .logo-icon {
-                margin-top: 10px;
-                width: 64px;
-                height: 64px;
-            }
-            .logo-icon svg {
-                width: 38px;
-                height: 38px;
-            }
-            h1 {
-                font-size: 26px;
+            body[dir="rtl"] .lang-switcher {
+                left: 20px;
             }
         }
     </style>
 </head>
 <body>
     <div class="phone-frame">
-        <!-- ===== ВЕРХНЯЯ ПАНЕЛЬ ===== -->
-        <div class="top-bar">
-            <!-- ЛЕВАЯ ЧАСТЬ: ВХОД/ВЫХОД -->
-            <div id="authSection" style="display:flex; align-items:center; gap:10px;">
-                <button class="auth-btn" id="loginBtn">🔑 Войти</button>
-            </div>
-            <div id="userSection" style="display:none; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                <span style="color:#8899aa; font-size:13px;">👋 <span class="name" id="userName" style="color:#ffb000; font-weight:600;">Гость</span></span>
-                <span class="user-balance" id="userBalance">💰 0 ₪</span>
-                <button class="auth-btn" id="logoutBtn" style="font-size:11px; padding:4px 12px;">Выйти</button>
-            </div>
-
-            <!-- ПРАВАЯ ЧАСТЬ: ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ -->
-            <div class="lang-toggle">
-                <button class="lang-toggle-btn" id="langToggleBtn">🌐</button>
-                <div class="lang-dropdown" id="langDropdown">
-                    <button class="lang-dropdown-item active" data-lang="en">
-                        <span class="flag">🇬🇧</span> English
-                    </button>
-                    <button class="lang-dropdown-item" data-lang="he">
-                        <span class="flag">🇮🇱</span> עברית
-                    </button>
-                    <button class="lang-dropdown-item" data-lang="ar">
-                        <span class="flag">🇸🇦</span> العربية
-                    </button>
-                </div>
-            </div>
+        <!-- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ -->
+        <div class="lang-switcher">
+            <button class="lang-btn" data-lang="he" title="עברית">עב</button>
+            <button class="lang-btn" data-lang="ar" title="العربية">عرب</button>
+            <button class="lang-btn active" data-lang="en" title="English">EN</button>
         </div>
 
-        <!-- ===== ЛОГОТИП ===== -->
-        <div class="logo-icon" id="logoIcon" title="👆 Двойной клик для входа диспетчера">
+        <!-- Логотип -->
+        <div class="logo-icon">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
             </svg>
-        </div>
-
-        <!-- ===== СКРЫТАЯ ФОРМА ДИСПЕТЧЕРА ===== -->
-        <div class="secret-form" id="secretForm">
-            <label for="secretPassword">🔑 Вход для диспетчера</label>
-            <div class="input-row">
-                <input type="password" id="secretPassword" placeholder="Введите пароль" autocomplete="off" />
-                <button class="btn-secret" id="secretLoginBtn">Войти</button>
-            </div>
-            <div class="secret-error" id="secretError">❌ Неверный пароль</div>
-            <div class="secret-success" id="secretSuccess">✅ Перенаправление...</div>
         </div>
 
         <h1>WHEEL</h1>
@@ -822,7 +469,7 @@
             <span data-i18n="slogan">Мы уже едем к вам</span>
         </div>
 
-        <a href="client.html" class="cta-button" id="clientOrder">
+        <a href="#" class="cta-button" id="clientOrder">
             <span>📍</span> 
             <span data-i18n="orderBtn">Заказать сейчас</span>
         </a>
@@ -851,62 +498,23 @@
         <button class="driver-entry" id="driverBtn">
             🚖 <span data-i18n="driverEntry">Я водитель</span>
         </button>
-        
-        <!-- ===== БЛОК СТАТУСА ВОДИТЕЛЯ ===== -->
-        <div class="driver-status" id="driverStatus" style="display:none;">
+        <div class="driver-status" id="driverStatus">
             <span data-i18n="loggedIn">✅ Вы вошли как водитель</span>
             <br><small id="driverEmail"></small>
-            <br><a href="#" id="logoutDriverBtn" style="color:#ffb000; font-size:12px;" data-i18n="logout">Выйти</a>
+            <br><a href="#" id="logoutBtn" style="color:#ffb000; font-size:12px;" data-i18n="logout">Выйти</a>
         </div>
-
-        <div class="secret-hint">🔑 двойной клик по логотипу</div>
 
         <div class="home-indicator"></div>
     </div>
 
-    <!-- ===== МОДАЛКА ВХОДА/РЕГИСТРАЦИИ ===== -->
-    <div class="modal" id="authModal">
-        <div class="modal-content">
-            <div class="tabs">
-                <button class="active" data-tab="login">🔑 Вход</button>
-                <button data-tab="register">📝 Регистрация</button>
-            </div>
-
-            <div class="tab-content active" id="tab-login">
-                <h2>Войти в аккаунт</h2>
-                <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
-                <input type="password" id="loginPassword" placeholder="Пароль" autocomplete="current-password">
-                <button class="btn-submit" id="loginSubmit">Войти</button>
-                <div class="error-msg" id="loginError"></div>
-                <div class="success-msg" id="loginSuccess"></div>
-            </div>
-
-            <div class="tab-content" id="tab-register">
-                <h2>Создать аккаунт</h2>
-                <input type="text" id="regName" placeholder="Ваше имя" autocomplete="name">
-                <input type="text" id="regPhone" placeholder="Телефон" autocomplete="tel">
-                <input type="email" id="regEmail" placeholder="Email" autocomplete="email">
-                <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)" autocomplete="new-password">
-                <button class="btn-submit" id="registerSubmit">Зарегистрироваться</button>
-                <div class="error-msg" id="registerError"></div>
-                <div class="success-msg" id="registerSuccess"></div>
-                <p style="font-size:11px; color:#667788; margin-top:12px; text-align:center;">
-                    Регистрируясь, вы соглашаетесь с условиями сервиса
-                </p>
-            </div>
-
-            <button class="close-modal" id="closeAuthModal">✕ Закрыть</button>
-        </div>
-    </div>
-
-    <!-- ===== МОДАЛКА ВОДИТЕЛЯ ===== -->
+    <!-- Модальное окно входа -->
     <div class="modal" id="loginModal">
         <div class="modal-content">
             <h2 data-i18n="loginTitle">🚖 Вход для водителей</h2>
             <input type="email" id="emailInput" data-i18n-placeholder="emailPlaceholder" placeholder="Email" autocomplete="email">
             <input type="password" id="passwordInput" data-i18n-placeholder="passPlaceholder" placeholder="Пароль" autocomplete="current-password">
-            <button id="loginSubmitDriver" data-i18n="loginBtn">Войти</button>
-            <div class="error-msg" id="loginErrorDriver"></div>
+            <button id="loginSubmit" data-i18n="loginBtn">Войти</button>
+            <div class="error-msg" id="loginError"></div>
             <button class="close-modal" id="closeModal" data-i18n="cancel">Отмена</button>
             <p style="font-size:11px; color:#667788; margin-top:12px;" data-i18n="noAccount">
                 Нет аккаунта? Обратитесь к администратору
@@ -1013,13 +621,6 @@
                 document.documentElement.lang = 'en';
             }
 
-            document.querySelectorAll('.lang-dropdown-item').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-lang') === lang) {
-                    btn.classList.add('active');
-                }
-            });
-
             document.querySelectorAll('.lang-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.getAttribute('data-lang') === lang) {
@@ -1028,26 +629,7 @@
             });
 
             localStorage.setItem('wheel_lang', lang);
-            document.getElementById('langDropdown').classList.remove('active');
         }
-
-        // ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ =====
-        document.getElementById('langToggleBtn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.getElementById('langDropdown').classList.toggle('active');
-        });
-
-        document.addEventListener('click', () => {
-            document.getElementById('langDropdown').classList.remove('active');
-        });
-
-        document.querySelectorAll('.lang-dropdown-item').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const lang = btn.getAttribute('data-lang');
-                switchLanguage(lang);
-            });
-        });
 
         document.querySelectorAll('.lang-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1061,362 +643,19 @@
             switchLanguage(savedLang);
         }
 
-        // ============ СКРЫТЫЙ ВХОД ДЛЯ ДИСПЕТЧЕРА ============
-        const SECRET_PASSWORD = '0902';
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const logoIcon = document.getElementById('logoIcon');
-            const secretForm = document.getElementById('secretForm');
-            const secretPassword = document.getElementById('secretPassword');
-            const secretLoginBtn = document.getElementById('secretLoginBtn');
-            const secretError = document.getElementById('secretError');
-            const secretSuccess = document.getElementById('secretSuccess');
-
-            logoIcon.addEventListener('dblclick', function(e) {
-                e.preventDefault();
-                secretForm.classList.toggle('active');
-                secretError.classList.remove('active');
-                secretSuccess.classList.remove('active');
-                secretPassword.value = '';
-                if (secretForm.classList.contains('active')) {
-                    secretPassword.focus();
-                }
-            });
-
-            function handleSecretLogin() {
-                const password = secretPassword.value.trim();
-                
-                if (password === SECRET_PASSWORD) {
-                    secretError.classList.remove('active');
-                    secretSuccess.classList.add('active');
-                    secretSuccess.textContent = '✅ Перенаправление...';
-                    
-                    setTimeout(function() {
-                        window.location.href = 'dispatcher.html';
-                    }, 800);
-                } else {
-                    secretSuccess.classList.remove('active');
-                    secretError.classList.add('active');
-                    secretError.textContent = '❌ Неверный пароль';
-                    secretPassword.value = '';
-                    secretPassword.focus();
-                }
-            }
-
-            secretLoginBtn.addEventListener('click', handleSecretLogin);
-            secretPassword.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSecretLogin();
-                }
-            });
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && secretForm.classList.contains('active')) {
-                    secretForm.classList.remove('active');
-                    secretError.classList.remove('active');
-                    secretSuccess.classList.remove('active');
-                }
-            });
-
-            document.addEventListener('click', function(e) {
-                if (secretForm.classList.contains('active')) {
-                    const isClickInside = secretForm.contains(e.target) || logoIcon.contains(e.target);
-                    if (!isClickInside) {
-                        secretForm.classList.remove('active');
-                        secretError.classList.remove('active');
-                        secretSuccess.classList.remove('active');
-                    }
-                }
-            });
-        });
-
-        // ============ РЕГИСТРАЦИЯ И ВХОД КЛИЕНТА (БЕЗ АВТО-ПЕРЕНАПРАВЛЕНИЯ) ============
-        document.addEventListener('DOMContentLoaded', function() {
-            const authModal = document.getElementById('authModal');
-            const loginBtn = document.getElementById('loginBtn');
-            const closeAuthModal = document.getElementById('closeAuthModal');
-            const authSection = document.getElementById('authSection');
-            const userSection = document.getElementById('userSection');
-            const userName = document.getElementById('userName');
-            const userBalance = document.getElementById('userBalance');
-            const logoutBtn = document.getElementById('logoutBtn');
-
-            const tabBtns = document.querySelectorAll('.tabs button');
-            const tabContents = document.querySelectorAll('.tab-content');
-
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const tab = this.dataset.tab;
-                    tabBtns.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    tabContents.forEach(c => c.classList.remove('active'));
-                    document.getElementById('tab-' + tab).classList.add('active');
-                    document.getElementById('loginError').classList.remove('active');
-                    document.getElementById('registerError').classList.remove('active');
-                });
-            });
-
-            loginBtn.addEventListener('click', function() {
-                authModal.classList.add('active');
-                document.getElementById('loginError').classList.remove('active');
-                document.getElementById('registerError').classList.remove('active');
-                document.getElementById('loginSuccess').classList.remove('active');
-                document.getElementById('registerSuccess').classList.remove('active');
-            });
-
-            closeAuthModal.addEventListener('click', function() {
-                authModal.classList.remove('active');
-            });
-
-            authModal.addEventListener('click', function(e) {
-                if (e.target === authModal) {
-                    authModal.classList.remove('active');
-                }
-            });
-
-            // ===== ФУНКЦИЯ ОБНОВЛЕНИЯ UI =====
-            async function updateUserUI(user) {
-                if (!user) {
-                    authSection.style.display = 'flex';
-                    userSection.style.display = 'none';
-                    return;
-                }
-
-                try {
-                    const db = window.firebaseDb;
-                    const doc = window.doc;
-                    const getDoc = window.getDoc;
-                    const userDoc = await getDoc(doc(db, 'users', user.uid));
-                    
-                    if (userDoc.exists) {
-                        const data = userDoc.data();
-                        userName.textContent = data.fullName || user.displayName || 'Пользователь';
-                        userBalance.textContent = '💰 ' + (data.wallet || 0) + ' ₪';
-                        authSection.style.display = 'none';
-                        userSection.style.display = 'flex';
-                    } else {
-                        userName.textContent = user.displayName || 'Пользователь';
-                        userBalance.textContent = '💰 0 ₪';
-                        authSection.style.display = 'none';
-                        userSection.style.display = 'flex';
-                    }
-                } catch (error) {
-                    console.error('Error loading user data:', error);
-                    userName.textContent = user.displayName || 'Пользователь';
-                    userBalance.textContent = '💰 0 ₪';
-                    authSection.style.display = 'none';
-                    userSection.style.display = 'flex';
-                }
-            }
-
-            // ===== ВХОД (БЕЗ АВТО-ПЕРЕНАПРАВЛЕНИЯ) =====
-            document.getElementById('loginSubmit').addEventListener('click', async function() {
-                const email = document.getElementById('loginEmail').value.trim();
-                const password = document.getElementById('loginPassword').value.trim();
-                const errorEl = document.getElementById('loginError');
-                const successEl = document.getElementById('loginSuccess');
-
-                errorEl.classList.remove('active');
-                successEl.classList.remove('active');
-
-                if (!email || !password) {
-                    errorEl.textContent = '⚠️ Заполните все поля';
-                    errorEl.classList.add('active');
-                    return;
-                }
-
-                try {
-                    this.disabled = true;
-                    this.textContent = '⏳ Вход...';
-
-                    const auth = window.firebaseAuth;
-                    const signIn = window.signInWithEmailAndPassword;
-                    const userCredential = await signIn(auth, email, password);
-                    const user = userCredential.user;
-
-                    successEl.textContent = '✅ Вход выполнен!';
-                    successEl.classList.add('active');
-
-                    // 🔥 ОБНОВЛЯЕМ UI БЕЗ ПЕРЕЗАГРУЗКИ
-                    await updateUserUI(user);
-
-                    // Закрываем модалку
-                    setTimeout(() => {
-                        authModal.classList.remove('active');
-                        this.disabled = false;
-                        this.textContent = 'Войти';
-                        successEl.classList.remove('active');
-                    }, 800);
-
-                } catch (error) {
-                    console.error('Login error:', error);
-                    errorEl.textContent = '❌ ' + (error.message || 'Ошибка входа');
-                    errorEl.classList.add('active');
-                    this.disabled = false;
-                    this.textContent = 'Войти';
-                }
-            });
-
-            // ===== РЕГИСТРАЦИЯ (БЕЗ АВТО-ПЕРЕНАПРАВЛЕНИЯ) =====
-            document.getElementById('registerSubmit').addEventListener('click', async function() {
-                const name = document.getElementById('regName').value.trim();
-                const phone = document.getElementById('regPhone').value.trim();
-                const email = document.getElementById('regEmail').value.trim();
-                const password = document.getElementById('regPassword').value.trim();
-                const errorEl = document.getElementById('registerError');
-                const successEl = document.getElementById('registerSuccess');
-
-                errorEl.classList.remove('active');
-                successEl.classList.remove('active');
-
-                if (!name || !phone || !email || !password) {
-                    errorEl.textContent = '⚠️ Заполните все поля';
-                    errorEl.classList.add('active');
-                    return;
-                }
-
-                if (password.length < 6) {
-                    errorEl.textContent = '⚠️ Пароль должен быть минимум 6 символов';
-                    errorEl.classList.add('active');
-                    return;
-                }
-
-                try {
-                    this.disabled = true;
-                    this.textContent = '⏳ Регистрация...';
-
-                    const auth = window.firebaseAuth;
-                    const createUser = window.createUserWithEmailAndPassword;
-                    const updateProfile = window.updateProfile;
-                    const db = window.firebaseDb;
-                    const setDoc = window.setDoc;
-                    const doc = window.doc;
-                    const serverTimestamp = window.serverTimestamp;
-
-                    const userCredential = await createUser(auth, email, password);
-                    const user = userCredential.user;
-
-                    await updateProfile(user, {
-                        displayName: name
-                    });
-
-                    await setDoc(doc(db, 'users', user.uid), {
-                        uid: user.uid,
-                        email: email,
-                        fullName: name,
-                        phone: phone,
-                        role: 'client',
-                        wallet: 0,
-                        bonuses: 0,
-                        bonusesAvailable: false,
-                        bonusesActivateAt: null,
-                        createdAt: serverTimestamp(),
-                        isActive: true,
-                        settings: {
-                            language: 'ru',
-                            notifications: true,
-                            darkMode: false
-                        }
-                    });
-
-                    successEl.textContent = '✅ Регистрация успешна!';
-                    successEl.classList.add('active');
-
-                    // 🔥 ОБНОВЛЯЕМ UI БЕЗ ПЕРЕЗАГРУЗКИ
-                    await updateUserUI(user);
-
-                    setTimeout(() => {
-                        authModal.classList.remove('active');
-                        this.disabled = false;
-                        this.textContent = 'Зарегистрироваться';
-                        successEl.classList.remove('active');
-                    }, 1200);
-
-                } catch (error) {
-                    console.error('Register error:', error);
-                    let msg = error.message || 'Ошибка регистрации';
-                    if (error.code === 'auth/email-already-in-use') {
-                        msg = '❌ Этот email уже зарегистрирован';
-                    }
-                    errorEl.textContent = msg;
-                    errorEl.classList.add('active');
-                    this.disabled = false;
-                    this.textContent = 'Зарегистрироваться';
-                }
-            });
-
-            // ===== ВЫХОД =====
-            logoutBtn.addEventListener('click', async function(e) {
-                e.preventDefault();
-                try {
-                    const auth = window.firebaseAuth;
-                    const signOut = window.signOut;
-                    await signOut(auth);
-                    window.location.reload();
-                } catch (error) {
-                    console.error('Logout error:', error);
-                }
-            });
-
-            // ===== ПРОВЕРКА СОСТОЯНИЯ АВТОРИЗАЦИИ =====
-            const auth = window.firebaseAuth;
-            const onAuth = window.onAuthStateChanged;
-
-            onAuth(auth, async function(user) {
-                if (user) {
-                    await updateUserUI(user);
-                    
-                    // Проверяем, является ли пользователь водителем
-                    try {
-                        const db = window.firebaseDb;
-                        const doc = window.doc;
-                        const getDoc = window.getDoc;
-                        const driverDoc = await getDoc(doc(db, 'drivers', user.uid));
-                        const driverStatus = document.getElementById('driverStatus');
-                        const driverEmail = document.getElementById('driverEmail');
-                        const driverBtn = document.getElementById('driverBtn');
-                        
-                        if (driverDoc.exists()) {
-                            const driverData = driverDoc.data();
-                            driverStatus.style.display = 'block';
-                            driverStatus.classList.add('active');
-                            driverEmail.textContent = driverData.fullName || user.email;
-                            driverBtn.style.display = 'none';
-                        } else {
-                            driverStatus.style.display = 'none';
-                            driverStatus.classList.remove('active');
-                            driverEmail.textContent = '';
-                            driverBtn.style.display = 'block';
-                        }
-                    } catch (error) {
-                        console.error('Driver check error:', error);
-                        document.getElementById('driverStatus').style.display = 'none';
-                        document.getElementById('driverBtn').style.display = 'block';
-                    }
-                } else {
-                    authSection.style.display = 'flex';
-                    userSection.style.display = 'none';
-                    document.getElementById('driverStatus').style.display = 'none';
-                    document.getElementById('driverStatus').classList.remove('active');
-                    document.getElementById('driverEmail').textContent = '';
-                    document.getElementById('driverBtn').style.display = 'block';
-                }
-            });
-        });
-
-        // ============ ВХОД ВОДИТЕЛЯ ============
+        // ============ FIREBASE AUTH + DRIVER CHECK ============
         window.addEventListener('load', () => {
             const driverBtn = document.getElementById('driverBtn');
             const loginModal = document.getElementById('loginModal');
             const closeModal = document.getElementById('closeModal');
-            const loginSubmit = document.getElementById('loginSubmitDriver');
+            const loginSubmit = document.getElementById('loginSubmit');
             const emailInput = document.getElementById('emailInput');
             const passwordInput = document.getElementById('passwordInput');
             const driverStatus = document.getElementById('driverStatus');
             const driverEmail = document.getElementById('driverEmail');
-            const logoutDriverBtn = document.getElementById('logoutDriverBtn');
-            const loginError = document.getElementById('loginErrorDriver');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const clientOrder = document.getElementById('clientOrder');
+            const loginError = document.getElementById('loginError');
 
             driverBtn.addEventListener('click', () => {
                 loginModal.classList.add('active');
@@ -1434,6 +673,7 @@
                 }
             });
 
+            // ========== ВХОД С ПРОВЕРКОЙ РОЛИ ВОДИТЕЛЯ ==========
             loginSubmit.addEventListener('click', async () => {
                 const email = emailInput.value.trim();
                 const password = passwordInput.value.trim();
@@ -1451,6 +691,7 @@
                     loginSubmit.disabled = true;
                     loginError.classList.remove('active');
 
+                    // Шаг 1: Firebase Auth — проверка email/пароля
                     const auth = window.firebaseAuth;
                     const signIn = window.signInWithEmailAndPassword;
                     
@@ -1459,6 +700,7 @@
                     
                     console.log('🔐 Auth success:', user.uid);
 
+                    // Шаг 2: Firestore — проверка, есть ли водитель с таким UID
                     const db = window.firebaseDb;
                     const docFn = window.doc;
                     const getDocFn = window.getDoc;
@@ -1467,7 +709,10 @@
                     const driverDoc = await getDocFn(driverDocRef);
 
                     if (!driverDoc.exists()) {
+                        // Пользователь есть в Auth, но не водитель
                         console.error('❌ Not a driver:', user.uid);
+                        
+                        // Выходим из Auth
                         await window.signOut(auth);
                         
                         loginError.textContent = translations[currentLang].notDriver;
@@ -1477,9 +722,11 @@
                         return;
                     }
 
+                    // ✅ Успех: это водитель
                     const driverData = driverDoc.data();
                     console.log('✅ Driver found:', driverData.fullName || driverData.email);
                     
+                    // Обновляем статус водителя на "online" и lastUpdated
                     const updateDocFn = window.updateDoc;
                     const serverTimestampFn = window.serverTimestamp;
                     
@@ -1488,13 +735,21 @@
                         lastUpdated: serverTimestampFn()
                     });
 
-                    window.location.href = 'driver.html';
-
+                    // Показываем статус
+                    driverStatus.classList.add('active');
+                    driverEmail.textContent = driverData.fullName || user.email;
+                    driverBtn.style.display = 'none';
+                    loginModal.classList.remove('active');
+                    
+                    emailInput.value = '';
+                    passwordInput.value = '';
+                    
                 } catch (error) {
                     console.error('❌ Login error:', error);
                     
                     let errorMsg = translations[currentLang].loginError;
                     
+                    // Firebase ошибки
                     if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
                         errorMsg = translations[currentLang].loginError;
                     } else if (error.code === 'auth/invalid-email') {
@@ -1511,11 +766,13 @@
                 }
             });
 
-            logoutDriverBtn.addEventListener('click', async (e) => {
+            // ========== ВЫХОД ==========
+            logoutBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 try {
                     const auth = window.firebaseAuth;
                     
+                    // Обновляем статус на "offline" перед выходом
                     const user = auth.currentUser;
                     if (user) {
                         const db = window.firebaseDb;
@@ -1532,55 +789,58 @@
                     
                     await window.signOut(auth);
                     
-                    driverStatus.style.display = 'none';
                     driverStatus.classList.remove('active');
                     driverEmail.textContent = '';
                     driverBtn.style.display = 'block';
                     
                     console.log('👋 Driver logged out');
-                    window.location.reload();
                 } catch (error) {
                     console.error('Logout error:', error);
                 }
             });
 
+            // ========== ПРОВЕРКА ПРИ ЗАГРУЗКЕ ==========
             const auth = window.firebaseAuth;
             const onAuth = window.onAuthStateChanged;
             
             onAuth(auth, async (user) => {
                 if (user) {
-                    try {
-                        const db = window.firebaseDb;
-                        const docFn = window.doc;
-                        const getDocFn = window.getDoc;
-                        
-                        const driverDocRef = docFn(db, 'drivers', user.uid);
-                        const driverDoc = await getDocFn(driverDocRef);
-                        
-                        if (driverDoc.exists()) {
-                            const driverData = driverDoc.data();
-                            driverStatus.style.display = 'block';
-                            driverStatus.classList.add('active');
-                            driverEmail.textContent = driverData.fullName || user.email;
-                            driverBtn.style.display = 'none';
-                        } else {
-                            await window.signOut(auth);
-                            driverStatus.style.display = 'none';
-                            driverStatus.classList.remove('active');
-                            driverEmail.textContent = '';
-                            driverBtn.style.display = 'block';
-                        }
-                    } catch (error) {
-                        console.error('Driver check error:', error);
-                        driverStatus.style.display = 'none';
+                    // Проверяем, водитель ли это
+                    const db = window.firebaseDb;
+                    const docFn = window.doc;
+                    const getDocFn = window.getDoc;
+                    
+                    const driverDocRef = docFn(db, 'drivers', user.uid);
+                    const driverDoc = await getDocFn(driverDocRef);
+                    
+                    if (driverDoc.exists()) {
+                        const driverData = driverDoc.data();
+                        driverStatus.classList.add('active');
+                        driverEmail.textContent = driverData.fullName || user.email;
+                        driverBtn.style.display = 'none';
+                    } else {
+                        // Не водитель — выходим
+                        await window.signOut(auth);
+                        driverStatus.classList.remove('active');
+                        driverEmail.textContent = '';
                         driverBtn.style.display = 'block';
                     }
                 } else {
-                    driverStatus.style.display = 'none';
                     driverStatus.classList.remove('active');
                     driverEmail.textContent = '';
                     driverBtn.style.display = 'block';
                 }
+            });
+
+            // ========== ЗАГЛУШКА КЛИЕНТСКОГО ЗАКАЗА ==========
+            clientOrder.addEventListener('click', (e) => {
+                e.preventDefault();
+                const msgs = {
+                    he: '📍 כאן תופיע מפה להזמנה ללא הרשמה.',
+                    ar: '📍 ستظهر هنا خريطة للطلب بدون تسجيل.',
+                    en: '📍 Map for ordering without registration will appear here.'
+                };
+                alert(msgs[currentLang] || msgs['en']);
             });
         });
     </script>
