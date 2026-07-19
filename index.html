@@ -852,7 +852,7 @@
             🚖 <span data-i18n="driverEntry">Я водитель</span>
         </button>
         
-        <!-- ===== БЛОК СТАТУСА ВОДИТЕЛЯ (СКРЫВАЕМ, ЕСЛИ НЕ ВОДИТЕЛЬ) ===== -->
+        <!-- ===== БЛОК СТАТУСА ВОДИТЕЛЯ ===== -->
         <div class="driver-status" id="driverStatus" style="display:none;">
             <span data-i18n="loggedIn">✅ Вы вошли как водитель</span>
             <br><small id="driverEmail"></small>
@@ -1131,7 +1131,7 @@
             });
         });
 
-        // ============ РЕГИСТРАЦИЯ И ВХОД КЛИЕНТА ============
+        // ============ РЕГИСТРАЦИЯ И ВХОД КЛИЕНТА (БЕЗ АВТО-ПЕРЕНАПРАВЛЕНИЯ) ============
         document.addEventListener('DOMContentLoaded', function() {
             const authModal = document.getElementById('authModal');
             const loginBtn = document.getElementById('loginBtn');
@@ -1210,7 +1210,7 @@
                 }
             }
 
-            // ===== ВХОД → ПЕРЕХОД НА CLIENT.HTML =====
+            // ===== ВХОД (БЕЗ АВТО-ПЕРЕНАПРАВЛЕНИЯ) =====
             document.getElementById('loginSubmit').addEventListener('click', async function() {
                 const email = document.getElementById('loginEmail').value.trim();
                 const password = document.getElementById('loginPassword').value.trim();
@@ -1235,12 +1235,18 @@
                     const userCredential = await signIn(auth, email, password);
                     const user = userCredential.user;
 
-                    successEl.textContent = '✅ Вход выполнен! Перенаправление...';
+                    successEl.textContent = '✅ Вход выполнен!';
                     successEl.classList.add('active');
 
-                    // 🔥 ПЕРЕХОД НА СТРАНИЦУ КЛИЕНТА
+                    // 🔥 ОБНОВЛЯЕМ UI БЕЗ ПЕРЕЗАГРУЗКИ
+                    await updateUserUI(user);
+
+                    // Закрываем модалку
                     setTimeout(() => {
-                        window.location.href = 'client.html';
+                        authModal.classList.remove('active');
+                        this.disabled = false;
+                        this.textContent = 'Войти';
+                        successEl.classList.remove('active');
                     }, 800);
 
                 } catch (error) {
@@ -1252,7 +1258,7 @@
                 }
             });
 
-            // ===== РЕГИСТРАЦИЯ → ПЕРЕХОД НА CLIENT.HTML =====
+            // ===== РЕГИСТРАЦИЯ (БЕЗ АВТО-ПЕРЕНАПРАВЛЕНИЯ) =====
             document.getElementById('registerSubmit').addEventListener('click', async function() {
                 const name = document.getElementById('regName').value.trim();
                 const phone = document.getElementById('regPhone').value.trim();
@@ -1314,13 +1320,18 @@
                         }
                     });
 
-                    successEl.textContent = '✅ Регистрация успешна! Перенаправление...';
+                    successEl.textContent = '✅ Регистрация успешна!';
                     successEl.classList.add('active');
 
-                    // 🔥 ПЕРЕХОД НА СТРАНИЦУ КЛИЕНТА
+                    // 🔥 ОБНОВЛЯЕМ UI БЕЗ ПЕРЕЗАГРУЗКИ
+                    await updateUserUI(user);
+
                     setTimeout(() => {
-                        window.location.href = 'client.html';
-                    }, 1000);
+                        authModal.classList.remove('active');
+                        this.disabled = false;
+                        this.textContent = 'Зарегистрироваться';
+                        successEl.classList.remove('active');
+                    }, 1200);
 
                 } catch (error) {
                     console.error('Register error:', error);
