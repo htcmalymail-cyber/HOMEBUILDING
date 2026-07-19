@@ -435,7 +435,7 @@
     }
 
     // ============================================================
-    // 🔥 АВТОМАТИЧЕСКОЕ РАСПРЕДЕЛЕНИЕ ЗАКАЗОВ
+    // 🔥 АВТОМАТИЧЕСКОЕ РАСПРЕДЕЛЕНИЕ ЗАКАЗОВ (исправлено — users)
     // ============================================================
     async function distributeOrderToDrivers(orderId) {
         console.log('📡 Распределяем заказ:', orderId);
@@ -452,8 +452,9 @@
             return;
         }
 
-        const driversSnapshot = await db.collection('drivers')
-            .where('status', '==', 'online')
+        const driversSnapshot = await db.collection('users')
+            .where('role', '==', 'driver')
+            .where('driverProfile.status', '==', 'online')
             .get();
 
         if (driversSnapshot.empty) {
@@ -467,6 +468,7 @@
         for (const doc of driversSnapshot.docs) {
             const data = doc.data();
             const driverId = doc.id;
+            const driverProfile = data.driverProfile || {};
 
             const activeOrder = await db.collection('orders')
                 .where('driverId', '==', driverId)
@@ -475,8 +477,8 @@
 
             if (!activeOrder.empty) continue;
 
-            const driverLat = data.location?.lat || data.lat;
-            const driverLng = data.location?.lng || data.lng;
+            const driverLat = driverProfile.location?.lat || data.lat;
+            const driverLng = driverProfile.location?.lng || data.lng;
 
             if (!driverLat || !driverLng) continue;
 
@@ -490,11 +492,11 @@
                 driverId: driverId,
                 fullName: data.fullName || data.email,
                 phone: data.phone,
-                carModel: data.carModel,
-                carNumber: data.carNumber,
+                carModel: driverProfile.carModel,
+                carNumber: driverProfile.carNumber,
                 distance: distance,
                 timeMinutes: timeMinutes,
-                rating: data.rating || 5
+                rating: driverProfile.rating || 5
             });
         }
 
@@ -539,11 +541,12 @@
     }
 
     // ============================================================
-    // 🖐️ РУЧНОЕ НАЗНАЧЕНИЕ (диспетчер выбирает водителя)
+    // 🖐️ РУЧНОЕ НАЗНАЧЕНИЕ (исправлено — users)
     // ============================================================
     function reassignOrder(orderId) {
-        db.collection('drivers')
-            .where('status', '==', 'online')
+        db.collection('users')
+            .where('role', '==', 'driver')
+            .where('driverProfile.status', '==', 'online')
             .get()
             .then(snapshot => {
                 if (snapshot.empty) {
@@ -555,12 +558,13 @@
                 const drivers = [];
                 snapshot.forEach(doc => {
                     const data = doc.data();
+                    const driverProfile = data.driverProfile || {};
                     drivers.push({ 
                         id: doc.id, 
                         name: data.fullName || data.email, 
-                        car: data.carModel || '' 
+                        car: driverProfile.carModel || '' 
                     });
-                    driverList += `${drivers.length}. ${data.fullName || data.email} (${data.carModel || ''})\n`;
+                    driverList += `${drivers.length}. ${data.fullName || data.email} (${driverProfile.carModel || ''})\n`;
                 });
 
                 const choice = prompt(`Выберите водителя:\n${driverList}\nВведите номер (1-${drivers.length}):`);
@@ -579,9 +583,10 @@
                     dispatcherNote: `Ручное назначение диспетчером на ${selected.name}`,
                     assignedAt: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
-                    return db.collection('drivers').doc(selected.id).update({
-                        status: 'busy',
-                        currentOrderId: orderId
+                    return db.collection('users').doc(selected.id).update({
+                        'driverProfile.status': 'busy',
+                        'driverProfile.currentOrderId': orderId,
+                        'driverProfile.lastUpdated': firebase.firestore.FieldValue.serverTimestamp()
                     });
                 }).then(() => {
                     alert(`✅ Заказ назначен на ${selected.name}`);
@@ -714,77 +719,86 @@
     }
 
     // ============================================================
-    // ВОДИТЕЛИ
+    // ВОДИТЕЛИ (исправлено — users)
     // ============================================================
     function loadAllDrivers() {
-        db.collection('drivers').onSnapshot(snapshot => {
-            const tbody = document.getElementById('drivers-tbody');
-            let html = '';
-            let count = 0;
+        db.collection('users')
+            .where('role', '==', 'driver')
+            .onSnapshot(snapshot => {
+                const tbody = document.getElementById('drivers-tbody');
+                let html = '';
+                let count = 0;
 
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const driverId = doc.id;
-                count++;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const driverId = doc.id;
+                    const driverProfile = data.driverProfile || {};
+                    count++;
 
-                const statusClass = data.status === 'online' ? 'status-online' :
-                                   data.status === 'busy' ? 'status-busy' : 'status-offline';
-                const statusText = data.status === 'online' ? '🟢 Онлайн' :
-                                  data.status === 'busy' ? '🟡 Занят' : '🔴 Офлайн';
+                    const status = driverProfile.status || 'offline';
+                    const statusClass = status === 'online' ? 'status-online' :
+                                       status === 'busy' ? 'status-busy' : 'status-offline';
+                    const statusText = status === 'online' ? '🟢 Онлайн' :
+                                      status === 'busy' ? '🟡 Занят' : '🔴 Офлайн';
 
-                html += `<tr>
-                    <td><strong>${data.fullName || data.email || '—'}</strong></td>
-                    <td>${data.carModel || '—'}</td>
-                    <td>${data.carNumber || '—'}</td>
-                    <td>${data.phone || '—'}</td>
-                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                    <td id="order-${driverId}">—</td>
-                    <td>
-                        <button class="btn btn-sm btn-danger" onclick="deleteDriver('${driverId}')"><i class="fas fa-trash"></i></button>
-                        <button class="btn btn-sm btn-warning" onclick="toggleDriverStatus('${driverId}')"><i class="fas fa-sync"></i></button>
-                    </td>
-                </tr>`;
-            });
+                    html += `<tr>
+                        <td><strong>${data.fullName || data.email || '—'}</strong></td>
+                        <td>${driverProfile.carModel || '—'}</td>
+                        <td>${driverProfile.carNumber || '—'}</td>
+                        <td>${data.phone || '—'}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td id="order-${driverId}">—</td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="deleteDriver('${driverId}')"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-sm btn-warning" onclick="toggleDriverStatus('${driverId}')"><i class="fas fa-sync"></i></button>
+                        </td>
+                    </tr>`;
+                });
 
-            tbody.innerHTML = html || `<tr class="empty-row"><td colspan="7">Нет зарегистрированных водителей</td></tr>`;
-            document.getElementById('stat-drivers').textContent = count;
+                tbody.innerHTML = html || `<tr class="empty-row"><td colspan="7">Нет зарегистрированных водителей</td></tr>`;
+                document.getElementById('stat-drivers').textContent = count;
 
-            snapshot.forEach(doc => {
-                const driverId = doc.id;
-                db.collection('orders')
-                    .where('driverId', '==', driverId)
-                    .where('status', 'in', ['assigned', 'accepted', 'en_route', 'offering'])
-                    .get()
-                    .then(snap => {
-                        const cell = document.getElementById('order-' + driverId);
-                        if (cell) {
-                            if (!snap.empty) {
-                                const order = snap.docs[0].data();
-                                cell.textContent = (order.client?.from?.address || order.from || '?') + ' → ' + (order.destination?.address || order.to || '?');
-                            } else {
-                                cell.textContent = '—';
+                snapshot.forEach(doc => {
+                    const driverId = doc.id;
+                    db.collection('orders')
+                        .where('driverId', '==', driverId)
+                        .where('status', 'in', ['assigned', 'accepted', 'en_route', 'offering'])
+                        .get()
+                        .then(snap => {
+                            const cell = document.getElementById('order-' + driverId);
+                            if (cell) {
+                                if (!snap.empty) {
+                                    const order = snap.docs[0].data();
+                                    cell.textContent = (order.client?.from?.address || order.from || '?') + ' → ' + (order.destination?.address || order.to || '?');
+                                } else {
+                                    cell.textContent = '—';
+                                }
                             }
-                        }
-                    });
+                        });
+                });
             });
-        });
     }
 
     function deleteDriver(driverId) {
         if (!confirm('⚠️ Удалить водителя?')) return;
-        db.collection('drivers').doc(driverId).delete()
+        db.collection('users').doc(driverId).delete()
             .then(() => alert('✅ Водитель удалён'))
             .catch(e => alert('❌ Ошибка: ' + e.message));
     }
 
     function toggleDriverStatus(driverId) {
-        db.collection('drivers').doc(driverId).get().then(doc => {
+        db.collection('users').doc(driverId).get().then(doc => {
             if (doc.exists) {
-                const current = doc.data().status || 'offline';
+                const data = doc.data();
+                const driverProfile = data.driverProfile || {};
+                const current = driverProfile.status || 'offline';
                 const newStatus = current === 'online' ? 'offline' : 'online';
-                db.collection('drivers').doc(driverId).update({ status: newStatus })
-                    .then(() => alert(`✅ Статус изменён на ${newStatus}`))
-                    .catch(e => alert('❌ Ошибка: ' + e.message));
+                db.collection('users').doc(driverId).update({
+                    'driverProfile.status': newStatus,
+                    'driverProfile.lastUpdated': firebase.firestore.FieldValue.serverTimestamp()
+                })
+                .then(() => alert(`✅ Статус изменён на ${newStatus}`))
+                .catch(e => alert('❌ Ошибка: ' + e.message));
             }
         });
     }
