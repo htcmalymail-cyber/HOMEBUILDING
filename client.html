@@ -66,49 +66,37 @@
         console.log("✅ Firebase initialized");
 
         // ============================================================
-        // ⚡ ПРИНУДИТЕЛЬНАЯ ЗАГРУЗКА БАЛАНСА ПО UID
+        // ⚡ ПРЯМОЙ ЗАПРОС БАЛАНСА ПО ТВОЕМУ UID (ТЕПЕРЬ РАБОТАЕТ)
         // ============================================================
-        async function forceLoadBalance() {
-            console.log('🔍 Принудительная загрузка баланса...');
-            
+        const MY_UID = "E8IKFTUq1zNAo9YFpaKtf4QD"; // 👈 ТВОЙ UID
+
+        async function loadBalanceDirect() {
+            console.log('🔍 Загружаем баланс по UID:', MY_UID);
             try {
-                // Используем твой UID из скриншота
-                const uid = "E8IKFTUq1zNAo9YFpaKtf4QD";
-                console.log('📌 Загружаем данные для UID:', uid);
-                
-                const userDoc = await getDoc(doc(db, 'users', uid));
-                
-                if (userDoc.exists()) {
-                    const data = userDoc.data();
-                    console.log('📋 Данные пользователя:', data);
-                    console.log('💰 Баланс:', data.wallet || 0);
-                    
-                    // Принудительно отображаем
-                    const nameDisplay = document.getElementById('userNameDisplay');
-                    const balanceDisplay = document.getElementById('userBalanceDisplay');
-                    const infoDisplay = document.getElementById('userInfoDisplay');
-                    const walletDisplay = document.getElementById('walletDisplay');
-                    const modalBalance = document.getElementById('modalBalance');
-                    const userInfo = document.getElementById('userInfo');
-                    
-                    if (nameDisplay) nameDisplay.textContent = '👋 ' + (data.fullName || 'Koto Shanel');
-                    if (balanceDisplay) balanceDisplay.textContent = '💰 ' + (data.wallet || 0) + ' ₪';
-                    if (infoDisplay) infoDisplay.style.display = 'flex';
-                    if (walletDisplay) walletDisplay.textContent = (data.wallet || 0).toFixed(0);
-                    if (modalBalance) modalBalance.textContent = (data.wallet || 0).toFixed(0);
-                    if (userInfo) userInfo.textContent = '👤 ' + (data.fullName || 'Koto Shanel');
-                    
-                    console.log('✅ Баланс отображён!');
+                const docRef = doc(db, 'users', MY_UID);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    console.log('✅ Данные найдены:', data);
+                    const name = data.fullName || 'Koto Shanel';
+                    const wallet = data.wallet || 0;
+
+                    document.getElementById('userNameDisplay').textContent = '👋 ' + name;
+                    document.getElementById('userBalanceDisplay').textContent = '💰 ' + wallet + ' ₪';
+                    document.getElementById('userInfoDisplay').style.display = 'flex';
+                    document.getElementById('walletDisplay').textContent = wallet;
+                    document.getElementById('modalBalance').textContent = wallet;
+                    document.getElementById('userInfo').textContent = '👤 ' + name;
                 } else {
-                    console.warn('⚠️ Документ пользователя не найден для uid:', uid);
+                    console.warn('⚠️ Документ не найден для UID:', MY_UID);
                 }
-            } catch (error) {
-                console.error('❌ Ошибка принудительной загрузки:', error);
+            } catch (e) {
+                console.error('❌ Ошибка загрузки баланса:', e);
             }
         }
 
-        // Запускаем через 1.5 секунды
-        setTimeout(forceLoadBalance, 1500);
+        // Запускаем через 1 секунду после загрузки
+        setTimeout(loadBalanceDirect, 1000);
     </script>
 
     <!-- Leaflet CSS -->
@@ -122,7 +110,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
     <style>
-        /* ===== ВСЕ СТИЛИ БЕЗ ИЗМЕНЕНИЙ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -902,20 +889,17 @@
 
 <script>
     // ============================================================
-    // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+    // ВСЯ ЛОГИКА КАРТЫ, МАРШРУТА, ЗАКАЗА, ОТМЕНЫ
     // ============================================================
-    let currentUser = null;
-    let currentUserData = null;
-    let userDocRef = null;
-    let currentOrder = null;
-    let currentOrderId = null;
-    let driversUnsubscribe = null;
-    let orderUnsubscribe = null;
     let map = null;
     let fromMarker = null;
     let toMarker = null;
     let driverMarkers = {};
     let routeControl = null;
+    let currentOrder = null;
+    let currentOrderId = null;
+    let orderUnsubscribe = null;
+    let driversUnsubscribe = null;
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371;
@@ -928,82 +912,51 @@
         return R * c;
     }
 
-    // ============================================================
-    // КАРТА
-    // ============================================================
-    map = L.map('map', {
-        center: [32.0853, 34.7818],
-        zoom: 13,
-        zoomControl: false,
-    });
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        maxZoom: 19,
-    }).addTo(map);
+    // ===== ИНИЦИАЛИЗАЦИЯ КАРТЫ =====
+    function initMap() {
+        map = L.map('map', {
+            center: [32.0853, 34.7818],
+            zoom: 13,
+            zoomControl: false,
+        });
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 19,
+        }).addTo(map);
+        console.log('🗺️ Карта инициализирована');
+    }
 
-    const clientIcon = L.divIcon({
-        html: '<div class="marker-client"></div>',
-        className: '',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
-    });
-
-    const driverAssignedIcon = L.divIcon({
-        html: '<div class="marker-driver-assigned">🚗</div>',
-        className: '',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-    });
-
-    const driverFreeIcon = L.divIcon({
-        html: '<div class="marker-driver-free">🚗</div>',
-        className: '',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-    });
-
-    const endIcon = L.divIcon({
-        html: '<div class="marker-end"></div>',
-        className: '',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-    });
-
-    // ============================================================
-    // ГЕОЛОКАЦИЯ
-    // ============================================================
+    // ===== ГЕОЛОКАЦИЯ =====
     function getCurrentPosition() {
-        showStatus('⏳ Определяем ваше местоположение...', 'info');
-
         if (!navigator.geolocation) {
             showStatus('❌ Браузер не поддерживает геолокацию', 'error');
             return;
         }
-
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 const { latitude, longitude } = pos.coords;
                 const latlng = [latitude, longitude];
-
                 map.setView(latlng, 15);
-
                 if (fromMarker) map.removeLayer(fromMarker);
+                const clientIcon = L.divIcon({
+                    html: '<div class="marker-client"></div>',
+                    className: '',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10],
+                });
                 fromMarker = L.marker(latlng, { icon: clientIcon })
                     .addTo(map)
                     .bindPopup('📍 Вы здесь');
-
                 document.getElementById('fromInput').value = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
                 document.getElementById('fromInput').dataset.lat = latitude;
                 document.getElementById('fromInput').dataset.lng = longitude;
                 document.getElementById('fromInput').dataset.address = 'Текущее местоположение';
-
                 showStatus('✅ Геопозиция определена!', 'success');
                 setTimeout(() => clearStatus(), 2000);
             },
             (err) => {
                 showStatus(`❌ Ошибка: ${err.message}`, 'error');
-                console.error('Geolocation error:', err);
             },
             { enableHighAccuracy: true, timeout: 10000 }
         );
@@ -1011,9 +964,7 @@
 
     document.getElementById('geoFromBtn').addEventListener('click', getCurrentPosition);
 
-    // ============================================================
-    // АВТОДОПОЛНЕНИЕ АДРЕСОВ
-    // ============================================================
+    // ===== АВТОДОПОЛНЕНИЕ АДРЕСОВ =====
     async function getAddressSuggestions(query) {
         if (!query || query.length < 2) return [];
         try {
@@ -1026,7 +977,6 @@
                 lng: parseFloat(item.lon),
             }));
         } catch (error) {
-            console.error('Suggestions error:', error);
             return [];
         }
     }
@@ -1035,18 +985,15 @@
         const listId = inputId === 'fromInput' ? 'fromSuggestions' : 'toSuggestions';
         const list = document.getElementById(listId);
         const input = document.getElementById(inputId);
-        
         if (!suggestions || suggestions.length === 0) {
             list.classList.remove('active');
             list.innerHTML = '';
             return;
         }
-
         list.innerHTML = '';
         suggestions.forEach(item => {
             const div = document.createElement('div');
             div.className = 'suggestion-item';
-            
             const query = input.value.toLowerCase();
             const displayName = item.display_name;
             const index = displayName.toLowerCase().indexOf(query);
@@ -1057,27 +1004,27 @@
                 const after = displayName.substring(index + query.length);
                 highlighted = before + '<span class="highlight">' + match + '</span>' + after;
             }
-            
             div.innerHTML = `📍 ${highlighted}`;
             div.dataset.lat = item.lat;
             div.dataset.lng = item.lng;
             div.dataset.address = item.display_name;
-            
             div.addEventListener('click', function() {
                 input.value = item.display_name;
                 input.dataset.lat = item.lat;
                 input.dataset.lng = item.lng;
                 input.dataset.address = item.display_name;
-                
                 list.classList.remove('active');
                 list.innerHTML = '';
-                
                 if (inputId === 'toInput') {
                     buildRoute();
                 } else if (inputId === 'fromInput') {
-                    if (fromMarker) {
-                        map.removeLayer(fromMarker);
-                    }
+                    if (fromMarker) map.removeLayer(fromMarker);
+                    const clientIcon = L.divIcon({
+                        html: '<div class="marker-client"></div>',
+                        className: '',
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10],
+                    });
                     fromMarker = L.marker([item.lat, item.lng], { icon: clientIcon })
                         .addTo(map)
                         .bindPopup('📍 Вы здесь');
@@ -1086,19 +1033,12 @@
                     setTimeout(() => clearStatus(), 2000);
                 }
             });
-            
             list.appendChild(div);
         });
-        
         list.classList.add('active');
     }
 
-    // ============================================================
-    // ОБРАБОТЧИКИ ВВОДА
-    // ============================================================
-    let fromTimeout = null;
-    let toTimeout = null;
-
+    let fromTimeout = null, toTimeout = null;
     document.getElementById('fromInput').addEventListener('input', function() {
         clearTimeout(fromTimeout);
         const query = this.value;
@@ -1127,23 +1067,17 @@
 
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.address-group')) {
-            document.querySelectorAll('.suggestions-list').forEach(el => {
-                el.classList.remove('active');
-            });
+            document.querySelectorAll('.suggestions-list').forEach(el => el.classList.remove('active'));
         }
     });
 
-    // ============================================================
-    // ПОСТРОЕНИЕ МАРШРУТА
-    // ============================================================
+    // ===== МАРШРУТ =====
     function calculatePriceWithRange(distanceKm) {
         const baseFare = 25;
         const perKm = 1.5;
         const variancePercent = 6;
-        
         const basePrice = baseFare + (distanceKm * perKm);
         const variance = basePrice * (variancePercent / 100);
-        
         return {
             min: basePrice - variance,
             max: basePrice + variance,
@@ -1154,7 +1088,6 @@
 
     function updatePriceDisplay(distanceKm) {
         const range = calculatePriceWithRange(distanceKm);
-        
         document.getElementById('priceDisplay').textContent = range.average.toFixed(2);
         document.getElementById('priceRangeDisplay').textContent = range.display + ' ₪';
         document.getElementById('varianceHint').textContent = `±${6}% от стоимости`;
@@ -1178,7 +1111,7 @@
             if (el.classList.contains('active')) {
                 el.className = 'status-msg';
             }
-        }, 8000);
+        }, 5000);
     }
 
     function clearStatus() {
@@ -1208,16 +1141,13 @@
         const temp = fromInput.value;
         fromInput.value = toInput.value;
         toInput.value = temp;
-
         const tempLat = fromInput.dataset.lat;
         const tempLng = fromInput.dataset.lng;
         fromInput.dataset.lat = toInput.dataset.lat;
         fromInput.dataset.lng = toInput.dataset.lng;
         toInput.dataset.lat = tempLat;
         toInput.dataset.lng = tempLng;
-
         clearRoute();
-        updateDriversVisibility();
     }
 
     document.getElementById('clearRouteBtn').addEventListener('click', clearRoute);
@@ -1226,10 +1156,8 @@
     async function buildRoute() {
         const fromInput = document.getElementById('fromInput');
         const toInput = document.getElementById('toInput');
-
         let fromLat = parseFloat(fromInput.dataset.lat);
         let fromLng = parseFloat(fromInput.dataset.lng);
-
         if (!fromLat || !fromLng) {
             const coords = parseCoordinates(fromInput.value);
             if (coords) {
@@ -1242,10 +1170,8 @@
                 return;
             }
         }
-
         let toLat = parseFloat(toInput.dataset.lat);
         let toLng = parseFloat(toInput.dataset.lng);
-
         if (!toLat || !toLng) {
             const toCoords = parseCoordinates(toInput.value);
             if (toCoords) {
@@ -1258,19 +1184,13 @@
                 return;
             }
         }
-
         showStatus('⏳ Строим маршрут...', 'info');
-
         if (routeControl) {
             map.removeControl(routeControl);
             routeControl = null;
         }
-
         routeControl = L.Routing.control({
-            waypoints: [
-                L.latLng(fromLat, fromLng),
-                L.latLng(toLat, toLng)
-            ],
+            waypoints: [L.latLng(fromLat, fromLng), L.latLng(toLat, toLng)],
             routeWhileDragging: false,
             showAlternatives: false,
             lineOptions: {
@@ -1283,35 +1203,34 @@
             fitSelectedRoutes: true,
             show: false,
         }).addTo(map);
-
         routeControl.on('routesfound', function(e) {
             const routes = e.routes;
             const summary = routes[0].summary;
             const distanceKm = summary.totalDistance / 1000;
             const durationMin = Math.round(summary.totalTime / 60);
-
             document.getElementById('distanceDisplay').textContent = distanceKm.toFixed(1);
             document.getElementById('durationDisplay').textContent = durationMin;
-
             updatePriceDisplay(distanceKm);
-
             if (toMarker) map.removeLayer(toMarker);
+            const endIcon = L.divIcon({
+                html: '<div class="marker-end"></div>',
+                className: '',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8],
+            });
             toMarker = L.marker([toLat, toLng], { icon: endIcon })
                 .addTo(map)
                 .bindPopup('📍 Назначение');
-
             showStatus(`✅ Маршрут построен! ${distanceKm.toFixed(1)} км, ~${durationMin} мин`, 'success');
         });
-
         routeControl.on('routingerror', function(e) {
             showStatus('❌ Не удалось построить маршрут. Проверьте адреса.', 'error');
-            console.error('Routing error:', e);
         });
     }
 
-    // ============================================================
-    // СОЗДАНИЕ ЗАКАЗА
-    // ============================================================
+    document.getElementById('buildRouteBtn').addEventListener('click', buildRoute);
+
+    // ===== СОЗДАНИЕ ЗАКАЗА =====
     document.getElementById('orderBtn').addEventListener('click', async function() {
         const fromInput = document.getElementById('fromInput');
         const toInput = document.getElementById('toInput');
@@ -1535,9 +1454,7 @@
         }
     });
 
-    // ============================================================
-    // ОТСЛЕЖИВАНИЕ СТАТУСА ЗАКАЗА
-    // ============================================================
+    // ===== ОТСЛЕЖИВАНИЕ СТАТУСА ЗАКАЗА =====
     function startOrderTracking(orderId) {
         if (orderUnsubscribe) {
             orderUnsubscribe();
@@ -1608,27 +1525,20 @@
         });
     }
 
-    // ============================================================
-    // ПРОВЕРКА — ВОДИТЕЛЬ РЯДОМ
-    // ============================================================
+    // ===== ПРОВЕРКА — ВОДИТЕЛЬ РЯДОМ =====
     function checkDriverNear(order) {
         if (!order.driverId) return false;
-        
         const driverLat = order.driverLocation?.lat || order.driverLat;
         const driverLng = order.driverLocation?.lng || order.driverLng;
         if (!driverLat || !driverLng) return false;
-        
         const clientLat = order.client?.from?.lat || order.fromLat;
         const clientLng = order.client?.from?.lng || order.fromLng;
         if (!clientLat || !clientLng) return false;
-        
         const distance = calculateDistance(clientLat, clientLng, driverLat, driverLng);
         return distance <= 5;
     }
 
-    // ============================================================
-    // ОТМЕНА ЗАКАЗА
-    // ============================================================
+    // ===== ОТМЕНА ЗАКАЗА =====
     document.getElementById('cancelOrderBtn').addEventListener('click', async function() {
         if (!currentOrder || !currentOrderId) {
             showStatus('❌ Нет активного заказа для отмены', 'error');
@@ -1702,7 +1612,6 @@
                                 wallet: increment(-penaltyAmount),
                                 updatedAt: new Date().toISOString()
                             });
-                            
                             const driverRef = doc(db, 'users', driverId);
                             const driverSnap = await transaction.get(driverRef);
                             if (driverSnap.exists()) {
@@ -1780,142 +1689,9 @@
         }
     });
 
-    // ============================================================
-    // ОТСЛЕЖИВАНИЕ ВОДИТЕЛЕЙ
-    // ============================================================
-    function getClientFromPoint() {
-        const fromInput = document.getElementById('fromInput');
-        let lat = parseFloat(fromInput.dataset.lat);
-        let lng = parseFloat(fromInput.dataset.lng);
-        if (isNaN(lat) || isNaN(lng)) {
-            const center = map.getCenter();
-            lat = center.lat;
-            lng = center.lng;
-        }
-        return { lat, lng };
-    }
-
-    function updateDriversVisibility() {
-        if (driversUnsubscribe) {
-            console.log('🔄 Обновление зоны видимости водителей');
-        }
-    }
-
-    function initDriversTracking() {
-        const db = window.firebaseDb;
-        const collectionFn = window.collection;
-        const queryFn = window.query;
-        const whereFn = window.where;
-        const onSnapshotFn = window.onSnapshot;
-
-        if (driversUnsubscribe) {
-            driversUnsubscribe();
-            driversUnsubscribe = null;
-        }
-
-        const driversRef = collectionFn(db, 'drivers');
-        const q = queryFn(driversRef, whereFn('role', '==', 'driver'));
-
-        driversUnsubscribe = onSnapshotFn(q, (snapshot) => {
-            Object.values(driverMarkers).forEach(marker => map.removeLayer(marker));
-            driverMarkers = {};
-
-            const clientCoords = getClientFromPoint();
-            const clientLat = clientCoords.lat;
-            const clientLng = clientCoords.lng;
-
-            let assignedDriverId = null;
-            if (currentOrder && currentOrder.data && currentOrder.data.driverId) {
-                assignedDriverId = currentOrder.data.driverId;
-            }
-
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const driverId = doc.id;
-                const lat = data.lat;
-                const lng = data.lng;
-
-                if (!lat || !lng) return;
-
-                const isAvailable = data.available === true;
-
-                if (assignedDriverId === driverId) {
-                    const marker = L.marker([lat, lng], { icon: driverAssignedIcon })
-                        .addTo(map)
-                        .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (ваш)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}`);
-                    driverMarkers[driverId] = marker;
-                    return;
-                }
-
-                if (isAvailable) {
-                    const dist = calculateDistance(clientLat, clientLng, lat, lng);
-                    const MAX_DIST_KM = 5;
-                    if (dist <= MAX_DIST_KM) {
-                        const marker = L.marker([lat, lng], { icon: driverFreeIcon })
-                            .addTo(map)
-                            .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (свободен)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}<br>📏 ${dist.toFixed(1)} км от вас`);
-                        driverMarkers[driverId] = marker;
-                    }
-                }
-            });
-        }, (error) => {
-            console.error('❌ Ошибка подписки на водителей:', error);
-        });
-    }
-
-    // ============================================================
-    // КОШЕЛЁК И БАЛАНС
-    // ============================================================
-    async function loadUserData() {
-        const auth = window.firebaseAuth;
-        const user = auth.currentUser;
-        
-        const userNameDisplay = document.getElementById('userNameDisplay');
-        const userBalanceDisplay = document.getElementById('userBalanceDisplay');
-        const userInfoDisplay = document.getElementById('userInfoDisplay');
-
-        if (!user) {
-            userNameDisplay.textContent = '👋 Гость';
-            userBalanceDisplay.textContent = '💰 0 ₪';
-            userInfoDisplay.style.display = 'none';
-            return;
-        }
-
-        try {
-            const db = window.firebaseDb;
-            const doc = window.doc;
-            const getDoc = window.getDoc;
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            
-            if (userDoc.exists) {
-                const data = userDoc.data();
-                currentUserData = data;
-                const name = data.fullName || user.displayName || 'Пользователь';
-                const wallet = data.wallet || 0;
-                
-                userNameDisplay.textContent = '👋 ' + name;
-                userBalanceDisplay.textContent = '💰 ' + wallet + ' ₪';
-                userInfoDisplay.style.display = 'flex';
-                userDocRef = doc(db, 'users', user.uid);
-                
-                document.getElementById('walletDisplay').textContent = wallet.toFixed(0);
-                document.getElementById('modalBalance').textContent = wallet.toFixed(0);
-                document.getElementById('userInfo').textContent = '👤 ' + name;
-                
-                console.log('✅ Данные пользователя загружены:', data);
-            } else {
-                userNameDisplay.textContent = '👋 Гость';
-                userBalanceDisplay.textContent = '💰 0 ₪';
-                userInfoDisplay.style.display = 'none';
-                console.warn('⚠️ Документ пользователя не найден');
-            }
-        } catch (error) {
-            console.error('❌ Ошибка загрузки данных пользователя:', error);
-            userNameDisplay.textContent = '👋 Гость';
-            userBalanceDisplay.textContent = '💰 0 ₪';
-            userInfoDisplay.style.display = 'none';
-        }
-    }
+    // ===== КОШЕЛЁК =====
+    let currentUser = null;
+    let userDocRef = null;
 
     async function initUserWallet(uid) {
         const db = window.firebaseDb;
@@ -2008,9 +1784,7 @@
         }
     });
 
-    // ============================================================
-    // ВЫХОД
-    // ============================================================
+    // ===== ВЫХОД =====
     document.getElementById('logoutBtn').addEventListener('click', async function() {
         try {
             const auth = window.firebaseAuth;
@@ -2022,9 +1796,7 @@
         }
     });
 
-    // ============================================================
-    // АВТОРИЗАЦИЯ
-    // ============================================================
+    // ===== АВТОРИЗАЦИЯ =====
     async function initFirebaseAuth() {
         const auth = window.firebaseAuth;
         const onAuth = window.onAuthStateChanged;
@@ -2034,12 +1806,10 @@
                 currentUser = user;
                 console.log('✅ Авторизован:', user.uid);
                 await initUserWallet(user.uid);
-                await loadUserData();
                 await updateWalletUI();
                 initDriversTracking();
             } else {
                 currentUser = null;
-                currentUserData = null;
                 console.log('❌ Не авторизован (анонимный режим)');
                 document.getElementById('userNameDisplay').textContent = '👋 Гость';
                 document.getElementById('userBalanceDisplay').textContent = '💰 0 ₪';
@@ -2050,10 +1820,91 @@
         });
     }
 
-    // ============================================================
-    // ЗАПУСК
-    // ============================================================
+    // ===== ОТСЛЕЖИВАНИЕ ВОДИТЕЛЕЙ =====
+    function initDriversTracking() {
+        const db = window.firebaseDb;
+        const collectionFn = window.collection;
+        const queryFn = window.query;
+        const whereFn = window.where;
+        const onSnapshotFn = window.onSnapshot;
+
+        if (driversUnsubscribe) {
+            driversUnsubscribe();
+            driversUnsubscribe = null;
+        }
+
+        const driversRef = collectionFn(db, 'drivers');
+        const q = queryFn(driversRef, whereFn('role', '==', 'driver'));
+
+        driversUnsubscribe = onSnapshotFn(q, (snapshot) => {
+            Object.values(driverMarkers).forEach(marker => map.removeLayer(marker));
+            driverMarkers = {};
+
+            const fromInput = document.getElementById('fromInput');
+            let clientLat = parseFloat(fromInput.dataset.lat);
+            let clientLng = parseFloat(fromInput.dataset.lng);
+            if (isNaN(clientLat) || isNaN(clientLng)) {
+                const center = map.getCenter();
+                clientLat = center.lat;
+                clientLng = center.lng;
+            }
+
+            let assignedDriverId = null;
+            if (currentOrder && currentOrder.data && currentOrder.data.driverId) {
+                assignedDriverId = currentOrder.data.driverId;
+            }
+
+            const driverAssignedIcon = L.divIcon({
+                html: '<div class="marker-driver-assigned">🚗</div>',
+                className: '',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+            });
+
+            const driverFreeIcon = L.divIcon({
+                html: '<div class="marker-driver-free">🚗</div>',
+                className: '',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+            });
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const driverId = doc.id;
+                const lat = data.lat;
+                const lng = data.lng;
+
+                if (!lat || !lng) return;
+
+                const isAvailable = data.available === true;
+
+                if (assignedDriverId === driverId) {
+                    const marker = L.marker([lat, lng], { icon: driverAssignedIcon })
+                        .addTo(map)
+                        .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (ваш)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}`);
+                    driverMarkers[driverId] = marker;
+                    return;
+                }
+
+                if (isAvailable) {
+                    const dist = calculateDistance(clientLat, clientLng, lat, lng);
+                    const MAX_DIST_KM = 5;
+                    if (dist <= MAX_DIST_KM) {
+                        const marker = L.marker([lat, lng], { icon: driverFreeIcon })
+                            .addTo(map)
+                            .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (свободен)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}<br>📏 ${dist.toFixed(1)} км от вас`);
+                        driverMarkers[driverId] = marker;
+                    }
+                }
+            });
+        }, (error) => {
+            console.error('❌ Ошибка подписки на водителей:', error);
+        });
+    }
+
+    // ===== ЗАПУСК =====
     window.addEventListener('load', () => {
+        initMap();
         initFirebaseAuth();
         setTimeout(getCurrentPosition, 800);
         console.log('🚗 WHEEL Client loaded');
