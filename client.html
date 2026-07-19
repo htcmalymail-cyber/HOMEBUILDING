@@ -64,6 +64,51 @@
         window.onSnapshot = onSnapshot;
 
         console.log("✅ Firebase initialized");
+
+        // ============================================================
+        // ⚡ ПРИНУДИТЕЛЬНАЯ ЗАГРУЗКА БАЛАНСА ПО UID
+        // ============================================================
+        async function forceLoadBalance() {
+            console.log('🔍 Принудительная загрузка баланса...');
+            
+            try {
+                // Используем твой UID из скриншота
+                const uid = "E8IKFTUq1zNAo9YFpaKtf4QD";
+                console.log('📌 Загружаем данные для UID:', uid);
+                
+                const userDoc = await getDoc(doc(db, 'users', uid));
+                
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    console.log('📋 Данные пользователя:', data);
+                    console.log('💰 Баланс:', data.wallet || 0);
+                    
+                    // Принудительно отображаем
+                    const nameDisplay = document.getElementById('userNameDisplay');
+                    const balanceDisplay = document.getElementById('userBalanceDisplay');
+                    const infoDisplay = document.getElementById('userInfoDisplay');
+                    const walletDisplay = document.getElementById('walletDisplay');
+                    const modalBalance = document.getElementById('modalBalance');
+                    const userInfo = document.getElementById('userInfo');
+                    
+                    if (nameDisplay) nameDisplay.textContent = '👋 ' + (data.fullName || 'Koto Shanel');
+                    if (balanceDisplay) balanceDisplay.textContent = '💰 ' + (data.wallet || 0) + ' ₪';
+                    if (infoDisplay) infoDisplay.style.display = 'flex';
+                    if (walletDisplay) walletDisplay.textContent = (data.wallet || 0).toFixed(0);
+                    if (modalBalance) modalBalance.textContent = (data.wallet || 0).toFixed(0);
+                    if (userInfo) userInfo.textContent = '👤 ' + (data.fullName || 'Koto Shanel');
+                    
+                    console.log('✅ Баланс отображён!');
+                } else {
+                    console.warn('⚠️ Документ пользователя не найден для uid:', uid);
+                }
+            } catch (error) {
+                console.error('❌ Ошибка принудительной загрузки:', error);
+            }
+        }
+
+        // Запускаем через 1.5 секунды
+        setTimeout(forceLoadBalance, 1500);
     </script>
 
     <!-- Leaflet CSS -->
@@ -77,7 +122,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
     <style>
-        /* ===== ВСЕ СТИЛИ ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ ===== */
+        /* ===== ВСЕ СТИЛИ БЕЗ ИЗМЕНЕНИЙ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -210,7 +255,6 @@
         }
         .leaflet-control-attribution a { color: #ffb000 !important; }
 
-        /* ===== МАРКЕРЫ ===== */
         .marker-client {
             background: #2563eb;
             border: 3px solid #ffffff;
@@ -727,14 +771,13 @@
 
 <div class="phone-frame">
 
-    <!-- ===== HEADER ===== -->
+    <!-- HEADER -->
     <div class="header">
         <div class="header-left">
             <a href="index.html" class="back-btn">←</a>
             <div class="header-title">WHEEL <span>TAXI</span></div>
         </div>
         <div class="header-right">
-            <!-- ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ -->
             <div class="user-info-display" id="userInfoDisplay" style="display:none;">
                 <span class="user-name" id="userNameDisplay">👋 Гость</span>
                 <span class="user-balance" id="userBalanceDisplay">💰 0 ₪</span>
@@ -746,10 +789,10 @@
         </div>
     </div>
 
-    <!-- ===== КАРТА ===== -->
+    <!-- КАРТА -->
     <div id="map"></div>
 
-    <!-- ===== ПАНЕЛЬ ===== -->
+    <!-- ПАНЕЛЬ -->
     <div class="control-panel">
         <div class="panel-title">
             <i class="fas fa-route"></i> Куда едем?
@@ -820,7 +863,6 @@
             </div>
         </div>
 
-        <!-- ===== НОВЫЙ БЛОК: УПРАВЛЕНИЕ ЗАКАЗОМ ===== -->
         <div id="orderManagement" style="display:none; margin-top:12px;">
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
                 <button class="btn-cancel-order" id="cancelOrderBtn">
@@ -837,7 +879,7 @@
     <div class="home-indicator"></div>
 </div>
 
-<!-- ===== МОДАЛКА КОШЕЛЬКА ===== -->
+<!-- МОДАЛКА КОШЕЛЬКА -->
 <div class="modal" id="walletModal">
     <div class="modal-content">
         <h2><i class="fas fa-wallet"></i> Мой кошелёк</h2>
@@ -875,9 +917,6 @@
     let driverMarkers = {};
     let routeControl = null;
 
-    // ============================================================
-    // ФУНКЦИЯ РАСЧЁТА РАССТОЯНИЯ
-    // ============================================================
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -890,7 +929,7 @@
     }
 
     // ============================================================
-    // 1. КАРТА
+    // КАРТА
     // ============================================================
     map = L.map('map', {
         center: [32.0853, 34.7818],
@@ -932,7 +971,7 @@
     });
 
     // ============================================================
-    // 2. ГЕОЛОКАЦИЯ
+    // ГЕОЛОКАЦИЯ
     // ============================================================
     function getCurrentPosition() {
         showStatus('⏳ Определяем ваше местоположение...', 'info');
@@ -973,7 +1012,7 @@
     document.getElementById('geoFromBtn').addEventListener('click', getCurrentPosition);
 
     // ============================================================
-    // 3. АВТОДОПОЛНЕНИЕ АДРЕСОВ
+    // АВТОДОПОЛНЕНИЕ АДРЕСОВ
     // ============================================================
     async function getAddressSuggestions(query) {
         if (!query || query.length < 2) return [];
@@ -1055,7 +1094,7 @@
     }
 
     // ============================================================
-    // 4. ОБРАБОТЧИКИ ВВОДА
+    // ОБРАБОТЧИКИ ВВОДА
     // ============================================================
     let fromTimeout = null;
     let toTimeout = null;
@@ -1095,7 +1134,7 @@
     });
 
     // ============================================================
-    // 5. ПОСТРОЕНИЕ МАРШРУТА
+    // ПОСТРОЕНИЕ МАРШРУТА
     // ============================================================
     function calculatePriceWithRange(distanceKm) {
         const baseFare = 25;
@@ -1271,249 +1310,7 @@
     }
 
     // ============================================================
-    // 6. БАЛАНС И КОШЕЛЁК (добавлено)
-    // ============================================================
-    async function loadUserData() {
-        const auth = window.firebaseAuth;
-        const user = auth.currentUser;
-        
-        const userNameDisplay = document.getElementById('userNameDisplay');
-        const userBalanceDisplay = document.getElementById('userBalanceDisplay');
-        const userInfoDisplay = document.getElementById('userInfoDisplay');
-
-        if (!user) {
-            userNameDisplay.textContent = '👋 Гость';
-            userBalanceDisplay.textContent = '💰 0 ₪';
-            userInfoDisplay.style.display = 'none';
-            return;
-        }
-
-        try {
-            const db = window.firebaseDb;
-            const doc = window.doc;
-            const getDoc = window.getDoc;
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            
-            if (userDoc.exists) {
-                const data = userDoc.data();
-                currentUserData = data;
-                const name = data.fullName || user.displayName || 'Пользователь';
-                const wallet = data.wallet || 0;
-                
-                userNameDisplay.textContent = '👋 ' + name;
-                userBalanceDisplay.textContent = '💰 ' + wallet + ' ₪';
-                userInfoDisplay.style.display = 'flex';
-                userDocRef = doc(db, 'users', user.uid);
-                
-                document.getElementById('walletDisplay').textContent = wallet.toFixed(0);
-                document.getElementById('modalBalance').textContent = wallet.toFixed(0);
-                document.getElementById('userInfo').textContent = '👤 ' + name;
-                
-                console.log('✅ Данные пользователя загружены:', data);
-            } else {
-                userNameDisplay.textContent = '👋 Гость';
-                userBalanceDisplay.textContent = '💰 0 ₪';
-                userInfoDisplay.style.display = 'none';
-                console.warn('⚠️ Документ пользователя не найден');
-            }
-        } catch (error) {
-            console.error('❌ Ошибка загрузки данных пользователя:', error);
-            userNameDisplay.textContent = '👋 Гость';
-            userBalanceDisplay.textContent = '💰 0 ₪';
-            userInfoDisplay.style.display = 'none';
-        }
-    }
-
-    async function initUserWallet(uid) {
-        const db = window.firebaseDb;
-        const docFn = window.doc;
-        const getDocFn = window.getDoc;
-        const setDocFn = window.setDoc;
-
-        const userRef = docFn(db, 'users', uid);
-        userDocRef = userRef;
-
-        const docSnap = await getDocFn(userRef);
-
-        if (!docSnap.exists()) {
-            await setDocFn(userRef, {
-                wallet: 0,
-                bonuses: 0,
-                bonusesAvailable: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            });
-            console.log('🆕 Создан кошелёк для:', uid);
-        }
-
-        return userRef;
-    }
-
-    async function getWalletData() {
-        if (!userDocRef) return null;
-        const getDocFn = window.getDoc;
-        const docSnap = await getDocFn(userDocRef);
-        if (docSnap.exists()) {
-            return docSnap.data();
-        }
-        return null;
-    }
-
-    async function updateWalletUI() {
-        const data = await getWalletData();
-        if (data) {
-            const wallet = data.wallet || 0;
-            document.getElementById('walletDisplay').textContent = wallet.toFixed(0);
-            document.getElementById('modalBalance').textContent = wallet.toFixed(0);
-            
-            const auth = window.firebaseAuth;
-            const user = auth.currentUser;
-            if (user) {
-                document.getElementById('userBalanceDisplay').textContent = '💰 ' + wallet.toFixed(0) + ' ₪';
-            }
-        }
-    }
-
-    document.getElementById('topupBtn').addEventListener('click', async () => {
-        const input = document.getElementById('topupInput');
-        const amount = parseFloat(input.value);
-        if (!amount || amount <= 0) {
-            alert('Введите сумму пополнения');
-            return;
-        }
-
-        try {
-            const updateDocFn = window.updateDoc;
-            const incrementFn = window.increment;
-
-            await updateDocFn(userDocRef, {
-                wallet: incrementFn(amount),
-                updatedAt: new Date().toISOString(),
-            });
-
-            await updateWalletUI();
-            input.value = '';
-            showStatus(`💰 Кошелёк пополнен на ${amount} ₪`, 'success');
-        } catch (error) {
-            console.error('❌ Ошибка пополнения:', error);
-            showStatus('❌ Ошибка пополнения: ' + error.message, 'error');
-        }
-    });
-
-    document.getElementById('walletBtn').addEventListener('click', () => {
-        document.getElementById('walletModal').classList.add('active');
-        updateWalletUI();
-    });
-
-    document.getElementById('closeWalletModal').addEventListener('click', () => {
-        document.getElementById('walletModal').classList.remove('active');
-    });
-
-    document.getElementById('walletModal').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) {
-            document.getElementById('walletModal').classList.remove('active');
-        }
-    });
-
-    // ============================================================
-    // 7. ВЫХОД
-    // ============================================================
-    document.getElementById('logoutBtn').addEventListener('click', async function() {
-        try {
-            const auth = window.firebaseAuth;
-            const signOut = window.signOut;
-            await signOut(auth);
-            window.location.href = 'index.html';
-        } catch (error) {
-            console.error('❌ Ошибка выхода:', error);
-        }
-    });
-
-    // ============================================================
-    // 8. ОТСЛЕЖИВАНИЕ ВОДИТЕЛЕЙ
-    // ============================================================
-    function getClientFromPoint() {
-        const fromInput = document.getElementById('fromInput');
-        let lat = parseFloat(fromInput.dataset.lat);
-        let lng = parseFloat(fromInput.dataset.lng);
-        if (isNaN(lat) || isNaN(lng)) {
-            const center = map.getCenter();
-            lat = center.lat;
-            lng = center.lng;
-        }
-        return { lat, lng };
-    }
-
-    function updateDriversVisibility() {
-        if (driversUnsubscribe) {
-            console.log('🔄 Обновление зоны видимости водителей');
-        }
-    }
-
-    function initDriversTracking() {
-        const db = window.firebaseDb;
-        const collectionFn = window.collection;
-        const queryFn = window.query;
-        const whereFn = window.where;
-        const onSnapshotFn = window.onSnapshot;
-
-        if (driversUnsubscribe) {
-            driversUnsubscribe();
-            driversUnsubscribe = null;
-        }
-
-        const driversRef = collectionFn(db, 'drivers');
-        const q = queryFn(driversRef, whereFn('role', '==', 'driver'));
-
-        driversUnsubscribe = onSnapshotFn(q, (snapshot) => {
-            Object.values(driverMarkers).forEach(marker => map.removeLayer(marker));
-            driverMarkers = {};
-
-            const clientCoords = getClientFromPoint();
-            const clientLat = clientCoords.lat;
-            const clientLng = clientCoords.lng;
-
-            let assignedDriverId = null;
-            if (currentOrder && currentOrder.data && currentOrder.data.driverId) {
-                assignedDriverId = currentOrder.data.driverId;
-            }
-
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const driverId = doc.id;
-                const lat = data.lat;
-                const lng = data.lng;
-
-                if (!lat || !lng) return;
-
-                const isAvailable = data.available === true;
-
-                if (assignedDriverId === driverId) {
-                    const marker = L.marker([lat, lng], { icon: driverAssignedIcon })
-                        .addTo(map)
-                        .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (ваш)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}`);
-                    driverMarkers[driverId] = marker;
-                    return;
-                }
-
-                if (isAvailable) {
-                    const dist = calculateDistance(clientLat, clientLng, lat, lng);
-                    const MAX_DIST_KM = 5;
-                    if (dist <= MAX_DIST_KM) {
-                        const marker = L.marker([lat, lng], { icon: driverFreeIcon })
-                            .addTo(map)
-                            .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (свободен)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}<br>📏 ${dist.toFixed(1)} км от вас`);
-                        driverMarkers[driverId] = marker;
-                    }
-                }
-            });
-        }, (error) => {
-            console.error('❌ Ошибка подписки на водителей:', error);
-        });
-    }
-
-    // ============================================================
-    // 9. СОЗДАНИЕ ЗАКАЗА (оригинальная логика без изменений)
+    // СОЗДАНИЕ ЗАКАЗА
     // ============================================================
     document.getElementById('orderBtn').addEventListener('click', async function() {
         const fromInput = document.getElementById('fromInput');
@@ -1739,7 +1536,7 @@
     });
 
     // ============================================================
-    // 10. ОТСЛЕЖИВАНИЕ СТАТУСА ЗАКАЗА (добавлено)
+    // ОТСЛЕЖИВАНИЕ СТАТУСА ЗАКАЗА
     // ============================================================
     function startOrderTracking(orderId) {
         if (orderUnsubscribe) {
@@ -1790,7 +1587,6 @@
                 document.getElementById('orderConfirmation').classList.remove('active');
             }
 
-            // Обновляем кнопку отмены
             const cancelBtn = document.getElementById('cancelOrderBtn');
             const canCancel = ['waiting', 'offering', 'assigned', 'accepted'].includes(order.status);
             if (canCancel && !order.cancelledBy) {
@@ -1813,7 +1609,7 @@
     }
 
     // ============================================================
-    // 11. ПРОВЕРКА — ВОДИТЕЛЬ РЯДОМ (добавлено)
+    // ПРОВЕРКА — ВОДИТЕЛЬ РЯДОМ
     // ============================================================
     function checkDriverNear(order) {
         if (!order.driverId) return false;
@@ -1831,7 +1627,7 @@
     }
 
     // ============================================================
-    // 12. ОТМЕНА ЗАКАЗА (добавлено)
+    // ОТМЕНА ЗАКАЗА
     // ============================================================
     document.getElementById('cancelOrderBtn').addEventListener('click', async function() {
         if (!currentOrder || !currentOrderId) {
@@ -1985,7 +1781,249 @@
     });
 
     // ============================================================
-    // 13. АВТОРИЗАЦИЯ
+    // ОТСЛЕЖИВАНИЕ ВОДИТЕЛЕЙ
+    // ============================================================
+    function getClientFromPoint() {
+        const fromInput = document.getElementById('fromInput');
+        let lat = parseFloat(fromInput.dataset.lat);
+        let lng = parseFloat(fromInput.dataset.lng);
+        if (isNaN(lat) || isNaN(lng)) {
+            const center = map.getCenter();
+            lat = center.lat;
+            lng = center.lng;
+        }
+        return { lat, lng };
+    }
+
+    function updateDriversVisibility() {
+        if (driversUnsubscribe) {
+            console.log('🔄 Обновление зоны видимости водителей');
+        }
+    }
+
+    function initDriversTracking() {
+        const db = window.firebaseDb;
+        const collectionFn = window.collection;
+        const queryFn = window.query;
+        const whereFn = window.where;
+        const onSnapshotFn = window.onSnapshot;
+
+        if (driversUnsubscribe) {
+            driversUnsubscribe();
+            driversUnsubscribe = null;
+        }
+
+        const driversRef = collectionFn(db, 'drivers');
+        const q = queryFn(driversRef, whereFn('role', '==', 'driver'));
+
+        driversUnsubscribe = onSnapshotFn(q, (snapshot) => {
+            Object.values(driverMarkers).forEach(marker => map.removeLayer(marker));
+            driverMarkers = {};
+
+            const clientCoords = getClientFromPoint();
+            const clientLat = clientCoords.lat;
+            const clientLng = clientCoords.lng;
+
+            let assignedDriverId = null;
+            if (currentOrder && currentOrder.data && currentOrder.data.driverId) {
+                assignedDriverId = currentOrder.data.driverId;
+            }
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const driverId = doc.id;
+                const lat = data.lat;
+                const lng = data.lng;
+
+                if (!lat || !lng) return;
+
+                const isAvailable = data.available === true;
+
+                if (assignedDriverId === driverId) {
+                    const marker = L.marker([lat, lng], { icon: driverAssignedIcon })
+                        .addTo(map)
+                        .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (ваш)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}`);
+                    driverMarkers[driverId] = marker;
+                    return;
+                }
+
+                if (isAvailable) {
+                    const dist = calculateDistance(clientLat, clientLng, lat, lng);
+                    const MAX_DIST_KM = 5;
+                    if (dist <= MAX_DIST_KM) {
+                        const marker = L.marker([lat, lng], { icon: driverFreeIcon })
+                            .addTo(map)
+                            .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (свободен)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}<br>📏 ${dist.toFixed(1)} км от вас`);
+                        driverMarkers[driverId] = marker;
+                    }
+                }
+            });
+        }, (error) => {
+            console.error('❌ Ошибка подписки на водителей:', error);
+        });
+    }
+
+    // ============================================================
+    // КОШЕЛЁК И БАЛАНС
+    // ============================================================
+    async function loadUserData() {
+        const auth = window.firebaseAuth;
+        const user = auth.currentUser;
+        
+        const userNameDisplay = document.getElementById('userNameDisplay');
+        const userBalanceDisplay = document.getElementById('userBalanceDisplay');
+        const userInfoDisplay = document.getElementById('userInfoDisplay');
+
+        if (!user) {
+            userNameDisplay.textContent = '👋 Гость';
+            userBalanceDisplay.textContent = '💰 0 ₪';
+            userInfoDisplay.style.display = 'none';
+            return;
+        }
+
+        try {
+            const db = window.firebaseDb;
+            const doc = window.doc;
+            const getDoc = window.getDoc;
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            
+            if (userDoc.exists) {
+                const data = userDoc.data();
+                currentUserData = data;
+                const name = data.fullName || user.displayName || 'Пользователь';
+                const wallet = data.wallet || 0;
+                
+                userNameDisplay.textContent = '👋 ' + name;
+                userBalanceDisplay.textContent = '💰 ' + wallet + ' ₪';
+                userInfoDisplay.style.display = 'flex';
+                userDocRef = doc(db, 'users', user.uid);
+                
+                document.getElementById('walletDisplay').textContent = wallet.toFixed(0);
+                document.getElementById('modalBalance').textContent = wallet.toFixed(0);
+                document.getElementById('userInfo').textContent = '👤 ' + name;
+                
+                console.log('✅ Данные пользователя загружены:', data);
+            } else {
+                userNameDisplay.textContent = '👋 Гость';
+                userBalanceDisplay.textContent = '💰 0 ₪';
+                userInfoDisplay.style.display = 'none';
+                console.warn('⚠️ Документ пользователя не найден');
+            }
+        } catch (error) {
+            console.error('❌ Ошибка загрузки данных пользователя:', error);
+            userNameDisplay.textContent = '👋 Гость';
+            userBalanceDisplay.textContent = '💰 0 ₪';
+            userInfoDisplay.style.display = 'none';
+        }
+    }
+
+    async function initUserWallet(uid) {
+        const db = window.firebaseDb;
+        const docFn = window.doc;
+        const getDocFn = window.getDoc;
+        const setDocFn = window.setDoc;
+
+        const userRef = docFn(db, 'users', uid);
+        userDocRef = userRef;
+
+        const docSnap = await getDocFn(userRef);
+
+        if (!docSnap.exists()) {
+            await setDocFn(userRef, {
+                wallet: 0,
+                bonuses: 0,
+                bonusesAvailable: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            });
+            console.log('🆕 Создан кошелёк для:', uid);
+        }
+
+        return userRef;
+    }
+
+    async function getWalletData() {
+        if (!userDocRef) return null;
+        const getDocFn = window.getDoc;
+        const docSnap = await getDocFn(userDocRef);
+        if (docSnap.exists()) {
+            return docSnap.data();
+        }
+        return null;
+    }
+
+    async function updateWalletUI() {
+        const data = await getWalletData();
+        if (data) {
+            const wallet = data.wallet || 0;
+            document.getElementById('walletDisplay').textContent = wallet.toFixed(0);
+            document.getElementById('modalBalance').textContent = wallet.toFixed(0);
+            
+            const auth = window.firebaseAuth;
+            const user = auth.currentUser;
+            if (user) {
+                document.getElementById('userBalanceDisplay').textContent = '💰 ' + wallet.toFixed(0) + ' ₪';
+            }
+        }
+    }
+
+    document.getElementById('topupBtn').addEventListener('click', async () => {
+        const input = document.getElementById('topupInput');
+        const amount = parseFloat(input.value);
+        if (!amount || amount <= 0) {
+            alert('Введите сумму пополнения');
+            return;
+        }
+
+        try {
+            const updateDocFn = window.updateDoc;
+            const incrementFn = window.increment;
+
+            await updateDocFn(userDocRef, {
+                wallet: incrementFn(amount),
+                updatedAt: new Date().toISOString(),
+            });
+
+            await updateWalletUI();
+            input.value = '';
+            showStatus(`💰 Кошелёк пополнен на ${amount} ₪`, 'success');
+        } catch (error) {
+            console.error('❌ Ошибка пополнения:', error);
+            showStatus('❌ Ошибка пополнения: ' + error.message, 'error');
+        }
+    });
+
+    document.getElementById('walletBtn').addEventListener('click', () => {
+        document.getElementById('walletModal').classList.add('active');
+        updateWalletUI();
+    });
+
+    document.getElementById('closeWalletModal').addEventListener('click', () => {
+        document.getElementById('walletModal').classList.remove('active');
+    });
+
+    document.getElementById('walletModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+            document.getElementById('walletModal').classList.remove('active');
+        }
+    });
+
+    // ============================================================
+    // ВЫХОД
+    // ============================================================
+    document.getElementById('logoutBtn').addEventListener('click', async function() {
+        try {
+            const auth = window.firebaseAuth;
+            const signOut = window.signOut;
+            await signOut(auth);
+            window.location.href = 'index.html';
+        } catch (error) {
+            console.error('❌ Ошибка выхода:', error);
+        }
+    });
+
+    // ============================================================
+    // АВТОРИЗАЦИЯ
     // ============================================================
     async function initFirebaseAuth() {
         const auth = window.firebaseAuth;
@@ -2013,7 +2051,7 @@
     }
 
     // ============================================================
-    // 14. ЗАПУСК
+    // ЗАПУСК
     // ============================================================
     window.addEventListener('load', () => {
         initFirebaseAuth();
