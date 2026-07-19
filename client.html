@@ -77,7 +77,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
     <style>
-        /* ===== Все стили (без изменений) ===== */
+        /* ===== Все стили без изменений ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -543,6 +543,44 @@
             margin-top: 4px;
         }
 
+        /* ===== НОВЫЙ СТИЛЬ ДЛЯ КНОПКИ ОТМЕНЫ ===== */
+        .order-actions-client {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-cancel-order {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-cancel-order:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(239,68,68,0.3);
+        }
+        .btn-cancel-order:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-cancel-order .penalty-info {
+            font-size: 11px;
+            font-weight: 400;
+            color: #fca5a5;
+        }
+
         .status-msg {
             text-align: center;
             margin-top: 10px;
@@ -566,6 +604,11 @@
             background: rgba(59,130,246,0.15);
             color: #60a5fa;
             border: 1px solid rgba(59,130,246,0.2);
+        }
+        .status-msg.warning {
+            background: rgba(245,158,11,0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245,158,11,0.2);
         }
 
         .modal {
@@ -676,6 +719,7 @@
             .wallet-badge { font-size: 12px; padding: 4px 12px; }
             .user-info-display { font-size: 10px; gap: 5px; }
             .user-info-display .logout-btn { font-size: 9px; padding: 3px 8px; }
+            .btn-cancel-order { font-size: 12px; padding: 10px 12px; }
         }
     </style>
 </head>
@@ -775,6 +819,17 @@
             </div>
         </div>
 
+        <!-- ===== НОВЫЙ БЛОК: УПРАВЛЕНИЕ ЗАКАЗОМ (для клиента) ===== -->
+        <div id="orderManagement" style="display:none; margin-top:12px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn-cancel-order" id="cancelOrderBtn">
+                    <i class="fas fa-times-circle"></i> Отменить заказ
+                    <span class="penalty-info">(штраф 10 ₪)</span>
+                </button>
+            </div>
+            <div id="orderStatusInfo" style="margin-top:8px; font-size:13px; color:#8899aa; text-align:center;"></div>
+        </div>
+
         <div class="status-msg" id="statusMsg"></div>
     </div>
 
@@ -810,13 +865,28 @@
     let currentUserData = null;
     let userDocRef = null;
     let currentOrder = null;
+    let currentOrderId = null;
     let driversUnsubscribe = null;
+    let orderUnsubscribe = null;
     let map = null;
     let fromMarker = null;
     let toMarker = null;
     let driverMarkers = {};
     let routeControl = null;
-    let currentOrderId = null;
+
+    // ============================================================
+    // ФУНКЦИЯ РАСЧЁТА РАССТОЯНИЯ (ГАВЕРСИН)
+    // ============================================================
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
 
     // ============================================================
     // 1. КАРТА
@@ -1024,7 +1094,7 @@
     });
 
     // ============================================================
-    // 5. ПОСТРОЕНИЕ МАРШРУТА И РАСЧЁТ ЦЕНЫ
+    // 5. ПОСТРОЕНИЕ МАРШРУТА
     // ============================================================
     function calculatePriceWithRange(distanceKm) {
         const baseFare = 25;
@@ -1068,7 +1138,7 @@
             if (el.classList.contains('active')) {
                 el.className = 'status-msg';
             }
-        }, 5000);
+        }, 8000);
     }
 
     function clearStatus() {
@@ -1088,6 +1158,7 @@
         document.getElementById('orderBtn').disabled = false;
         document.getElementById('orderBtn').innerHTML = '<i class="fas fa-taxi"></i> Заказать такси';
         document.getElementById('orderConfirmation').classList.remove('active');
+        document.getElementById('orderManagement').style.display = 'none';
         clearStatus();
     }
 
@@ -1199,7 +1270,7 @@
     }
 
     // ============================================================
-    // 6. КОШЕЛЁК И БОНУСЫ (БЕЗ ИЗМЕНЕНИЙ)
+    // 6. КОШЕЛЁК
     // ============================================================
     async function loadUserData() {
         const auth = window.firebaseAuth;
@@ -1362,7 +1433,90 @@
     });
 
     // ============================================================
-    // 8. СОЗДАНИЕ ЗАКАЗА (С КОРРЕКТНЫМ КОШЕЛЬКОМ)
+    // 8. ОТСЛЕЖИВАНИЕ ВОДИТЕЛЕЙ
+    // ============================================================
+    function getClientFromPoint() {
+        const fromInput = document.getElementById('fromInput');
+        let lat = parseFloat(fromInput.dataset.lat);
+        let lng = parseFloat(fromInput.dataset.lng);
+        if (isNaN(lat) || isNaN(lng)) {
+            const center = map.getCenter();
+            lat = center.lat;
+            lng = center.lng;
+        }
+        return { lat, lng };
+    }
+
+    function updateDriversVisibility() {
+        if (driversUnsubscribe) {
+            console.log('🔄 Обновление зоны видимости водителей');
+        }
+    }
+
+    function initDriversTracking() {
+        const db = window.firebaseDb;
+        const collectionFn = window.collection;
+        const queryFn = window.query;
+        const whereFn = window.where;
+        const onSnapshotFn = window.onSnapshot;
+
+        if (driversUnsubscribe) {
+            driversUnsubscribe();
+            driversUnsubscribe = null;
+        }
+
+        const driversRef = collectionFn(db, 'drivers');
+        const q = queryFn(driversRef, whereFn('role', '==', 'driver'));
+
+        driversUnsubscribe = onSnapshotFn(q, (snapshot) => {
+            Object.values(driverMarkers).forEach(marker => map.removeLayer(marker));
+            driverMarkers = {};
+
+            const clientCoords = getClientFromPoint();
+            const clientLat = clientCoords.lat;
+            const clientLng = clientCoords.lng;
+
+            let assignedDriverId = null;
+            if (currentOrder && currentOrder.data && currentOrder.data.driverId) {
+                assignedDriverId = currentOrder.data.driverId;
+            }
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const driverId = doc.id;
+                const lat = data.lat;
+                const lng = data.lng;
+
+                if (!lat || !lng) return;
+
+                const isAvailable = data.available === true;
+
+                if (assignedDriverId === driverId) {
+                    const marker = L.marker([lat, lng], { icon: driverAssignedIcon })
+                        .addTo(map)
+                        .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (ваш)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}`);
+                    driverMarkers[driverId] = marker;
+                    return;
+                }
+
+                if (isAvailable) {
+                    const dist = calculateDistance(clientLat, clientLng, lat, lng);
+                    const MAX_DIST_KM = 5;
+                    if (dist <= MAX_DIST_KM) {
+                        const marker = L.marker([lat, lng], { icon: driverFreeIcon })
+                            .addTo(map)
+                            .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (свободен)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}<br>📏 ${dist.toFixed(1)} км от вас`);
+                        driverMarkers[driverId] = marker;
+                    }
+                }
+            });
+        }, (error) => {
+            console.error('❌ Ошибка подписки на водителей:', error);
+        });
+    }
+
+    // ============================================================
+    // 9. СОЗДАНИЕ ЗАКАЗА
     // ============================================================
     document.getElementById('orderBtn').addEventListener('click', async function() {
         const fromInput = document.getElementById('fromInput');
@@ -1373,6 +1527,7 @@
         const orderIdDisplay = document.getElementById('orderIdDisplay');
 
         confirmationEl.classList.remove('active');
+        document.getElementById('orderManagement').style.display = 'none';
 
         let fromLat = parseFloat(fromInput.dataset.lat);
         let fromLng = parseFloat(fromInput.dataset.lng);
@@ -1535,12 +1690,15 @@
                 dispatcherNote: null,
                 completedAt: null,
                 cancelledAt: null,
+                cancelledBy: null,
+                cancellationPenalty: 0,
                 isAnonymous: !user
             };
 
             const ordersRef = collectionFn(db, 'orders');
             const docRef = await addDocFn(ordersRef, orderData);
 
+            // Сохраняем информацию о заказе
             currentOrder = {
                 id: docRef.id,
                 data: orderData,
@@ -1548,6 +1706,7 @@
             };
             currentOrderId = docRef.id;
 
+            // Начисляем бонус (если цена > 0 и пользователь зарегистрирован)
             if (user && price > 0) {
                 const bonusAmount = price * 0.01;
                 await window.updateDoc(userDocRef, {
@@ -1563,6 +1722,10 @@
             orderIdDisplay.textContent = `ID: ${orderShortId}...`;
             confirmationEl.classList.add('active');
 
+            // Показываем панель управления заказом
+            document.getElementById('orderManagement').style.display = 'block';
+            document.getElementById('orderStatusInfo').textContent = '⏳ Ожидание назначения водителя...';
+
             showStatus(`✅ Заказ успешно создан! ID: ${orderShortId}...`, 'success');
             
             this.disabled = false;
@@ -1570,6 +1733,9 @@
 
             console.log('📦 ЗАКАЗ СОЗДАН:', orderData);
             console.log('📦 ID документа:', docRef.id);
+
+            // Запускаем отслеживание статуса заказа
+            startOrderTracking(docRef.id);
 
         } catch (error) {
             console.error('❌ Ошибка создания заказа:', error);
@@ -1580,98 +1746,276 @@
     });
 
     // ============================================================
-    // 9. ОТСЛЕЖИВАНИЕ ВОДИТЕЛЕЙ
+    // 10. ОТСЛЕЖИВАНИЕ СТАТУСА ЗАКАЗА
     // ============================================================
-    function getClientFromPoint() {
-        const fromInput = document.getElementById('fromInput');
-        let lat = parseFloat(fromInput.dataset.lat);
-        let lng = parseFloat(fromInput.dataset.lng);
-        if (isNaN(lat) || isNaN(lng)) {
-            const center = map.getCenter();
-            lat = center.lat;
-            lng = center.lng;
+    function startOrderTracking(orderId) {
+        if (orderUnsubscribe) {
+            orderUnsubscribe();
+            orderUnsubscribe = null;
         }
-        return { lat, lng };
-    }
 
-    function updateDriversVisibility() {
-        if (driversUnsubscribe) {
-            console.log('🔄 Обновление зоны видимости водителей');
-        }
-    }
-
-    function initDriversTracking() {
         const db = window.firebaseDb;
-        const collectionFn = window.collection;
-        const queryFn = window.query;
-        const whereFn = window.where;
-        const onSnapshotFn = window.onSnapshot;
+        const doc = window.doc;
+        const onSnapshot = window.onSnapshot;
 
-        if (driversUnsubscribe) {
-            driversUnsubscribe();
-            driversUnsubscribe = null;
-        }
+        const orderRef = doc(db, 'orders', orderId);
 
-        const driversRef = collectionFn(db, 'drivers');
-        const q = queryFn(driversRef, whereFn('role', '==', 'driver'));
-
-        driversUnsubscribe = onSnapshotFn(q, (snapshot) => {
-            Object.values(driverMarkers).forEach(marker => map.removeLayer(marker));
-            driverMarkers = {};
-
-            const clientCoords = getClientFromPoint();
-            const clientLat = clientCoords.lat;
-            const clientLng = clientCoords.lng;
-
-            let assignedDriverId = null;
-            if (currentOrder && currentOrder.data.driverId) {
-                assignedDriverId = currentOrder.data.driverId;
+        orderUnsubscribe = onSnapshot(orderRef, (snapshot) => {
+            if (!snapshot.exists()) {
+                console.log('📦 Заказ удалён');
+                return;
             }
 
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const driverId = doc.id;
-                const lat = data.lat;
-                const lng = data.lng;
+            const order = snapshot.data();
+            currentOrder = {
+                id: orderId,
+                data: order
+            };
 
-                if (!lat || !lng) return;
+            // Обновляем статус в UI
+            const statusInfo = document.getElementById('orderStatusInfo');
+            
+            if (order.status === 'waiting') {
+                statusInfo.textContent = '⏳ Ожидание назначения водителя...';
+            } else if (order.status === 'offering') {
+                statusInfo.textContent = '📨 Поиск водителя...';
+            } else if (order.status === 'assigned') {
+                const driverName = order.driverName || 'Водитель';
+                statusInfo.textContent = `🚗 Водитель ${driverName} назначен! Ожидайте прибытия.`;
+            } else if (order.status === 'accepted') {
+                const driverName = order.driverName || 'Водитель';
+                statusInfo.textContent = `🚗 Водитель ${driverName} принял заказ и едет к вам!`;
+            } else if (order.status === 'en_route') {
+                statusInfo.textContent = '🟢 Водитель в пути к вам!';
+            } else if (order.status === 'arrived') {
+                statusInfo.textContent = '📍 Водитель прибыл!';
+            } else if (order.status === 'completed') {
+                statusInfo.textContent = '✅ Заказ выполнен!';
+                document.getElementById('orderManagement').style.display = 'none';
+            } else if (order.status === 'cancelled_by_client' || order.status === 'cancelled') {
+                statusInfo.textContent = '❌ Заказ отменён';
+                document.getElementById('orderManagement').style.display = 'none';
+                document.getElementById('orderConfirmation').classList.remove('active');
+            }
 
-                const isAvailable = data.available === true;
-
-                if (assignedDriverId === driverId) {
-                    const marker = L.marker([lat, lng], { icon: driverAssignedIcon })
-                        .addTo(map)
-                        .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (ваш)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}`);
-                    driverMarkers[driverId] = marker;
-                    return;
-                }
-
-                if (isAvailable) {
-                    const dist = getDistance(clientLat, clientLng, lat, lng);
-                    const MAX_DIST_KM = 5;
-                    if (dist <= MAX_DIST_KM) {
-                        const marker = L.marker([lat, lng], { icon: driverFreeIcon })
-                            .addTo(map)
-                            .bindPopup(`<b>${data.fullName || 'Водитель'}</b> (свободен)<br>🚗 ${data.carModel || ''} ${data.carNumber || ''}<br>📞 ${data.phone || ''}<br>📏 ${dist.toFixed(1)} км от вас`);
-                        driverMarkers[driverId] = marker;
+            // Обновляем кнопку отмены
+            const cancelBtn = document.getElementById('cancelOrderBtn');
+            const canCancel = ['waiting', 'offering', 'assigned', 'accepted'].includes(order.status);
+            if (canCancel && !order.cancelledBy) {
+                cancelBtn.disabled = false;
+                // Показываем информацию о штрафе
+                const penaltyInfo = cancelBtn.querySelector('.penalty-info');
+                if (penaltyInfo) {
+                    const isNear = checkDriverNear(order);
+                    if (isNear) {
+                        penaltyInfo.textContent = '(штраф 10 ₪ — водитель рядом)';
+                    } else {
+                        penaltyInfo.textContent = '(штраф 10 ₪)';
                     }
                 }
-            });
+            } else {
+                cancelBtn.disabled = true;
+            }
         }, (error) => {
-            console.error('❌ Ошибка подписки на водителей:', error);
+            console.error('❌ Ошибка отслеживания заказа:', error);
         });
     }
 
-    function getDistance(lat1, lng1, lat2, lng2) {
-        const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLng = (lng2 - lng1) * Math.PI / 180;
-        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    // ============================================================
+    // 11. ПРОВЕРКА — ВОДИТЕЛЬ РЯДОМ (для штрафа)
+    // ============================================================
+    function checkDriverNear(order) {
+        if (!order.driverId) return false;
+        
+        // Проверяем, есть ли координаты водителя в заказе
+        const driverLat = order.driverLocation?.lat || order.driverLat;
+        const driverLng = order.driverLocation?.lng || order.driverLng;
+        
+        if (!driverLat || !driverLng) return false;
+        
+        // Получаем координаты клиента
+        const clientLat = order.client?.from?.lat || order.fromLat;
+        const clientLng = order.client?.from?.lng || order.fromLng;
+        
+        if (!clientLat || !clientLng) return false;
+        
+        // Расчёт расстояния
+        const distance = calculateDistance(clientLat, clientLng, driverLat, driverLng);
+        
+        // Если водитель в радиусе 5 км — штраф
+        return distance <= 5;
     }
 
     // ============================================================
-    // 10. АВТОРИЗАЦИЯ
+    // 12. ОТМЕНА ЗАКАЗА КЛИЕНТОМ (С ШТРАФОМ 10 ₪)
+    // ============================================================
+    document.getElementById('cancelOrderBtn').addEventListener('click', async function() {
+        if (!currentOrder || !currentOrderId) {
+            showStatus('❌ Нет активного заказа для отмены', 'error');
+            return;
+        }
+
+        const order = currentOrder.data;
+        const canCancel = ['waiting', 'offering', 'assigned', 'accepted'].includes(order.status);
+        if (!canCancel) {
+            showStatus('❌ Этот заказ уже нельзя отменить', 'error');
+            return;
+        }
+
+        // Проверяем, есть ли водитель и насколько он близко
+        const penaltyAmount = 10; // 10 ₪
+        const isNear = checkDriverNear(order);
+        let penaltyMsg = '';
+
+        if (order.driverId) {
+            if (isNear) {
+                penaltyMsg = `\n⚠️ Водитель уже рядом (менее 5 км). С вашего кошелька будет списано ${penaltyAmount} ₪.`;
+            } else {
+                penaltyMsg = `\n⚠️ За отмену заказа будет списан штраф ${penaltyAmount} ₪.`;
+            }
+        } else {
+            penaltyMsg = `\n⚠️ За отмену заказа будет списан штраф ${penaltyAmount} ₪.`;
+        }
+
+        if (!confirm(`❌ Вы уверены, что хотите отменить заказ?${penaltyMsg}`)) {
+            return;
+        }
+
+        try {
+            this.disabled = true;
+            showStatus('⏳ Отмена заказа...', 'info');
+
+            const db = window.firebaseDb;
+            const doc = window.doc;
+            const updateDoc = window.updateDoc;
+            const runTransaction = window.runTransaction;
+            const increment = window.increment;
+
+            const orderRef = doc(db, 'orders', currentOrderId);
+
+            // Проверяем, не был ли заказ уже отменён
+            const orderSnap = await window.getDoc(orderRef);
+            if (!orderSnap.exists()) {
+                showStatus('❌ Заказ не найден', 'error');
+                this.disabled = false;
+                return;
+            }
+
+            const orderData = orderSnap.data();
+            if (orderData.status === 'cancelled_by_client' || orderData.status === 'cancelled' || orderData.status === 'completed') {
+                showStatus('❌ Заказ уже завершён или отменён', 'error');
+                this.disabled = false;
+                return;
+            }
+
+            // Если есть водитель и он назначен — списываем штраф
+            let penaltyApplied = false;
+            const driverId = orderData.driverId;
+
+            if (driverId && currentUser) {
+                // Проверяем баланс клиента
+                const userRef = doc(db, 'users', currentUser.uid);
+                const userSnap = await window.getDoc(userRef);
+                if (userSnap.exists()) {
+                    const userData = userSnap.data();
+                    const currentWallet = userData.wallet || 0;
+                    
+                    // Если есть водитель — всегда штраф
+                    if (currentWallet >= penaltyAmount) {
+                        await runTransaction(db, async (transaction) => {
+                            // Списываем штраф с клиента
+                            transaction.update(userRef, {
+                                wallet: increment(-penaltyAmount),
+                                updatedAt: new Date().toISOString()
+                            });
+                            
+                            // Добавляем штраф водителю (если нужно)
+                            const driverRef = doc(db, 'users', driverId);
+                            const driverSnap = await transaction.get(driverRef);
+                            if (driverSnap.exists()) {
+                                const driverProfile = driverSnap.data().driverProfile || {};
+                                transaction.update(driverRef, {
+                                    'driverProfile.balance': increment(penaltyAmount),
+                                    'driverProfile.lastUpdated': new Date().toISOString()
+                                });
+                            }
+                        });
+
+                        penaltyApplied = true;
+                        
+                        // Записываем транзакцию штрафа
+                        const txRef = db.collection('transactions').doc();
+                        await window.setDoc(txRef, {
+                            userId: currentUser.uid,
+                            type: 'penalty',
+                            amount: penaltyAmount,
+                            currency: 'ILS',
+                            description: `Штраф за отмену заказа ${currentOrderId}`,
+                            orderId: currentOrderId,
+                            status: 'completed',
+                            createdAt: new Date().toISOString()
+                        });
+
+                        showStatus(`⚠️ С вашего кошелька списано ${penaltyAmount} ₪ (штраф за отмену)`, 'warning');
+                    } else {
+                        showStatus(`❌ Недостаточно средств для штрафа (нужно ${penaltyAmount} ₪, доступно ${currentWallet} ₪)`, 'error');
+                        this.disabled = false;
+                        return;
+                    }
+                }
+            } else if (driverId) {
+                // Клиент анонимный — нет кошелька, но штраф не списать
+                showStatus('⚠️ Вы не авторизованы. Для отмены заказа необходимо войти в аккаунт.', 'warning');
+                this.disabled = false;
+                return;
+            }
+
+            // Обновляем статус заказа
+            const updateData = {
+                status: 'cancelled_by_client',
+                cancelledAt: new Date().toISOString(),
+                cancelledBy: currentUser ? currentUser.uid : 'anonymous',
+                cancellationPenalty: penaltyApplied ? penaltyAmount : 0,
+                dispatcherNote: `Отменён клиентом${penaltyApplied ? ` (штраф ${penaltyAmount} ₪)` : ''}`
+            };
+
+            // Если был назначен водитель — освобождаем его
+            if (driverId) {
+                const driverRef = doc(db, 'users', driverId);
+                await updateDoc(driverRef, {
+                    'driverProfile.status': 'online',
+                    'driverProfile.currentOrderId': null,
+                    'driverProfile.lastUpdated': new Date().toISOString()
+                });
+                updateData.driverId = null;
+            }
+
+            await updateDoc(orderRef, updateData);
+
+            // Обновляем UI
+            await updateWalletUI();
+            document.getElementById('orderManagement').style.display = 'none';
+            document.getElementById('orderConfirmation').classList.remove('active');
+            document.getElementById('orderStatusInfo').textContent = '❌ Заказ отменён';
+
+            showStatus(`✅ Заказ отменён${penaltyApplied ? ` (списано ${penaltyAmount} ₪)` : ''}`, 'success');
+            
+            // Останавливаем отслеживание
+            if (orderUnsubscribe) {
+                orderUnsubscribe();
+                orderUnsubscribe = null;
+            }
+
+        } catch (error) {
+            console.error('❌ Ошибка отмены заказа:', error);
+            showStatus('❌ Ошибка отмены заказа: ' + error.message, 'error');
+        } finally {
+            this.disabled = false;
+        }
+    });
+
+    // ============================================================
+    // 13. АВТОРИЗАЦИЯ
     // ============================================================
     async function initFirebaseAuth() {
         const auth = window.firebaseAuth;
@@ -1699,7 +2043,7 @@
     }
 
     // ============================================================
-    // 11. ЗАПУСК
+    // 14. ЗАПУСК
     // ============================================================
     window.addEventListener('load', () => {
         initFirebaseAuth();
@@ -1707,5 +2051,6 @@
         console.log('🚗 WHEEL Client loaded (исправленный)');
     });
 </script>
+
 </body>
 </html>
