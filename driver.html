@@ -235,7 +235,6 @@
             color: #ffffff;
         }
 
-        /* ===== ЗАКАЗ ===== */
         .order-card {
             background: rgba(255,180,0,0.06);
             border: 1px solid rgba(255,180,0,0.1);
@@ -295,7 +294,6 @@
             display: block;
         }
 
-        /* ===== УВЕДОМЛЕНИЯ ===== */
         .notification {
             background: rgba(255,180,0,0.1);
             border: 1px solid rgba(255,180,0,0.2);
@@ -319,12 +317,7 @@
         }
 
         .hidden { display: none !important; }
-        .mt-8 { margin-top: 8px; }
-        .text-success { color: #4ade80; }
-        .text-warning { color: #ffb000; }
-        .text-danger { color: #f87171; }
 
-        /* ===== МАРКЕРЫ ===== */
         .marker-driver {
             background: #3b82f6;
             border: 3px solid #ffffff;
@@ -475,7 +468,6 @@
     let currentOrder = null;
     let currentOrderId = null;
 
-    // Карта
     let map = null;
     let fromMarker = null;
     let toMarker = null;
@@ -484,7 +476,7 @@
     let watchId = null;
 
     // ============================================================
-    // ИНИЦИАЛИЗАЦИЯ КАРТЫ
+    // КАРТА
     // ============================================================
     function initMap() {
         map = L.map('map', {
@@ -500,7 +492,6 @@
             maxZoom: 19,
         }).addTo(map);
 
-        // Маркер водителя
         const driverIcon = L.divIcon({
             html: '🚗',
             className: '',
@@ -515,9 +506,6 @@
         console.log('🗺️ Карта инициализирована');
     }
 
-    // ============================================================
-    // ЦЕНТРИРОВАНИЕ КАРТЫ
-    // ============================================================
     document.getElementById('centerMapBtn').addEventListener('click', () => {
         if (driverMarker) {
             const pos = driverMarker.getLatLng();
@@ -548,12 +536,11 @@
             showNotification('✅ Авторизация успешна', 'success');
             await loadDriverData();
             if (driverData) {
-                // 🔥 Автоматически ставим статус "онлайн"
-                await db.collection('drivers').doc(currentDriverId).update({
-                    status: 'online',
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                await db.collection('users').doc(currentDriverId).update({
+                    'driverProfile.status': 'online',
+                    'driverProfile.lastUpdated': firebase.firestore.FieldValue.serverTimestamp()
                 });
-                driverData.status = 'online';
+                driverData.driverProfile.status = 'online';
                 updateUI();
                 listenForOrders();
                 startTrackingLocation();
@@ -577,7 +564,7 @@
     // ============================================================
     async function loadDriverData() {
         try {
-            const doc = await db.collection('drivers').doc(currentDriverId).get();
+            const doc = await db.collection('users').doc(currentDriverId).get();
             if (doc.exists) {
                 driverData = doc.data();
                 console.log('📋 Данные водителя:', driverData);
@@ -595,14 +582,15 @@
     function updateUI() {
         if (!driverData) return;
 
+        const driverProfile = driverData.driverProfile || {};
         const name = driverData.fullName || driverData.email || 'Водитель';
-        const car = driverData.carModel || 'Модель не указана';
+        const car = driverProfile.carModel || 'Модель не указана';
         const phone = driverData.phone || 'Телефон не указан';
-        const rating = driverData.rating || 5.0;
-        const totalTrips = driverData.totalTrips || 0;
-        const balance = driverData.balance || 0;
-        const earned = (driverData.totalEarned || 0);
-        const status = driverData.status || 'offline';
+        const rating = driverProfile.rating || 5.0;
+        const totalTrips = driverProfile.totalTrips || 0;
+        const balance = driverProfile.balance || 0;
+        const earned = driverProfile.totalEarned || 0;
+        const status = driverProfile.status || 'offline';
 
         document.getElementById('driverName').textContent = name;
         document.getElementById('driverCar').textContent = '🚗 ' + car;
@@ -615,9 +603,9 @@
         document.getElementById('driverBalance').textContent = balance + ' ₪';
         updateStatusUI(status);
 
-        if (driverData.location) {
-            const lat = driverData.location.lat || driverData.lat;
-            const lng = driverData.location.lng || driverData.lng;
+        if (driverProfile.location) {
+            const lat = driverProfile.location.lat;
+            const lng = driverProfile.location.lng;
             if (lat && lng) {
                 driverMarker.setLatLng([lat, lng]);
                 map.setView([lat, lng], 15);
@@ -672,11 +660,14 @@
 
     async function updateDriverStatus(status) {
         try {
-            await db.collection('drivers').doc(currentDriverId).update({
-                status: status,
-                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            await db.collection('users').doc(currentDriverId).update({
+                'driverProfile.status': status,
+                'driverProfile.lastUpdated': firebase.firestore.FieldValue.serverTimestamp()
             });
-            driverData.status = status;
+            if (driverData) {
+                if (!driverData.driverProfile) driverData.driverProfile = {};
+                driverData.driverProfile.status = status;
+            }
             updateStatusUI(status);
             console.log(`✅ Статус обновлён: ${status}`);
         } catch (error) {
@@ -686,7 +677,7 @@
     }
 
     // ============================================================
-    // ОТСЛЕЖИВАНИЕ ГЕОПОЗИЦИИ
+    // ГЕОЛОКАЦИЯ
     // ============================================================
     function startTrackingLocation() {
         if (!navigator.geolocation) {
@@ -702,8 +693,6 @@
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
 
-                    console.log(`📍 Обновление позиции: ${lat}, ${lng}`);
-
                     driverMarker.setLatLng([lat, lng]);
 
                     if (firstUpdate) {
@@ -711,10 +700,10 @@
                         firstUpdate = false;
                     }
 
-                    await db.collection('drivers').doc(currentDriverId).update({
-                        'location.lat': lat,
-                        'location.lng': lng,
-                        'location.updatedAt': firebase.firestore.FieldValue.serverTimestamp()
+                    await db.collection('users').doc(currentDriverId).update({
+                        'driverProfile.location.lat': lat,
+                        'driverProfile.location.lng': lng,
+                        'driverProfile.location.updatedAt': firebase.firestore.FieldValue.serverTimestamp()
                     });
 
                     if (currentOrder && currentOrder.status !== 'completed') {
@@ -737,28 +726,23 @@
     }
 
     // ============================================================
-    // ЗАГРУЗКА МАРКЕРОВ НА КАРТЕ
+    // МАРКЕРЫ НА КАРТЕ
     // ============================================================
     function loadMapMarkers() {
-        // Если есть активный заказ — показываем маркеры
         if (currentOrder) {
             showMapMarkers(currentOrder);
         }
     }
 
     // ============================================================
-    // СЛУШАТЕЛЬ ЗАКАЗОВ (исправленный)
+    // СЛУШАТЕЛЬ ЗАКАЗОВ
     // ============================================================
     function listenForOrders() {
-        // 1. Слушаем заказы, где водитель назначен
         db.collection('orders')
             .where('driverId', '==', currentDriverId)
             .where('status', 'in', ['assigned', 'accepted', 'en_route', 'arrived'])
             .onSnapshot((snapshot) => {
-                if (snapshot.empty) {
-                    // Проверяем, может быть есть заказ в статусе "offering"
-                    return;
-                }
+                if (snapshot.empty) return;
 
                 let order = null;
                 let orderId = null;
@@ -777,7 +761,6 @@
                 }
             });
 
-        // 2. 🔥 ДОПОЛНИТЕЛЬНО: слушаем все заказы со статусом "offering"
         db.collection('orders')
             .where('status', '==', 'offering')
             .onSnapshot((snapshot) => {
@@ -785,11 +768,8 @@
                     if (change.type === 'added') {
                         const order = change.doc.data();
                         const orderId = change.doc.id;
-                        
-                        // Проверяем, есть ли этот водитель в списке предложенных
                         const offeredTo = order.offeredTo || [];
                         if (offeredTo.includes(currentDriverId)) {
-                            // Показываем заказ водителю
                             if (!currentOrder || currentOrderId !== orderId) {
                                 currentOrder = order;
                                 currentOrderId = orderId;
@@ -801,8 +781,6 @@
                     } else if (change.type === 'modified') {
                         const order = change.doc.data();
                         const orderId = change.doc.id;
-                        
-                        // Если заказ был принят другим водителем — убираем его
                         if (order.acceptedBy && order.acceptedBy !== currentDriverId) {
                             if (currentOrderId === orderId) {
                                 currentOrder = null;
@@ -905,7 +883,7 @@
     }
 
     // ============================================================
-    // ОТОБРАЖЕНИЕ МАРКЕРОВ НА КАРТЕ
+    // МАРКЕРЫ НА КАРТЕ
     // ============================================================
     function showMapMarkers(order) {
         const fromLat = order.client?.from?.lat || order.fromLat;
@@ -961,7 +939,7 @@
     }
 
     // ============================================================
-    // ПОСТРОЕНИЕ МАРШРУТА
+    // МАРШРУТ
     // ============================================================
     function updateRoute() {
         if (!currentOrder || !map) return;
@@ -1013,7 +991,7 @@
     }
 
     // ============================================================
-    // НАВИГАЦИЯ ЧЕРЕЗ WAZE
+    // НАВИГАЦИЯ
     // ============================================================
     function openWaze(lat, lng, address) {
         let url;
@@ -1059,11 +1037,10 @@
     }
 
     // ============================================================
-    // ПРИНЯТЬ ЗАКАЗ (исправлено)
+    // ПРИНЯТЬ / ОТКЛОНИТЬ
     // ============================================================
     async function acceptOrder(orderId) {
         try {
-            // Сначала проверяем, не принял ли кто-то другой
             const orderDoc = await db.collection('orders').doc(orderId).get();
             const order = orderDoc.data();
             
@@ -1072,7 +1049,6 @@
                 return;
             }
             
-            // Обновляем заказ
             await db.collection('orders').doc(orderId).update({
                 status: 'accepted',
                 acceptedBy: currentDriverId,
@@ -1080,11 +1056,10 @@
                 dispatcherNote: 'Принят водителем ' + (driverData?.fullName || '')
             });
             
-            // Обновляем водителя
-            await db.collection('drivers').doc(currentDriverId).update({
-                status: 'busy',
-                currentOrderId: orderId,
-                lastOrderTime: firebase.firestore.FieldValue.serverTimestamp()
+            await db.collection('users').doc(currentDriverId).update({
+                'driverProfile.status': 'busy',
+                'driverProfile.currentOrderId': orderId,
+                'driverProfile.lastUpdated': firebase.firestore.FieldValue.serverTimestamp()
             });
             
             showNotification('✅ Заказ принят!', 'success');
@@ -1094,9 +1069,6 @@
         }
     }
 
-    // ============================================================
-    // ОТКЛОНИТЬ ЗАКАЗ (исправлено — очищает заказ)
-    // ============================================================
     async function rejectOrder(orderId) {
         if (!confirm('❌ Отклонить заказ?')) return;
         try {
@@ -1108,17 +1080,16 @@
                 offeredTo: firebase.firestore.FieldValue.arrayRemove(currentDriverId)
             });
             
-            await db.collection('drivers').doc(currentDriverId).update({
-                status: 'online',
-                currentOrderId: null
+            await db.collection('users').doc(currentDriverId).update({
+                'driverProfile.status': 'online',
+                'driverProfile.currentOrderId': null,
+                'driverProfile.lastUpdated': firebase.firestore.FieldValue.serverTimestamp()
             });
             
-            // Убираем заказ из текущего отображения
             currentOrder = null;
             currentOrderId = null;
             showNoOrder();
             clearMapMarkers();
-            
             showNotification('❌ Заказ отклонён', 'info');
         } catch (error) {
             console.error('❌ Ошибка отклонения заказа:', error);
@@ -1170,39 +1141,35 @@
                     throw new Error('Недостаточно средств у клиента');
                 }
 
-                const driverRef = db.collection('drivers').doc(currentDriverId);
+                const driverRef = db.collection('users').doc(currentDriverId);
                 const driverDoc = await transaction.get(driverRef);
                 if (!driverDoc.exists) return;
 
-                const driverBalance = driverDoc.data().balance || 0;
+                const driverProfile = driverDoc.data().driverProfile || {};
+                const driverBalance = driverProfile.balance || 0;
 
-                // Обновляем клиента
                 const updateData = {
                     wallet: clientBalance - price,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                // Если клиент зарегистрирован — начисляем бонус
                 if (clientDoc.data().email) {
                     const currentBonuses = clientDoc.data().bonuses || 0;
                     updateData.bonuses = currentBonuses + bonusAmount;
                     updateData.bonusesAvailable = true;
-                    console.log(`💰 Бонус ${bonusAmount} ₪ начислен клиенту`);
                 }
 
                 transaction.update(clientRef, updateData);
 
-                // Обновляем водителя
                 transaction.update(driverRef, {
-                    balance: driverBalance + driverEarn,
-                    totalTrips: (driverDoc.data().totalTrips || 0) + 1,
-                    totalEarned: (driverDoc.data().totalEarned || 0) + driverEarn,
-                    status: 'online',
-                    currentOrderId: null,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    'driverProfile.balance': driverBalance + driverEarn,
+                    'driverProfile.totalTrips': (driverProfile.totalTrips || 0) + 1,
+                    'driverProfile.totalEarned': (driverProfile.totalEarned || 0) + driverEarn,
+                    'driverProfile.status': 'online',
+                    'driverProfile.currentOrderId': null,
+                    'driverProfile.lastUpdated': firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                // Транзакция
                 const txRef = db.collection('transactions').doc();
                 transaction.set(txRef, {
                     userId: clientId,
@@ -1219,7 +1186,6 @@
                 });
             });
 
-            // Обновляем статус заказа
             await db.collection('orders').doc(currentOrderId).update({
                 status: 'completed',
                 completedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1230,13 +1196,11 @@
                 dispatcherNote: 'Заказ выполнен'
             });
 
-            // Убираем заказ из текущего отображения
             currentOrder = null;
             currentOrderId = null;
             showNoOrder();
             clearMapMarkers();
 
-            console.log(`✅ Заказ выполнен! Сумма: ${price} ₪, Комиссия: ${commission} ₪, Водитель: ${driverEarn} ₪, Бонус: ${bonusAmount} ₪`);
             alert(`✅ Заказ выполнен!\n💰 Сумма: ${price} ₪\n📊 Комиссия: ${commission.toFixed(2)} ₪\n🚗 Водитель: ${driverEarn.toFixed(2)} ₪\n🎁 Бонус клиенту: ${bonusAmount.toFixed(2)} ₪`);
 
         } catch (error) {
