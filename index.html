@@ -6,8 +6,13 @@
     <title>WHEEL — Вход и регистрация</title>
 
     <style>
-        /* ===== ВСЕ СТИЛИ (те же, что в предыдущей версии) ===== */
-        * { margin:0; padding:0; box-sizing:border-box; }
+        /* ===== ОСНОВНЫЕ СТИЛИ ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: #0a0c10;
@@ -23,6 +28,7 @@
                 radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
             background-attachment: fixed;
         }
+
         .container {
             width: 100%;
             max-width: 420px;
@@ -37,6 +43,7 @@
             overflow: hidden;
             transition: all 0.3s ease;
         }
+
         .container::before {
             content: '';
             position: absolute;
@@ -48,45 +55,82 @@
             pointer-events: none;
             animation: rotateBg 30s linear infinite;
         }
+
         @keyframes rotateBg {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ С ФЛАГАМИ ===== */
         .lang-switcher {
             position: absolute;
-            top: 20px;
-            right: 24px;
+            top: 18px;
+            right: 22px;
             z-index: 10;
             display: flex;
-            gap: 4px;
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 14px;
-            padding: 4px;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            padding: 5px 10px;
             border: 1px solid rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
-        body[dir="rtl"] .lang-switcher { right: auto; left: 24px; }
+
+        body[dir="rtl"] .lang-switcher {
+            right: auto;
+            left: 22px;
+        }
+
         .lang-btn {
             background: transparent;
             border: none;
-            color: #8899aa;
-            font-size: 12px;
-            font-weight: 600;
-            padding: 6px 12px;
-            border-radius: 10px;
+            font-size: 20px;
+            line-height: 1;
+            padding: 4px 6px;
+            border-radius: 50%;
             cursor: pointer;
             transition: all 0.25s ease;
-            letter-spacing: 0.3px;
-            font-family: inherit;
+            opacity: 0.4;
+            filter: grayscale(0.8);
+            transform: scale(0.85);
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .lang-btn:hover { color: #ffffff; background: rgba(255, 255, 255, 0.06); }
+
+        .lang-btn:hover {
+            opacity: 0.8;
+            filter: grayscale(0.2);
+            transform: scale(0.95);
+        }
+
         .lang-btn.active {
-            background: linear-gradient(135deg, #ffb000, #ff6a00);
-            color: #0a0c10;
-            font-weight: 700;
-            box-shadow: 0 2px 12px rgba(255, 160, 0, 0.25);
+            opacity: 1;
+            filter: grayscale(0);
+            transform: scale(1);
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            box-shadow: 0 0 16px rgba(255, 180, 0, 0.15);
         }
-        .logo-section { text-align: center; margin-top: 8px; margin-bottom: 24px; position: relative; z-index: 1; }
+
+        .lang-btn .flag {
+            font-size: 22px;
+            line-height: 1;
+            display: block;
+        }
+
+        /* ===== ЛОГОТИП ===== */
+        .logo-section {
+            text-align: center;
+            margin-top: 8px;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
         .logo-icon {
             width: 80px;
             height: 80px;
@@ -99,7 +143,12 @@
             position: relative;
             animation: float 3s ease-in-out infinite;
         }
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+
         .logo-icon::after {
             content: '';
             position: absolute;
@@ -109,7 +158,16 @@
             border-radius: 50%;
             border: 3px solid rgba(255, 255, 255, 0.2);
         }
-        .logo-icon svg { width: 46px; height: 46px; fill: white; position: relative; z-index: 2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); }
+
+        .logo-icon svg {
+            width: 46px;
+            height: 46px;
+            fill: white;
+            position: relative;
+            z-index: 2;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
         .logo-title {
             font-size: 32px;
             font-weight: 800;
@@ -121,8 +179,16 @@
             background-clip: text;
             text-transform: uppercase;
         }
-        .logo-subtitle { font-size: 14px; color: #8899aa; margin-top: 4px; letter-spacing: 0.5px; }
+
+        .logo-subtitle {
+            font-size: 14px;
+            color: #8899aa;
+            margin-top: 4px;
+            letter-spacing: 0.5px;
+        }
         .logo-subtitle span { color: #ffb000; font-weight: 600; }
+
+        /* ===== ВКЛАДКИ ===== */
         .tabs {
             display: flex;
             gap: 6px;
@@ -134,6 +200,7 @@
             position: relative;
             z-index: 1;
         }
+
         .tab {
             flex: 1;
             padding: 12px 10px;
@@ -148,20 +215,44 @@
             font-family: inherit;
             letter-spacing: 0.3px;
         }
+
         .tab:hover:not(.active) { color: #ffffff; background: rgba(255, 255, 255, 0.04); }
         .tab.active {
             background: linear-gradient(135deg, #ffb000, #ff6a00);
             color: #0a0c10;
             box-shadow: 0 4px 16px rgba(255, 160, 0, 0.2);
         }
+
+        /* ===== ФОРМЫ ===== */
         .form-container { position: relative; z-index: 1; }
         .form { display: none; animation: fadeIn 0.4s ease; }
         .form.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .form-title { font-size: 18px; font-weight: 700; color: #ffffff; margin-bottom: 20px; text-align: center; }
-        .input-group { margin-bottom: 16px; }
-        .input-group label { display: block; font-size: 13px; font-weight: 500; color: #b0c0d0; margin-bottom: 6px; }
-        .input-group input, .input-group select {
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #b0c0d0;
+            margin-bottom: 6px;
+        }
+        .input-group input,
+        .input-group select {
             width: 100%;
             padding: 14px 16px;
             border-radius: 14px;
@@ -173,14 +264,20 @@
             outline: none;
             transition: all 0.3s ease;
         }
-        .input-group input:focus, .input-group select:focus {
+        .input-group input:focus,
+        .input-group select:focus {
             border-color: #ffb000;
             background: rgba(255, 255, 255, 0.06);
             box-shadow: 0 0 0 4px rgba(255, 180, 0, 0.06);
         }
         .input-group input::placeholder { color: #556677; }
-        .input-group select { appearance: none; -webkit-appearance: none; cursor: pointer; }
+        .input-group select {
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
         .input-group select option { background: #1a1e26; color: #ffffff; }
+
         .btn-submit {
             width: 100%;
             padding: 16px;
@@ -197,9 +294,18 @@
             margin-top: 4px;
             letter-spacing: 0.5px;
         }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(255, 140, 0, 0.35); }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(255, 140, 0, 0.35);
+        }
         .btn-submit:active { transform: scale(0.97); }
-        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* ===== СООБЩЕНИЯ ===== */
         .message {
             margin-top: 16px;
             padding: 12px 16px;
@@ -210,12 +316,42 @@
             text-align: center;
             animation: fadeIn 0.3s ease;
         }
-        .message.error { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); display: block; }
-        .message.success { background: rgba(74, 222, 128, 0.12); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.2); display: block; }
-        .message.info { background: rgba(255, 180, 0, 0.12); color: #ffb000; border: 1px solid rgba(255, 180, 0, 0.2); display: block; }
-        .switch-link { margin-top: 16px; font-size: 14px; color: #8899aa; text-align: center; }
-        .switch-link a { color: #ffb000; text-decoration: none; font-weight: 600; cursor: pointer; transition: color 0.2s; }
+        .message.error {
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            display: block;
+        }
+        .message.success {
+            background: rgba(74, 222, 128, 0.12);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            display: block;
+        }
+        .message.info {
+            background: rgba(255, 180, 0, 0.12);
+            color: #ffb000;
+            border: 1px solid rgba(255, 180, 0, 0.2);
+            display: block;
+        }
+
+        /* ===== ССЫЛКИ ПЕРЕКЛЮЧЕНИЯ ===== */
+        .switch-link {
+            margin-top: 16px;
+            font-size: 14px;
+            color: #8899aa;
+            text-align: center;
+        }
+        .switch-link a {
+            color: #ffb000;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
         .switch-link a:hover { color: #ffcc44; }
+
+        /* ===== ПРЕИМУЩЕСТВА ===== */
         .features {
             display: flex;
             gap: 10px;
@@ -232,35 +368,89 @@
             border: 1px solid rgba(255, 255, 255, 0.04);
             transition: all 0.3s ease;
         }
-        .feature:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 180, 0, 0.1); }
+        .feature:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 180, 0, 0.1);
+        }
         .feature-icon { font-size: 22px; margin-bottom: 4px; }
         .feature-title { font-size: 12px; font-weight: 600; color: #e0e8f0; }
         .feature-desc { font-size: 10px; color: #667788; margin-top: 2px; }
-        .home-indicator { margin-top: 20px; width: 120px; height: 4px; background: rgba(255, 255, 255, 0.15); border-radius: 20px; margin-left: auto; margin-right: auto; position: relative; z-index: 1; }
+
+        .home-indicator {
+            margin-top: 20px;
+            width: 120px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== АДАПТИВНОСТЬ ===== */
         @media (max-width: 480px) {
-            .container { border-radius: 0; padding: 20px 18px 28px; background: rgba(10, 12, 16, 0.96); backdrop-filter: blur(20px); border: none; box-shadow: none; max-width: 100%; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
-            .lang-switcher { top: 16px; right: 16px; }
-            body[dir="rtl"] .lang-switcher { right: auto; left: 16px; }
+            .container {
+                border-radius: 0;
+                padding: 20px 18px 28px;
+                background: rgba(10, 12, 16, 0.96);
+                backdrop-filter: blur(20px);
+                border: none;
+                box-shadow: none;
+                max-width: 100%;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            .lang-switcher {
+                top: 14px;
+                right: 14px;
+                padding: 4px 8px;
+                gap: 4px;
+            }
+            body[dir="rtl"] .lang-switcher {
+                right: auto;
+                left: 14px;
+            }
+            .lang-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 16px;
+            }
+            .lang-btn .flag { font-size: 18px; }
             .logo-title { font-size: 28px; }
             .logo-icon { width: 70px; height: 70px; }
             .logo-icon svg { width: 40px; height: 40px; }
             .features { gap: 6px; }
             .feature { padding: 12px 8px; }
         }
+
+        /* ===== RTL ===== */
         body[dir="rtl"] .input-group input,
-        body[dir="rtl"] .input-group select { text-align: right; }
+        body[dir="rtl"] .input-group select {
+            text-align: right;
+        }
     </style>
 </head>
 <body>
 
 <div class="container" id="app">
 
-    <!-- ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== -->
+    <!-- ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ С ФЛАГАМИ ===== -->
     <div class="lang-switcher">
-        <button class="lang-btn" data-lang="he" title="עברית">עב</button>
-        <button class="lang-btn" data-lang="ar" title="العربية">عرب</button>
-        <button class="lang-btn active" data-lang="ru" title="Русский">RU</button>
-        <button class="lang-btn" data-lang="en" title="English">EN</button>
+        <button class="lang-btn" data-lang="he" title="עברית">
+            <span class="flag">🇮🇱</span>
+        </button>
+        <button class="lang-btn" data-lang="ar" title="العربية">
+            <span class="flag">🇸🇦</span>
+        </button>
+        <button class="lang-btn active" data-lang="ru" title="Русский">
+            <span class="flag">🇷🇺</span>
+        </button>
+        <button class="lang-btn" data-lang="en" title="English">
+            <span class="flag">🇬🇧</span>
+        </button>
     </div>
 
     <!-- ===== ЛОГОТИП ===== -->
@@ -355,10 +545,10 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- FIREBASE СКРИПТ (ВЕСЬ В ОДНОМ МЕСТЕ) -->
+<!-- FIREBASE СКРИПТ -->
 <!-- ============================================================ -->
 <script type="module">
-    // ===== ИМПОРТЫ FIREBASE =====
+    // ===== FIREBASE =====
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
         getAuth,
@@ -516,7 +706,7 @@
             feat3Title: "شفاف",
             feat3Desc: "سعر بدون مفاجآت",
             loginSuccess: "✅ تم تسجيل الدخول بنجاح! جاري التوجيه...",
-            loginError: "❌ بريد إلكتروني أو كلمة مرور غير صحيحة",
+            loginError: "❌ بريد إلكتروني или كلمة مرور غير صحيحة",
             regSuccess: "✅ تم التسجيل بنجاح! قم بتسجيل الدخول الآن.",
             regError: "❌ خطأ في التسجيل: ",
             regEmailExists: "⚠️ هذا البريد الإلكتروني مسجل بالفعل. قم بتسجيل الدخول.",
@@ -525,6 +715,7 @@
         }
     };
 
+    // ===== ЯЗЫК =====
     let currentLang = 'ru';
 
     function switchLanguage(lang) {
@@ -579,9 +770,7 @@
     }
 
     tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            switchForm(tab.getAttribute('data-form'));
-        });
+        tab.addEventListener('click', () => switchForm(tab.getAttribute('data-form')));
     });
 
     document.getElementById('switchToRegister').addEventListener('click', () => switchForm('register'));
@@ -592,9 +781,7 @@
         element.textContent = text;
     }
 
-    // ============================================================
-    // 1. ВХОД
-    // ============================================================
+    // ===== 1. ВХОД =====
     document.getElementById('loginBtn').addEventListener('click', async () => {
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value.trim();
@@ -659,20 +846,17 @@
         }
     });
 
-    // ============================================================
-    // 2. РЕГИСТРАЦИЯ (ГЛАВНОЕ — РАБОТАЕТ!)
-    // ============================================================
+    // ===== 2. РЕГИСТРАЦИЯ =====
     document.getElementById('registerBtn').addEventListener('click', async (e) => {
-        e.preventDefault(); // Предотвращаем возможный перезагрузку страницы
+        e.preventDefault();
 
         const name = document.getElementById('regName').value.trim();
         const email = document.getElementById('regEmail').value.trim();
         const password = document.getElementById('regPassword').value.trim();
         const role = document.getElementById('regRole').value;
 
-        console.log('🔍 Регистрация:', { name, email, password, role });
+        console.log('🔍 Регистрация:', { name, email, role });
 
-        // ===== ВАЛИДАЦИЯ =====
         if (!name || !email || !password) {
             showMessage(registerMsg, translations[currentLang].fillAll, 'error');
             return;
@@ -687,15 +871,13 @@
         document.getElementById('registerBtn').disabled = true;
 
         try {
-            // ===== ШАГ 1: Создаём пользователя в Authentication =====
-            console.log('📌 Шаг 1: Создание пользователя в Auth...');
+            // Создаём пользователя
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             console.log('✅ Auth: пользователь создан, UID:', user.uid);
 
-            // ===== ШАГ 2: Создаём документ в Firestore (коллекция "users") =====
-            console.log('📌 Шаг 2: Создание документа в Firestore...');
-            const userData = {
+            // Создаём документ
+            await setDoc(doc(db, 'users', user.uid), {
                 uid: user.uid,
                 email: user.email,
                 role: role,
@@ -709,13 +891,11 @@
                 totalSpent: 0,
                 driverData: null,
                 createdAt: serverTimestamp()
-            };
-            await setDoc(doc(db, 'users', user.uid), userData);
-            console.log('✅ Firestore: документ создан для', user.uid);
+            });
+            console.log('✅ Firestore: документ создан');
 
-            // ===== ШАГ 3: Если роль "driver" — создаём запись в "drivers" =====
+            // Если водитель
             if (role === 'driver') {
-                console.log('📌 Шаг 3: Создание документа в drivers...');
                 await setDoc(doc(db, 'drivers', user.uid), {
                     uid: user.uid,
                     fullName: name,
@@ -729,16 +909,7 @@
                 console.log('✅ Firestore: создан документ в drivers');
             }
 
-            // ===== ШАГ 4: Проверяем, что документ создан =====
-            const checkDoc = await getDoc(doc(db, 'users', user.uid));
-            if (!checkDoc.exists()) {
-                throw new Error('Документ не был создан в Firestore!');
-            }
-            console.log('✅ Проверка: документ существует!');
-
-            // ===== УСПЕХ =====
             showMessage(registerMsg, translations[currentLang].regSuccess, 'success');
-            console.log('🎉 Регистрация успешно завершена!');
 
             // Очищаем поля
             document.getElementById('regName').value = '';
@@ -746,7 +917,6 @@
             document.getElementById('regPassword').value = '';
             document.getElementById('regRole').value = 'client';
 
-            // Переключаем на форму входа
             setTimeout(() => {
                 switchForm('login');
                 document.getElementById('loginEmail').value = email;
@@ -755,7 +925,6 @@
 
         } catch (error) {
             console.error('❌ Ошибка регистрации:', error);
-
             let msg = translations[currentLang].regError + error.message;
 
             if (error.code === 'auth/email-already-in-use') {
@@ -777,9 +946,7 @@
         }
     });
 
-    // ============================================================
-    // 3. ПРОВЕРКА АВТОРИЗАЦИИ
-    // ============================================================
+    // ===== 3. ПРОВЕРКА АВТОРИЗАЦИИ =====
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             try {
