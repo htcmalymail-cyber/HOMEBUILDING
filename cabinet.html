@@ -1,108 +1,796 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" dir="ltr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Личный кабинет — WHEEL</title>
-    <link rel="stylesheet" href="styles/main.css">
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, query, where, orderBy, limit, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+            authDomain: "taxi-ai-app-69628.firebaseapp.com",
+            projectId: "taxi-ai-app-69628",
+            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+            messagingSenderId: "952357992434",
+            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+            measurementId: "G-Z9NJFSSXH6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+    </script>
+
+    <style>
+        /* ===== ОСНОВНЫЕ СТИЛИ ===== */
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0c10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.06) 0%, transparent 45%),
+                radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.05) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(18, 22, 28, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 48px;
+            padding: 24px 24px 32px;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            position: relative;
+            overflow: hidden;
+            min-height: 500px;
+            transition: all 0.3s ease;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(255, 180, 0, 0.03), transparent 60%);
+            pointer-events: none;
+            animation: rotateBg 30s linear infinite;
+        }
+
+        @keyframes rotateBg {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ С ФЛАГАМИ ===== */
+        .lang-switcher {
+            position: absolute;
+            top: 18px;
+            right: 22px;
+            z-index: 10;
+            display: flex;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            padding: 4px 8px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        body[dir="rtl"] .lang-switcher {
+            right: auto;
+            left: 22px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            line-height: 1;
+            padding: 3px 4px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            opacity: 0.4;
+            filter: grayscale(0.8);
+            transform: scale(0.85);
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lang-btn:hover {
+            opacity: 0.8;
+            filter: grayscale(0.2);
+            transform: scale(0.95);
+        }
+
+        .lang-btn.active {
+            opacity: 1;
+            filter: grayscale(0);
+            transform: scale(1);
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            box-shadow: 0 0 16px rgba(255, 180, 0, 0.15);
+        }
+
+        .lang-btn .flag {
+            font-size: 20px;
+            line-height: 1;
+            display: block;
+        }
+
+        /* ===== ШАПКА ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-top: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .user-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.3px;
+        }
+
+        .user-email {
+            font-size: 13px;
+            color: #8899aa;
+            margin-top: 2px;
+        }
+
+        .user-uid {
+            font-size: 10px;
+            color: #556677;
+            margin-top: 2px;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .logout-btn {
+            background: rgba(255, 70, 70, 0.08);
+            border: 1px solid rgba(255, 70, 70, 0.15);
+            border-radius: 30px;
+            padding: 8px 16px;
+            color: #ff6b6b;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 70, 70, 0.18);
+            border-color: #ff6b6b;
+            transform: scale(1.02);
+        }
+
+        .logout-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* ===== СТАТИСТИКА (4 КАРТОЧКИ) ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 18px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            text-align: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 180, 0, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .stat-card .icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .label {
+            font-size: 11px;
+            color: #8899aa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 4px;
+        }
+
+        .stat-card .value.gold { color: #ffb000; }
+        .stat-card .value.negative { color: #ff6b6b; }
+        .stat-card .value.positive { color: #4ade80; }
+        .stat-card .value.rating { color: #60a5fa; }
+
+        /* ===== КНОПКА ЗАКАЗА ===== */
+        .order-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #ffb000, #ff6a00);
+            color: #0a0c10;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(255, 140, 0, 0.2);
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+            letter-spacing: 0.3px;
+        }
+
+        .order-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(255, 140, 0, 0.35);
+        }
+
+        .order-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* ===== ИСТОРИЯ ===== */
+        .history-section {
+            width: 100%;
+            margin-top: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .history-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e0e8f0;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-title .badge {
+            font-size: 11px;
+            color: #667788;
+            font-weight: 400;
+        }
+
+        .history-list {
+            max-height: 260px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .history-list::-webkit-scrollbar {
+            width: 3px;
+        }
+        .history-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .history-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+
+        .transaction-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.2s ease;
+        }
+
+        .transaction-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .transaction-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            flex: 1;
+        }
+
+        .transaction-desc {
+            font-size: 14px;
+            font-weight: 500;
+            color: #e0e8f0;
+        }
+
+        .transaction-date {
+            font-size: 11px;
+            color: #667788;
+            margin-top: 2px;
+        }
+
+        .transaction-amount {
+            font-size: 16px;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-left: 12px;
+        }
+
+        .transaction-amount.positive { color: #4ade80; }
+        .transaction-amount.negative { color: #ff6b6b; }
+
+        .empty-history {
+            color: #667788;
+            font-size: 14px;
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+            color: #8899aa;
+            font-size: 14px;
+        }
+
+        /* ===== ИНДИКАТОР ===== */
+        .home-indicator {
+            margin-top: 20px;
+            width: 120px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== АДАПТИВНОСТЬ ===== */
+        @media (max-width: 480px) {
+            .container {
+                border-radius: 0;
+                padding: 18px 16px 24px;
+                background: rgba(10, 12, 16, 0.96);
+                backdrop-filter: blur(20px);
+                border: none;
+                box-shadow: none;
+                max-width: 100%;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .lang-switcher {
+                top: 14px;
+                right: 14px;
+                padding: 3px 6px;
+                gap: 2px;
+            }
+
+            body[dir="rtl"] .lang-switcher {
+                right: auto;
+                left: 14px;
+            }
+
+            .lang-btn {
+                width: 26px;
+                height: 26px;
+                font-size: 15px;
+            }
+            .lang-btn .flag { font-size: 17px; }
+
+            .user-name { font-size: 19px; }
+            .stat-card .value { font-size: 20px; }
+            .order-btn { font-size: 15px; padding: 14px; }
+            .stats-grid { gap: 8px; }
+            .stat-card { padding: 14px 10px; }
+        }
+
+        /* ===== RTL ===== */
+        body[dir="rtl"] .transaction-amount {
+            margin-left: 0;
+            margin-right: 12px;
+        }
+        body[dir="rtl"] .user-info {
+            align-items: flex-end;
+        }
+    </style>
 </head>
 <body>
-    <div id="app">
-        <div class="header">
-            <div>
-                <h2 id="userName">Загрузка...</h2>
-                <span id="userEmail">email@domain.com</span>
-                <small id="userUid">UID: ...</small>
-            </div>
-            <button id="logoutBtn">🚪 Выйти</button>
-        </div>
 
-        <div class="stats-grid">
-            <div class="stat-card"><span>💰 Баланс</span><span id="balance">0 ₽</span></div>
-            <div class="stat-card"><span>⭐ Рейтинг</span><span id="rating">0.0</span></div>
-            <div class="stat-card"><span>🎁 Бонусы</span><span id="bonus">0</span></div>
-            <div class="stat-card"><span>📊 Потрачено</span><span id="totalSpent">0 ₽</span></div>
-        </div>
+<div class="container" id="app">
 
-        <button id="orderBtn">📍 Заказать такси</button>
-
-        <h3>📋 История операций</h3>
-        <div id="historyList">Загрузка...</div>
+    <!-- ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== -->
+    <div class="lang-switcher">
+        <button class="lang-btn" data-lang="he" title="עברית">
+            <span class="flag">🇮🇱</span>
+        </button>
+        <button class="lang-btn" data-lang="ar" title="العربية">
+            <span class="flag">🇸🇦</span>
+        </button>
+        <button class="lang-btn active" data-lang="ru" title="Русский">
+            <span class="flag">🇷🇺</span>
+        </button>
+        <button class="lang-btn" data-lang="en" title="English">
+            <span class="flag">🇬🇧</span>
+        </button>
     </div>
 
-    <script type="module">
-        import { onAuthChange, logout, getCurrentUser } from './auth.js';
-        import { getUser, subscribeToTransactions } from './db.js';
+    <!-- ===== ШАПКА ===== -->
+    <div class="header">
+        <div class="user-info">
+            <div class="user-name" id="userName">Загрузка...</div>
+            <div class="user-email" id="userEmail">email@domain.com</div>
+            <div class="user-uid" id="userUid">UID: загрузка...</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">🚪 <span data-i18n="logout">Выйти</span></button>
+    </div>
 
-        // === ЭЛЕМЕНТЫ ===
-        const userNameEl = document.getElementById('userName');
-        const userEmailEl = document.getElementById('userEmail');
-        const userUidEl = document.getElementById('userUid');
-        const balanceEl = document.getElementById('balance');
-        const ratingEl = document.getElementById('rating');
-        const bonusEl = document.getElementById('bonus');
-        const totalSpentEl = document.getElementById('totalSpent');
-        const historyList = document.getElementById('historyList');
+    <!-- ===== СТАТИСТИКА ===== -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="icon">💰</div>
+            <div class="label" data-i18n="balance">Баланс</div>
+            <div class="value gold" id="balance">0 ₽</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon">⭐</div>
+            <div class="label" data-i18n="rating">Рейтинг</div>
+            <div class="value rating" id="rating">0.0</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon">🎁</div>
+            <div class="label" data-i18n="bonus">Бонусы</div>
+            <div class="value gold" id="bonus">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon">📊</div>
+            <div class="label" data-i18n="spent">Потрачено</div>
+            <div class="value negative" id="totalSpent">0 ₽</div>
+        </div>
+    </div>
 
-        let unsubTx = null;
+    <!-- ===== КНОПКА ЗАКАЗА ===== -->
+    <button class="order-btn" id="orderBtn">
+        <span>📍</span>
+        <span data-i18n="orderBtn">Заказать такси</span>
+    </button>
 
-        function updateUI(data) {
-            balanceEl.textContent = (data.balance || 0).toFixed(2) + ' ₽';
-            ratingEl.textContent = (data.rating || 0).toFixed(1);
-            bonusEl.textContent = data.bonus || 0;
-            totalSpentEl.textContent = (data.totalSpent || 0).toFixed(2) + ' ₽';
+    <!-- ===== ИСТОРИЯ ===== -->
+    <div class="history-section">
+        <div class="history-title">
+            <span>📋 <span data-i18n="history">История операций</span></span>
+            <span class="badge" data-i18n="last10">последние 10</span>
+        </div>
+        <div class="history-list" id="historyList">
+            <div class="loading">⏳ <span data-i18n="loading">Загрузка...</span></div>
+        </div>
+    </div>
+
+    <div class="home-indicator"></div>
+</div>
+
+<script>
+    // ============================================================
+    // 1. ПЕРЕВОДЫ
+    // ============================================================
+    const translations = {
+        ru: {
+            logout: "Выйти",
+            balance: "Баланс",
+            rating: "Рейтинг",
+            bonus: "Бонусы",
+            spent: "Потрачено",
+            orderBtn: "Заказать такси",
+            history: "История операций",
+            last10: "последние 10",
+            loading: "Загрузка...",
+            noTransactions: "Нет операций"
+        },
+        en: {
+            logout: "Log out",
+            balance: "Balance",
+            rating: "Rating",
+            bonus: "Bonuses",
+            spent: "Spent",
+            orderBtn: "Order taxi",
+            history: "Transaction history",
+            last10: "last 10",
+            loading: "Loading...",
+            noTransactions: "No transactions"
+        },
+        he: {
+            logout: "התנתק",
+            balance: "יתרה",
+            rating: "דירוג",
+            bonus: "בונוסים",
+            spent: "הוצאות",
+            orderBtn: "הזמן מונית",
+            history: "היסטוריית פעולות",
+            last10: "10 אחרונים",
+            loading: "טוען...",
+            noTransactions: "אין פעולות"
+        },
+        ar: {
+            logout: "تسجيل خروج",
+            balance: "الرصيد",
+            rating: "التقييم",
+            bonus: "المكافآت",
+            spent: "الإنفاق",
+            orderBtn: "اطلب سيارة",
+            history: "سجل العمليات",
+            last10: "آخر 10",
+            loading: "جاري التحميل...",
+            noTransactions: "لا توجد عمليات"
         }
+    };
 
-        function renderTransactions(transactions) {
-            if (!transactions || transactions.length === 0) {
-                historyList.innerHTML = 'Нет операций';
-                return;
+    let currentLang = 'ru';
+
+    function switchLanguage(lang) {
+        currentLang = lang;
+        const t = translations[lang];
+        if (!t) return;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (t[key] !== undefined) el.textContent = t[key];
+        });
+        if (lang === 'ar' || lang === 'he') {
+            document.body.setAttribute('dir', 'rtl');
+            document.documentElement.lang = lang;
+        } else {
+            document.body.setAttribute('dir', 'ltr');
+            document.documentElement.lang = 'en';
+        }
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-lang') === lang) btn.classList.add('active');
+        });
+        localStorage.setItem('wheel_lang', lang);
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchLanguage(btn.getAttribute('data-lang')));
+    });
+
+    const savedLang = localStorage.getItem('wheel_lang');
+    if (savedLang && translations[savedLang]) switchLanguage(savedLang);
+
+    // ============================================================
+    // 2. ЭЛЕМЕНТЫ
+    // ============================================================
+    const userNameEl = document.getElementById('userName');
+    const userEmailEl = document.getElementById('userEmail');
+    const userUidEl = document.getElementById('userUid');
+    const balanceEl = document.getElementById('balance');
+    const ratingEl = document.getElementById('rating');
+    const bonusEl = document.getElementById('bonus');
+    const totalSpentEl = document.getElementById('totalSpent');
+    const historyList = document.getElementById('historyList');
+
+    let unsubUser = null;
+    let unsubTx = null;
+
+    // ============================================================
+    // 3. ФУНКЦИИ ОБНОВЛЕНИЯ
+    // ============================================================
+    function updateUI(data) {
+        if (!data) return;
+        balanceEl.textContent = (data.balance || 0).toFixed(2) + ' ₽';
+        ratingEl.textContent = (data.rating || 0).toFixed(1);
+        bonusEl.textContent = data.bonus || 0;
+        totalSpentEl.textContent = (data.totalSpent || 0).toFixed(2) + ' ₽';
+    }
+
+    function renderTransactions(transactions) {
+        if (!transactions || transactions.length === 0) {
+            historyList.innerHTML = `<div class="empty-history">${translations[currentLang].noTransactions}</div>`;
+            return;
+        }
+        let html = '';
+        transactions.forEach(tx => {
+            const amount = tx.amount || 0;
+            const sign = amount >= 0 ? '+' : '';
+            const cls = amount >= 0 ? 'positive' : 'negative';
+            let date = '—';
+            if (tx.timestamp) {
+                try {
+                    if (tx.timestamp.seconds) {
+                        date = new Date(tx.timestamp.seconds * 1000).toLocaleString('ru-RU');
+                    } else {
+                        date = new Date(tx.timestamp).toLocaleString('ru-RU');
+                    }
+                } catch { date = '—'; }
             }
-            historyList.innerHTML = transactions.map(tx => `
-                <div>
-                    <span>${tx.description || 'Операция'}</span>
-                    <span>${tx.amount >= 0 ? '+' : ''}${tx.amount.toFixed(2)} ₽</span>
+            html += `
+                <div class="transaction-item">
+                    <div class="transaction-info">
+                        <div class="transaction-desc">${tx.description || 'Операция'}</div>
+                        <div class="transaction-date">${date}</div>
+                    </div>
+                    <div class="transaction-amount ${cls}">${sign}${amount.toFixed(2)} ₽</div>
                 </div>
-            `).join('');
+            `;
+        });
+        historyList.innerHTML = html;
+    }
+
+    // ============================================================
+    // 4. ОСНОВНАЯ ЛОГИКА
+    // ============================================================
+    onAuthStateChanged(auth, (user) => {
+        console.log('🔐 onAuthStateChanged, user:', user ? user.uid : 'null');
+
+        if (!user) {
+            window.location.href = 'index.html';
+            return;
         }
 
-        // === ПРОВЕРКА АВТОРИЗАЦИИ ===
-        onAuthChange(async (user) => {
-            if (!user) {
-                window.location.href = 'index.html';
+        userUidEl.textContent = 'UID: ' + user.uid;
+        const userDocRef = doc(db, 'users', user.uid);
+
+        // === ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ ===
+        getDoc(userDocRef).then((docSnap) => {
+            console.log('📥 getDoc:', docSnap.exists() ? 'существует' : 'НЕ СУЩЕСТВУЕТ');
+
+            if (!docSnap.exists()) {
+                // Документа нет — создаём
+                console.log('⚠️ Создаём документ...');
+                const newData = {
+                    uid: user.uid,
+                    email: user.email,
+                    role: 'client',
+                    displayName: user.displayName || 'Пользователь',
+                    balance: 0,
+                    rating: 0,
+                    bonus: 0,
+                    penalty: 0,
+                    premium: 0,
+                    totalEarned: 0,
+                    totalSpent: 0,
+                    driverData: null,
+                    createdAt: serverTimestamp()
+                };
+                setDoc(userDocRef, newData).then(() => {
+                    console.log('✅ Документ создан');
+                    userNameEl.textContent = newData.displayName;
+                    userEmailEl.textContent = user.email;
+                    updateUI(newData);
+                    subscribeToUser(userDocRef);
+                    subscribeToTransactions(user.uid);
+                });
                 return;
             }
 
-            userUidEl.textContent = 'UID: ' + user.uid;
-            const userData = await getUser(user.uid);
-
-            if (!userData) {
-                // Если нет документа — редирект на главную (пусть создадут заново)
-                alert('Профиль не найден. Пожалуйста, зарегистрируйтесь.');
-                window.location.href = 'index.html';
-                return;
-            }
-
-            // === ОБНОВЛЯЕМ UI ===
-            userNameEl.textContent = userData.displayName || 'Пользователь';
+            // Документ есть
+            const data = docSnap.data();
+            console.log('✅ Данные:', data);
+            userNameEl.textContent = data.displayName || 'Пользователь';
             userEmailEl.textContent = user.email || '';
-            updateUI(userData);
+            updateUI(data);
 
-            // === ПОДПИСКА НА ТРАНЗАКЦИИ ===
-            if (unsubTx) unsubTx();
-            unsubTx = subscribeToTransactions(user.uid, renderTransactions);
-        });
+            subscribeToUser(userDocRef);
+            subscribeToTransactions(user.uid);
 
-        // === ВЫХОД ===
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            if (unsubTx) unsubTx();
-            await logout();
-            window.location.href = 'index.html';
+        }).catch((error) => {
+            console.error('❌ Ошибка:', error);
+            historyList.innerHTML = `<div class="empty-history">❌ ${translations[currentLang].loading}</div>`;
         });
+    });
 
-        // === ЗАКАЗАТЬ ===
-        document.getElementById('orderBtn').addEventListener('click', () => {
-            window.location.href = 'order.html';
+    // ============================================================
+    // 5. ПОДПИСКИ REAL-TIME
+    // ============================================================
+    function subscribeToUser(userDocRef) {
+        if (unsubUser) unsubUser();
+        unsubUser = onSnapshot(userDocRef, (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                console.log('🔄 Обновление пользователя:', data);
+                userNameEl.textContent = data.displayName || 'Пользователь';
+                userEmailEl.textContent = data.email || '';
+                updateUI(data);
+            }
+        }, (error) => console.error('❌ Ошибка подписки на пользователя:', error));
+    }
+
+    function subscribeToTransactions(uid) {
+        if (unsubTx) unsubTx();
+        const q = query(
+            collection(db, 'transactions'),
+            where('userId', '==', uid),
+            orderBy('timestamp', 'desc'),
+            limit(10)
+        );
+        unsubTx = onSnapshot(q, (snapshot) => {
+            const transactions = [];
+            snapshot.forEach(doc => transactions.push({ id: doc.id, ...doc.data() }));
+            console.log('🔄 Транзакции обновлены:', transactions.length);
+            renderTransactions(transactions);
+        }, (error) => {
+            console.error('❌ Ошибка подписки на транзакции:', error);
+            historyList.innerHTML = `<div class="empty-history">❌ ${translations[currentLang].loading}</div>`;
         });
-    </script>
+    }
+
+    // ============================================================
+    // 6. ОБРАБОТЧИКИ
+    // ============================================================
+
+    // Выход
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        console.log('🚪 Выход');
+        try {
+            if (unsubUser) { unsubUser(); unsubUser = null; }
+            if (unsubTx) { unsubTx(); unsubTx = null; }
+            await signOut(auth);
+            window.location.replace('index.html');
+        } catch (error) {
+            console.error('❌ Ошибка выхода:', error);
+            window.location.replace('index.html');
+        }
+    });
+
+    // Заказать такси
+    document.getElementById('orderBtn').addEventListener('click', () => {
+        window.location.href = 'order.html';
+    });
+</script>
 </body>
 </html>
