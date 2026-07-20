@@ -2,10 +2,24 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Заказ такси — WHEEL</title>
 
+    <!-- ===== Leaflet CSS ===== -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+
+    <!-- ===== Firebase (compat) ===== -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js">
+    </script>
+
     <style>
+        /* ===== ОБЩИЕ СТИЛИ ===== */
         * {
             margin: 0;
             padding: 0;
@@ -28,71 +42,240 @@
 
         .container {
             width: 100%;
-            max-width: 420px;
+            max-width: 480px;
             background: rgba(18, 22, 28, 0.85);
             backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-radius: 48px;
-            padding: 32px 24px 36px;
-            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            border-radius: 32px;
+            padding: 20px 20px 24px;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.06);
-            text-align: center;
-            min-height: 400px;
+            position: relative;
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(255, 180, 0, 0.03), transparent 60%);
+            pointer-events: none;
+            animation: rotateBg 30s linear infinite;
+        }
+
+        @keyframes rotateBg {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ===== ШАПКА ===== */
+        .header {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 10;
         }
 
-        h1 {
-            font-size: 28px;
-            font-weight: 800;
-            background: linear-gradient(to right, #ffffff, #ffb000);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .subtitle {
-            color: #8899aa;
-            font-size: 14px;
-            margin-bottom: 30px;
-        }
-
-        .emoji-big {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-
-        .info-box {
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 16px;
-            padding: 20px;
+        .back-btn {
+            background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.06);
-            margin-bottom: 24px;
-        }
-
-        .info-box .label {
-            font-size: 12px;
+            border-radius: 30px;
+            padding: 8px 14px;
             color: #8899aa;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
         }
 
-        .info-box .value {
-            font-size: 18px;
-            font-weight: 600;
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
             color: #ffffff;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .balance-display {
+            background: rgba(255, 180, 0, 0.08);
+            border: 1px solid rgba(255, 180, 0, 0.15);
+            border-radius: 30px;
+            padding: 6px 14px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffb000;
+        }
+
+        /* ===== КАРТА ===== */
+        #map {
+            height: 280px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .leaflet-control-attribution {
+            font-size: 9px !important;
+            color: #667788 !important;
+        }
+
+        /* ===== ФОРМА ===== */
+        .form-section {
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .form-row .icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            width: 30px;
+            text-align: center;
+        }
+
+        .form-row input {
+            flex: 1;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1.5px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.04);
+            color: #ffffff;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.3s ease;
+            min-width: 0;
+        }
+
+        .form-row input:focus {
+            border-color: #ffb000;
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 0 4px rgba(255, 180, 0, 0.06);
+        }
+
+        .form-row input::placeholder {
+            color: #556677;
+        }
+
+        .form-row input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .geo-btn {
+            background: rgba(255, 180, 0, 0.08);
+            border: 1px solid rgba(255, 180, 0, 0.12);
+            border-radius: 14px;
+            padding: 10px 14px;
+            color: #ffb000;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .geo-btn:hover {
+            background: rgba(255, 180, 0, 0.15);
+            border-color: rgba(255, 180, 0, 0.25);
+        }
+
+        .geo-btn:active {
+            transform: scale(0.95);
+        }
+
+        .geo-btn.loading {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== ИНФОРМАЦИОННАЯ ПАНЕЛЬ ===== */
+        .info-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin: 14px 0 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-item .label {
+            font-size: 10px;
+            color: #667788;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .info-item .value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 2px;
+        }
+
+        .info-item .value.gold {
+            color: #ffb000;
+        }
+        .info-item .value.green {
+            color: #4ade80;
+        }
+        .info-item .value.blue {
+            color: #60a5fa;
+        }
+
+        /* ===== КНОПКИ ===== */
+        .btn-group {
+            display: flex;
+            gap: 10px;
             margin-top: 4px;
         }
 
-        .btn-back {
-            width: 100%;
-            padding: 16px;
+        .btn-order {
+            flex: 1;
+            padding: 14px;
             border: none;
-            border-radius: 20px;
+            border-radius: 16px;
             background: linear-gradient(135deg, #ffb000, #ff6a00);
             color: #0a0c10;
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -100,84 +283,1035 @@
             box-shadow: 0 8px 24px rgba(255, 140, 0, 0.2);
         }
 
-        .btn-back:hover {
+        .btn-order:hover {
             transform: translateY(-2px);
             box-shadow: 0 12px 32px rgba(255, 140, 0, 0.35);
         }
 
-        .btn-back:active {
+        .btn-order:active {
             transform: scale(0.97);
         }
 
-        .btn-back.secondary {
-            background: rgba(255, 255, 255, 0.06);
+        .btn-order:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-cancel {
+            padding: 14px 20px;
+            border: 1px solid rgba(255, 70, 70, 0.2);
+            border-radius: 16px;
+            background: rgba(255, 70, 70, 0.06);
+            color: #ff6b6b;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .btn-cancel:hover {
+            background: rgba(255, 70, 70, 0.12);
+            border-color: rgba(255, 70, 70, 0.3);
+        }
+
+        .btn-cancel:active {
+            transform: scale(0.95);
+        }
+
+        .btn-cancel:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* ===== СООБЩЕНИЯ ===== */
+        .message {
+            margin-top: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            display: none;
+            text-align: center;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            display: block;
+        }
+
+        .message.success {
+            background: rgba(74, 222, 128, 0.1);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.15);
+            display: block;
+        }
+
+        .message.info {
+            background: rgba(255, 180, 0, 0.1);
+            color: #ffb000;
+            border: 1px solid rgba(255, 180, 0, 0.15);
+            display: block;
+        }
+
+        .message.warning {
+            background: rgba(255, 180, 0, 0.1);
+            color: #ffb000;
+            border: 1px solid rgba(255, 180, 0, 0.15);
+            display: block;
+        }
+
+        .error-box {
+            background: rgba(255, 70, 70, 0.08);
+            border: 1px solid rgba(255, 70, 70, 0.12);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            color: #ff6b6b;
+            font-size: 13px;
+            text-align: center;
+            display: none;
+        }
+
+        /* ===== СТАТУС ЗАКАЗА ===== */
+        .order-status {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            display: none;
+            text-align: center;
+        }
+
+        .order-status .status-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e0e8f0;
+        }
+
+        .order-status .status-detail {
+            font-size: 12px;
             color: #8899aa;
-            box-shadow: none;
-            margin-top: 10px;
+            margin-top: 4px;
         }
 
-        .btn-back.secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            box-shadow: none;
-            transform: translateY(-2px);
+        .order-status.active {
+            display: block;
         }
 
-        .home-indicator {
-            margin-top: 20px;
-            width: 120px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.12);
-            border-radius: 20px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        @media (max-width: 420px) {
+        /* ===== АДАПТИВНОСТЬ ===== */
+        @media (max-width: 480px) {
             .container {
                 border-radius: 0;
-                padding: 24px 18px;
+                padding: 16px;
                 min-height: 100vh;
                 background: rgba(10, 12, 16, 0.96);
                 border: none;
-                backdrop-filter: blur(20px);
             }
-            h1 {
-                font-size: 24px;
+            #map {
+                height: 200px;
             }
-            .emoji-big {
-                font-size: 48px;
+            .header-title {
+                font-size: 16px;
             }
+            .balance-display {
+                font-size: 12px;
+                padding: 4px 10px;
+            }
+            .form-row input {
+                font-size: 13px;
+                padding: 10px 12px;
+            }
+            .geo-btn {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+            .info-panel {
+                grid-template-columns: 1fr 1fr 1fr;
+                padding: 8px;
+                gap: 4px;
+            }
+            .info-item .value {
+                font-size: 14px;
+            }
+            .btn-order {
+                font-size: 14px;
+                padding: 12px;
+            }
+            .btn-cancel {
+                font-size: 13px;
+                padding: 12px 14px;
+            }
+        }
+
+        /* ===== RTL ===== */
+        body[dir="rtl"] .form-row .icon {
+            order: 1;
+        }
+        body[dir="rtl"] .header-left .back-btn {
+            order: 1;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="emoji-big">📍</div>
-        <h1>Заказ такси</h1>
-        <p class="subtitle">Страница заказа в разработке</p>
 
-        <div class="info-box">
-            <div class="label">Ваш статус</div>
-            <div class="value">🟢 Активен</div>
+        <!-- ===== ШАПКА ===== -->
+        <div class="header">
+            <div class="header-left">
+                <button class="back-btn" id="backBtn">← Назад</button>
+                <span class="header-title">📍 Заказ</span>
+            </div>
+            <div class="header-right">
+                <span class="balance-display" id="balanceDisplay">💰 0 ₽</span>
+            </div>
         </div>
 
-        <div class="info-box">
-            <div class="label">Ближайший водитель</div>
-            <div class="value">🚖 Поиск...</div>
+        <!-- ===== КАРТА ===== -->
+        <div id="map"></div>
+
+        <!-- ===== ОШИБКИ ===== -->
+        <div class="error-box" id="errorBox">
+            ⚠️ <span id="errorText">Ошибка</span>
         </div>
 
-        <button class="btn-back" onclick="window.location.href='cabinet.html'">
-            🔄 Обновить
-        </button>
+        <!-- ===== СТАТУС ЗАКАЗА ===== -->
+        <div class="order-status" id="orderStatus">
+            <div class="status-text" id="statusText">⏳ Поиск водителя...</div>
+            <div class="status-detail" id="statusDetail">Ближайший водитель: 2.3 км</div>
+        </div>
 
-        <button class="btn-back secondary" onclick="window.location.href='cabinet.html'">
-            ← Вернуться в кабинет
-        </button>
+        <!-- ===== ФОРМА ===== -->
+        <div class="form-section">
 
-        <div class="home-indicator"></div>
+            <!-- Откуда -->
+            <div class="form-row">
+                <span class="icon">📍</span>
+                <input type="text" id="pickupInput" placeholder="Откуда (адрес или геолокация)" autocomplete="address-line1">
+                <button class="geo-btn" id="geoBtn">📍 Определить</button>
+            </div>
+
+            <!-- Куда -->
+            <div class="form-row">
+                <span class="icon">🏁</span>
+                <input type="text" id="destinationInput" placeholder="Куда (введите адрес)" autocomplete="address-line2">
+            </div>
+
+            <!-- Время -->
+            <div class="form-row">
+                <span class="icon">⏰</span>
+                <input type="datetime-local" id="timeInput">
+            </div>
+
+            <!-- ===== ИНФОРМАЦИОННАЯ ПАНЕЛЬ ===== -->
+            <div class="info-panel">
+                <div class="info-item">
+                    <div class="label">💵 Стоимость</div>
+                    <div class="value gold" id="priceDisplay">—</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">📏 Расстояние</div>
+                    <div class="value blue" id="distanceDisplay">—</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">⏱️ Время</div>
+                    <div class="value green" id="durationDisplay">—</div>
+                </div>
+            </div>
+
+            <!-- ===== КНОПКИ ===== -->
+            <div class="btn-group">
+                <button class="btn-order" id="orderBtn">📍 Заказать такси</button>
+                <button class="btn-cancel" id="cancelBtn" disabled>❌ Отменить</button>
+            </div>
+
+            <!-- ===== СООБЩЕНИЯ ===== -->
+            <div class="message" id="message"></div>
+
+            <!-- ===== ПРИМЕЧАНИЕ О ШТРАФЕ ===== -->
+            <div style="font-size:11px; color:#667788; text-align:center; margin-top:12px;">
+                ⚠️ Отмена после подтверждения водителя — <span style="color:#ff6b6b;">штраф 7 ₪</span>
+            </div>
+        </div>
+
     </div>
+
+    <!-- ============================================================ -->
+    <!-- JAVASCRIPT (ВСЯ ЛОГИКА) -->
+    <!-- ============================================================ -->
+    <script>
+        // ============================================================
+        // 1. FIREBASE КОНФИГ
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+            authDomain: "taxi-ai-app-69628.firebaseapp.com",
+            projectId: "taxi-ai-app-69628",
+            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+            messagingSenderId: "952357992434",
+            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+            measurementId: "G-Z9NJFSSXH6"
+        };
+
+        // ============================================================
+        // 2. ИНИЦИАЛИЗАЦИЯ
+        // ============================================================
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        console.log('🔥 Firebase готов');
+
+        // ============================================================
+        // 3. ПЕРЕМЕННЫЕ
+        // ============================================================
+        let map;
+        let userMarker;
+        let userLocation = null;
+        let pickupLocation = null;
+        let destinationLocation = null;
+        let currentOrderId = null;
+        let orderStatus = null;
+        let driverMarkers = [];
+        let drivers = [];
+        let balance = 0;
+        let currentUser = null;
+
+        // Элементы
+        const el = {
+            map: document.getElementById('map'),
+            pickupInput: document.getElementById('pickupInput'),
+            destinationInput: document.getElementById('destinationInput'),
+            timeInput: document.getElementById('timeInput'),
+            geoBtn: document.getElementById('geoBtn'),
+            orderBtn: document.getElementById('orderBtn'),
+            cancelBtn: document.getElementById('cancelBtn'),
+            balanceDisplay: document.getElementById('balanceDisplay'),
+            priceDisplay: document.getElementById('priceDisplay'),
+            distanceDisplay: document.getElementById('distanceDisplay'),
+            durationDisplay: document.getElementById('durationDisplay'),
+            message: document.getElementById('message'),
+            errorBox: document.getElementById('errorBox'),
+            errorText: document.getElementById('errorText'),
+            orderStatus: document.getElementById('orderStatus'),
+            statusText: document.getElementById('statusText'),
+            statusDetail: document.getElementById('statusDetail'),
+            backBtn: document.getElementById('backBtn')
+        };
+
+        // ============================================================
+        // 4. ТАРИФЫ (Израиль 2026)
+        // ============================================================
+        const TARIFF = {
+            BASE_FEE: 12.00,
+            PRICE_PER_KM: 3.70,
+            NIGHT_SURCHARGE: 1.25,
+            LUGGAGE_FEE: 4.30,
+            AIRPORT_FEE: 5.00,
+            NIGHT_START_HOUR: 23,
+            NIGHT_END_HOUR: 5,
+            PENALTY_CANCEL: 7.00
+        };
+
+        // ============================================================
+        // 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ============================================================
+
+        function showMessage(text, type = 'info') {
+            el.message.className = 'message ' + type;
+            el.message.textContent = text;
+            el.message.style.display = 'block';
+            setTimeout(() => {
+                el.message.style.display = 'none';
+            }, 5000);
+        }
+
+        function showError(text) {
+            el.errorBox.style.display = 'block';
+            el.errorText.textContent = text;
+            setTimeout(() => {
+                el.errorBox.style.display = 'none';
+            }, 8000);
+        }
+
+        function hideError() {
+            el.errorBox.style.display = 'none';
+        }
+
+        function formatPrice(price) {
+            return price.toFixed(2) + ' ₪';
+        }
+
+        function formatDistance(km) {
+            if (km < 1) return (km * 1000).toFixed(0) + ' м';
+            return km.toFixed(1) + ' км';
+        }
+
+        function formatDuration(min) {
+            if (min < 1) return '< 1 мин';
+            if (min < 60) return Math.round(min) + ' мин';
+            const h = Math.floor(min / 60);
+            const m = Math.round(min % 60);
+            return h + ' ч ' + m + ' мин';
+        }
+
+        function isNight() {
+            const now = new Date();
+            const hour = now.getHours();
+            return (hour >= TARIFF.NIGHT_START_HOUR || hour < TARIFF.NIGHT_END_HOUR);
+        }
+
+        function calculatePrice(distanceKm) {
+            let price = TARIFF.BASE_FEE + (distanceKm * TARIFF.PRICE_PER_KM);
+            if (isNight()) {
+                price = price * TARIFF.NIGHT_SURCHARGE;
+            }
+            return price;
+        }
+
+        // ============================================================
+        // 6. ГЕОКОДИНГ (адрес → координаты)
+        // ============================================================
+        async function geocodeAddress(address) {
+            if (!address || address.trim() === '') return null;
+            try {
+                const url =
+                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1`;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    return {
+                        lat: parseFloat(data[0].lat),
+                        lng: parseFloat(data[0].lon),
+                        displayName: data[0].display_name
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error('Ошибка геокодинга:', error);
+                return null;
+            }
+        }
+
+        // ============================================================
+        // 7. РАСЧЁТ РАССТОЯНИЯ (Haversine)
+        // ============================================================
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        // ============================================================
+        // 8. КАРТА
+        // ============================================================
+        function initMap() {
+            map = L.map('map').setView([32.0853, 34.7818], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19,
+                minZoom: 10
+            }).addTo(map);
+
+            // Клик по карте — установка точки отправления
+            map.on('click', function(e) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                pickupLocation = { lat, lng };
+                updatePickupMarker();
+                reverseGeocode(lat, lng, function(address) {
+                    if (address) {
+                        el.pickupInput.value = address;
+                    }
+                });
+                calculateAndUpdate();
+            });
+
+            // Клик правой кнопкой — установка точки назначения
+            map.on('contextmenu', function(e) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                destinationLocation = { lat, lng };
+                updateDestinationMarker();
+                reverseGeocode(lat, lng, function(address) {
+                    if (address) {
+                        el.destinationInput.value = address;
+                    }
+                });
+                calculateAndUpdate();
+            });
+
+            console.log('🗺️ Карта инициализирована');
+        }
+
+        // ============================================================
+        // 9. МАРКЕРЫ
+        // ============================================================
+        function updatePickupMarker() {
+            if (!pickupLocation) return;
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+            const icon = L.divIcon({
+                html: '🟢',
+                className: '',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            });
+            userMarker = L.marker([pickupLocation.lat, pickupLocation.lng], { icon: icon })
+                .addTo(map)
+                .bindPopup('📍 Отправление');
+            map.setView([pickupLocation.lat, pickupLocation.lng], 15);
+        }
+
+        function updateDestinationMarker() {
+            // Для простоты — используем стандартный маркер
+            // Но пока не реализуем отдельный маркер для назначения
+        }
+
+        // ============================================================
+        // 10. ОБРАТНЫЙ ГЕОКОДИНГ (координаты → адрес)
+        // ============================================================
+        function reverseGeocode(lat, lng, callback) {
+            const url =
+                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.display_name) {
+                        callback(data.display_name);
+                    } else {
+                        callback(null);
+                    }
+                })
+                .catch(() => callback(null));
+        }
+
+        // ============================================================
+        // 11. ОПРЕДЕЛЕНИЕ ГЕОЛОКАЦИИ
+        // ============================================================
+        function getCurrentLocation() {
+            el.geoBtn.textContent = '⏳ ...';
+            el.geoBtn.classList.add('loading');
+            el.geoBtn.disabled = true;
+
+            if (!navigator.geolocation) {
+                showError('Геолокация не поддерживается в вашем браузере');
+                el.geoBtn.textContent = '📍 Определить';
+                el.geoBtn.classList.remove('loading');
+                el.geoBtn.disabled = false;
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    userLocation = { lat, lng };
+                    pickupLocation = { lat, lng };
+
+                    // Обновляем карту
+                    if (userMarker) {
+                        map.removeLayer(userMarker);
+                    }
+                    const icon = L.divIcon({
+                        html: '🟢',
+                        className: '',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 30]
+                    });
+                    userMarker = L.marker([lat, lng], { icon: icon })
+                        .addTo(map)
+                        .bindPopup('📍 Ваше местоположение');
+                    map.setView([lat, lng], 15);
+
+                    // Получаем адрес
+                    reverseGeocode(lat, lng, function(address) {
+                        if (address) {
+                            el.pickupInput.value = address;
+                        } else {
+                            el.pickupInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                        }
+                    });
+
+                    showMessage('📍 Геолокация определена', 'success');
+                    el.geoBtn.textContent = '📍 Определить';
+                    el.geoBtn.classList.remove('loading');
+                    el.geoBtn.disabled = false;
+                    calculateAndUpdate();
+
+                    // Загружаем водителей
+                    loadDrivers(lat, lng);
+                },
+                function(error) {
+                    console.error('Ошибка геолокации:', error);
+                    showError('Не удалось определить местоположение: ' + error.message);
+                    el.geoBtn.textContent = '📍 Определить';
+                    el.geoBtn.classList.remove('loading');
+                    el.geoBtn.disabled = false;
+                }, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        // ============================================================
+        // 12. ПОИСК ВОДИТЕЛЕЙ (в радиусе 5 км)
+        // ============================================================
+        function loadDrivers(lat, lng) {
+            console.log('🔍 Поиск водителей рядом...');
+            // Удаляем старые маркеры
+            driverMarkers.forEach(m => map.removeLayer(m));
+            driverMarkers = [];
+            drivers = [];
+
+            db.collection('users')
+                .where('role', '==', 'driver')
+                .get()
+                .then(function(snapshot) {
+                    let count = 0;
+                    snapshot.forEach(function(doc) {
+                        const data = doc.data();
+                        if (data.driverData && data.driverData.location) {
+                            const dLat = data.driverData.location.lat;
+                            const dLng = data.driverData.location.lng;
+                            const distance = haversineDistance(lat, lng, dLat, dLng);
+
+                            if (distance <= 5) {
+                                drivers.push({
+                                    uid: doc.id,
+                                    displayName: data.displayName,
+                                    location: { lat: dLat, lng: dLng },
+                                    distance: distance,
+                                    isAvailable: data.driverData.isAvailable !== false
+                                });
+                                count++;
+                            }
+                        }
+                    });
+
+                    // Сортируем по расстоянию
+                    drivers.sort((a, b) => a.distance - b.distance);
+
+                    // Показываем не более 3 ближайших
+                    const showDrivers = drivers.slice(0, 3);
+
+                    showDrivers.forEach(function(driver) {
+                        const icon = L.divIcon({
+                            html: driver.isAvailable ? '🚗🟢' : '🚗🔴',
+                            className: '',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 30]
+                        });
+                        const marker = L.marker([driver.location.lat, driver.location.lng], { icon: icon })
+                            .addTo(map)
+                            .bindPopup(
+                            `🚗 ${driver.displayName}<br>📏 ${formatDistance(driver.distance)}<br>${driver.isAvailable ? '🟢 Свободен' : '🔴 Занят'}`);
+                        driverMarkers.push(marker);
+                    });
+
+                    console.log(`✅ Найдено ${count} водителей, показано ${showDrivers.length}`);
+                    updateDriversInfo();
+                })
+                .catch(function(err) {
+                    console.error('❌ Ошибка загрузки водителей:', err);
+                });
+        }
+
+        function updateDriversInfo() {
+            if (drivers.length > 0) {
+                const nearest = drivers[0];
+                el.statusText.textContent = `🚖 Ближайший водитель: ${formatDistance(nearest.distance)}`;
+                el.statusDetail.textContent = `${nearest.displayName} • ${nearest.isAvailable ? '🟢 Свободен' : '🔴 Занят'}`;
+                el.orderStatus.classList.add('active');
+            } else {
+                el.statusText.textContent = '🚖 Водители не найдены в радиусе 5 км';
+                el.statusDetail.textContent = 'Попробуйте позже или измените местоположение';
+                el.orderStatus.classList.add('active');
+            }
+        }
+
+        // ============================================================
+        // 13. РАСЧЁТ И ОБНОВЛЕНИЕ
+        // ============================================================
+        function calculateAndUpdate() {
+            if (!pickupLocation || !destinationLocation) {
+                el.priceDisplay.textContent = '—';
+                el.distanceDisplay.textContent = '—';
+                el.durationDisplay.textContent = '—';
+                return;
+            }
+
+            const distance = haversineDistance(
+                pickupLocation.lat, pickupLocation.lng,
+                destinationLocation.lat, destinationLocation.lng
+            );
+
+            const price = calculatePrice(distance);
+            const duration = distance * 3; // Примерно 3 минуты на км
+
+            el.priceDisplay.textContent = formatPrice(price);
+            el.distanceDisplay.textContent = formatDistance(distance);
+            el.durationDisplay.textContent = formatDuration(duration);
+        }
+
+        // ============================================================
+        // 14. СОЗДАНИЕ ЗАКАЗА
+        // ============================================================
+        async function createOrder() {
+            const pickupAddress = el.pickupInput.value.trim();
+            const destinationAddress = el.destinationInput.value.trim();
+
+            if (!pickupAddress) {
+                showMessage('Введите адрес отправления или определите геолокацию', 'error');
+                return;
+            }
+
+            if (!destinationAddress) {
+                showMessage('Введите адрес назначения', 'error');
+                return;
+            }
+
+            if (!pickupLocation) {
+                showMessage('Не удалось определить местоположение отправления', 'error');
+                return;
+            }
+
+            if (!destinationLocation) {
+                // Пытаемся геокодировать адрес назначения
+                const geoResult = await geocodeAddress(destinationAddress);
+                if (geoResult) {
+                    destinationLocation = { lat: geoResult.lat, lng: geoResult.lng };
+                } else {
+                    // Если геолокация не определена — сохраняем только текстовый адрес
+                    destinationLocation = null;
+                }
+            }
+
+            const distance = pickupLocation && destinationLocation ?
+                haversineDistance(pickupLocation.lat, pickupLocation.lng, destinationLocation.lat, destinationLocation.lng) :
+                0;
+
+            const price = distance > 0 ? calculatePrice(distance) : 0;
+
+            // Проверяем баланс
+            if (balance < price) {
+                showMessage(`❌ Недостаточно средств. Нужно: ${formatPrice(price)}, у вас: ${formatPrice(balance)}`, 'error');
+                return;
+            }
+
+            el.orderBtn.disabled = true;
+            el.orderBtn.textContent = '⏳ Заказ создаётся...';
+
+            try {
+                const user = auth.currentUser;
+                if (!user) {
+                    showMessage('❌ Пожалуйста, войдите в аккаунт', 'error');
+                    el.orderBtn.disabled = false;
+                    el.orderBtn.textContent = '📍 Заказать такси';
+                    return;
+                }
+
+                const orderData = {
+                    clientId: user.uid,
+                    clientName: user.displayName || 'Клиент',
+                    status: 'new',
+                    pickup: {
+                        address: pickupAddress,
+                        lat: pickupLocation ? pickupLocation.lat : null,
+                        lng: pickupLocation ? pickupLocation.lng : null
+                    },
+                    destination: {
+                        address: destinationAddress,
+                        lat: destinationLocation ? destinationLocation.lat : null,
+                        lng: destinationLocation ? destinationLocation.lng : null
+                    },
+                    price: price,
+                    distance: distance,
+                    estimatedDuration: distance * 3,
+                    isNight: isNight(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    assignedManually: false,
+                    dispatchHistory: [],
+                    cancelled: false,
+                    penaltyApplied: 0
+                };
+
+                const orderRef = await db.collection('orders').add(orderData);
+                currentOrderId = orderRef.id;
+                orderStatus = 'new';
+
+                showMessage(`✅ Заказ создан! ID: ${currentOrderId.substring(0, 8)}`, 'success');
+
+                // Обновляем кнопки
+                el.orderBtn.textContent = '✅ Заказ создан';
+                el.orderBtn.disabled = true;
+                el.cancelBtn.disabled = false;
+                el.cancelBtn.textContent = '❌ Отменить заказ';
+
+                // Подписываемся на изменения статуса
+                subscribeToOrder(currentOrderId);
+
+            } catch (error) {
+                console.error('❌ Ошибка создания заказа:', error);
+                showMessage('❌ Ошибка создания заказа: ' + error.message, 'error');
+                el.orderBtn.disabled = false;
+                el.orderBtn.textContent = '📍 Заказать такси';
+            }
+        }
+
+        // ============================================================
+        // 15. ПОДПИСКА НА ЗАКАЗ (REAL-TIME)
+        // ============================================================
+        let unsubOrder = null;
+
+        function subscribeToOrder(orderId) {
+            if (unsubOrder) {
+                unsubOrder();
+                unsubOrder = null;
+            }
+
+            const orderRef = db.collection('orders').doc(orderId);
+            unsubOrder = orderRef.onSnapshot(function(doc) {
+                if (!doc.exists) return;
+                const data = doc.data();
+                console.log('🔄 Обновление заказа:', data.status);
+
+                if (data.status === 'assigned') {
+                    el.statusText.textContent = '✅ Водитель назначен!';
+                    el.statusDetail.textContent = `🚗 Водитель едет к вам`;
+                    el.orderStatus.classList.add('active');
+                    el.cancelBtn.disabled = false;
+                    showMessage('✅ Водитель назначен! Ожидайте.', 'success');
+                } else if (data.status === 'in_progress') {
+                    el.statusText.textContent = '🚗 Поездка началась!';
+                    el.statusDetail.textContent = 'Водитель уже в пути';
+                    el.orderStatus.classList.add('active');
+                    el.cancelBtn.disabled = true;
+                    el.cancelBtn.textContent = '❌ Отмена недоступна';
+                } else if (data.status === 'completed') {
+                    el.statusText.textContent = '✅ Поездка завершена!';
+                    el.statusDetail.textContent = 'Спасибо за поездку!';
+                    el.orderStatus.classList.add('active');
+                    el.cancelBtn.disabled = true;
+                    el.orderBtn.disabled = true;
+                    showMessage('✅ Поездка завершена!', 'success');
+                } else if (data.status === 'cancelled') {
+                    el.statusText.textContent = '❌ Заказ отменён';
+                    el.statusDetail.textContent = data.penaltyApplied ? `Штраф: ${formatPrice(data.penaltyApplied)}` :
+                        'Без штрафа';
+                    el.orderStatus.classList.add('active');
+                    el.cancelBtn.disabled = true;
+                    el.cancelBtn.textContent = '❌ Отменён';
+                    el.orderBtn.disabled = false;
+                    el.orderBtn.textContent = '📍 Заказать снова';
+                    if (data.penaltyApplied) {
+                        showMessage(`⚠️ Штраф ${formatPrice(data.penaltyApplied)} за отмену`, 'warning');
+                    }
+                    if (unsubOrder) { unsubOrder();
+                        unsubOrder = null; }
+                }
+            }, function(error) {
+                console.error('❌ Ошибка подписки на заказ:', error);
+            });
+        }
+
+        // ============================================================
+        // 16. ОТМЕНА ЗАКАЗА
+        // ============================================================
+        function cancelOrder() {
+            if (!currentOrderId) {
+                showMessage('❌ Нет активного заказа для отмены', 'error');
+                return;
+            }
+
+            if (!confirm('Вы уверены, что хотите отменить заказ?')) return;
+
+            el.cancelBtn.disabled = true;
+            el.cancelBtn.textContent = '⏳ Отмена...';
+
+            const orderRef = db.collection('orders').doc(currentOrderId);
+
+            orderRef.get().then(function(doc) {
+                if (!doc.exists) {
+                    showMessage('❌ Заказ не найден', 'error');
+                    el.cancelBtn.disabled = false;
+                    el.cancelBtn.textContent = '❌ Отменить заказ';
+                    return;
+                }
+
+                const data = doc.data();
+                let penalty = 0;
+
+                // Проверяем штраф
+                if (data.status === 'assigned' || data.status === 'in_progress') {
+                    // Проверяем время с момента назначения
+                    if (data.assignedAt) {
+                        const assignedTime = data.assignedAt.toDate ? data.assignedAt.toDate() : new Date(data
+                        .assignedAt);
+                        const elapsed = (Date.now() - assignedTime.getTime()) / 60000;
+                        if (elapsed > 2) {
+                            penalty = TARIFF.PENALTY_CANCEL;
+                            showMessage(`⚠️ Штраф ${formatPrice(penalty)} за отмену после подтверждения`, 'warning');
+                        }
+                    } else {
+                        penalty = TARIFF.PENALTY_CANCEL;
+                    }
+                }
+
+                // Обновляем заказ
+                return orderRef.update({
+                    status: 'cancelled',
+                    cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    penaltyApplied: penalty,
+                    cancellationReason: 'Отменено клиентом'
+                }).then(function() {
+                    if (penalty > 0) {
+                        // Списываем штраф с баланса клиента
+                        const user = auth.currentUser;
+                        if (user) {
+                            const userRef = db.collection('users').doc(user.uid);
+                            userRef.update({
+                                balance: firebase.firestore.FieldValue.increment(-penalty),
+                                penalty: firebase.firestore.FieldValue.increment(penalty)
+                            }).then(function() {
+                                console.log('💰 Штраф списан:', penalty);
+                                showMessage(`💰 Списан штраф ${formatPrice(penalty)}`, 'warning');
+                            }).catch(function(err) {
+                                console.error('❌ Ошибка списания штрафа:', err);
+                            });
+                        }
+                    }
+                    el.cancelBtn.disabled = true;
+                    el.cancelBtn.textContent = '❌ Отменён';
+                    showMessage('✅ Заказ отменён', 'info');
+                });
+            }).catch(function(error) {
+                console.error('❌ Ошибка отмены:', error);
+                showMessage('❌ Ошибка отмены: ' + error.message, 'error');
+                el.cancelBtn.disabled = false;
+                el.cancelBtn.textContent = '❌ Отменить заказ';
+            });
+        }
+
+        // ============================================================
+        // 17. ОБНОВЛЕНИЕ БАЛАНСА
+        // ============================================================
+        function updateBalance() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get()
+                .then(function(doc) {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        balance = data.balance || 0;
+                        el.balanceDisplay.textContent = '💰 ' + formatPrice(balance);
+                    }
+                })
+                .catch(function(err) {
+                    console.error('❌ Ошибка загрузки баланса:', err);
+                });
+        }
+
+        // ============================================================
+        // 18. АВТОРИЗАЦИЯ
+        // ============================================================
+        auth.onAuthStateChanged(function(user) {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+            currentUser = user;
+            updateBalance();
+
+            // Устанавливаем время по умолчанию (сейчас + 15 минут)
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 15);
+            el.timeInput.value = now.toISOString().slice(0, 16);
+
+            // Инициализируем карту
+            initMap();
+
+            // Пытаемся определить геолокацию
+            setTimeout(getCurrentLocation, 500);
+        });
+
+        // ============================================================
+        // 19. ОБРАБОТЧИКИ СОБЫТИЙ
+        // ============================================================
+
+        // === Кнопка "Назад" ===
+        el.backBtn.addEventListener('click', function() {
+            window.location.href = 'cabinet.html';
+        });
+
+        // === Кнопка "Определить геолокацию" ===
+        el.geoBtn.addEventListener('click', getCurrentLocation);
+
+        // === Ввод адреса "Откуда" ===
+        el.pickupInput.addEventListener('change', function() {
+            const address = this.value.trim();
+            if (address) {
+                geocodeAddress(address).then(function(result) {
+                    if (result) {
+                        pickupLocation = { lat: result.lat, lng: result.lng };
+                        updatePickupMarker();
+                        calculateAndUpdate();
+                        loadDrivers(result.lat, result.lng);
+                    } else {
+                        showMessage('⚠️ Не удалось определить адрес по карте', 'warning');
+                    }
+                });
+            }
+        });
+
+        // === Ввод адреса "Куда" ===
+        el.destinationInput.addEventListener('change', function() {
+            const address = this.value.trim();
+            if (address) {
+                geocodeAddress(address).then(function(result) {
+                    if (result) {
+                        destinationLocation = { lat: result.lat, lng: result.lng };
+                        calculateAndUpdate();
+                    } else {
+                        // Не удалось определить геолокацию — сохраняем только текстовый адрес
+                        destinationLocation = null;
+                        calculateAndUpdate();
+                        showMessage('📍 Адрес сохранён как текстовый', 'info');
+                    }
+                });
+            }
+        });
+
+        // === Кнопка "Заказать такси" ===
+        el.orderBtn.addEventListener('click', createOrder);
+
+        // === Кнопка "Отменить заказ" ===
+        el.cancelBtn.addEventListener('click', cancelOrder);
+
+        console.log('✅ Страница заказа готова');
+        console.log('📌 Инструкция:');
+        console.log('  1. Нажмите "📍 Определить" для геолокации');
+        console.log('  2. Введите адрес назначения');
+        console.log('  3. Нажмите "Заказать такси"');
+        console.log('  4. Для отмены нажмите "Отменить"');
+        console.log('  5. Штраф 7 ₪ при отмене после подтверждения водителя');
+        console.log('  6. Кнопка "Назад" → личный кабинет');
+    </script>
 
 </body>
 </html>
