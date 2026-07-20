@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Личный кабинет — WHEEL</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div>
+                <h2 id="userName">Загрузка...</h2>
+                <span id="userEmail">email@domain.com</span>
+                <small id="userUid">UID: ...</small>
+            </div>
+            <button id="logoutBtn">🚪 Выйти</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><span>💰 Баланс</span><span id="balance">0 ₽</span></div>
+            <div class="stat-card"><span>⭐ Рейтинг</span><span id="rating">0.0</span></div>
+            <div class="stat-card"><span>🎁 Бонусы</span><span id="bonus">0</span></div>
+            <div class="stat-card"><span>📊 Потрачено</span><span id="totalSpent">0 ₽</span></div>
+        </div>
+
+        <button id="orderBtn">📍 Заказать такси</button>
+
+        <h3>📋 История операций</h3>
+        <div id="historyList">Загрузка...</div>
+    </div>
+
+    <script type="module">
+        import { onAuthChange, logout, getCurrentUser } from './auth.js';
+        import { getUser, subscribeToTransactions } from './db.js';
+
+        // === ЭЛЕМЕНТЫ ===
+        const userNameEl = document.getElementById('userName');
+        const userEmailEl = document.getElementById('userEmail');
+        const userUidEl = document.getElementById('userUid');
+        const balanceEl = document.getElementById('balance');
+        const ratingEl = document.getElementById('rating');
+        const bonusEl = document.getElementById('bonus');
+        const totalSpentEl = document.getElementById('totalSpent');
+        const historyList = document.getElementById('historyList');
+
+        let unsubTx = null;
+
+        function updateUI(data) {
+            balanceEl.textContent = (data.balance || 0).toFixed(2) + ' ₽';
+            ratingEl.textContent = (data.rating || 0).toFixed(1);
+            bonusEl.textContent = data.bonus || 0;
+            totalSpentEl.textContent = (data.totalSpent || 0).toFixed(2) + ' ₽';
+        }
+
+        function renderTransactions(transactions) {
+            if (!transactions || transactions.length === 0) {
+                historyList.innerHTML = 'Нет операций';
+                return;
+            }
+            historyList.innerHTML = transactions.map(tx => `
+                <div>
+                    <span>${tx.description || 'Операция'}</span>
+                    <span>${tx.amount >= 0 ? '+' : ''}${tx.amount.toFixed(2)} ₽</span>
+                </div>
+            `).join('');
+        }
+
+        // === ПРОВЕРКА АВТОРИЗАЦИИ ===
+        onAuthChange(async (user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            userUidEl.textContent = 'UID: ' + user.uid;
+            const userData = await getUser(user.uid);
+
+            if (!userData) {
+                // Если нет документа — редирект на главную (пусть создадут заново)
+                alert('Профиль не найден. Пожалуйста, зарегистрируйтесь.');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // === ОБНОВЛЯЕМ UI ===
+            userNameEl.textContent = userData.displayName || 'Пользователь';
+            userEmailEl.textContent = user.email || '';
+            updateUI(userData);
+
+            // === ПОДПИСКА НА ТРАНЗАКЦИИ ===
+            if (unsubTx) unsubTx();
+            unsubTx = subscribeToTransactions(user.uid, renderTransactions);
+        });
+
+        // === ВЫХОД ===
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            if (unsubTx) unsubTx();
+            await logout();
+            window.location.href = 'index.html';
+        });
+
+        // === ЗАКАЗАТЬ ===
+        document.getElementById('orderBtn').addEventListener('click', () => {
+            window.location.href = 'order.html';
+        });
+    </script>
+</body>
+</html>
