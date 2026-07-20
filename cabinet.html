@@ -5,29 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Личный кабинет — WHEEL</title>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, query, where, orderBy, limit, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
-            authDomain: "taxi-ai-app-69628.firebaseapp.com",
-            projectId: "taxi-ai-app-69628",
-            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
-            messagingSenderId: "952357992434",
-            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
-            measurementId: "G-Z9NJFSSXH6"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-    </script>
-
     <style>
-        /* ===== ОСНОВНЫЕ СТИЛИ ===== */
         * { margin:0; padding:0; box-sizing:border-box; }
 
         body {
@@ -78,7 +56,7 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ С ФЛАГАМИ ===== */
+        /* ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== */
         .lang-switcher {
             position: absolute;
             top: 18px;
@@ -91,13 +69,9 @@
             padding: 4px 8px;
             border: 1px solid rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
         }
 
-        body[dir="rtl"] .lang-switcher {
-            right: auto;
-            left: 22px;
-        }
+        body[dir="rtl"] .lang-switcher { right: auto; left: 22px; }
 
         .lang-btn {
             background: transparent;
@@ -118,12 +92,7 @@
             justify-content: center;
         }
 
-        .lang-btn:hover {
-            opacity: 0.8;
-            filter: grayscale(0.2);
-            transform: scale(0.95);
-        }
-
+        .lang-btn:hover { opacity: 0.8; filter: grayscale(0.2); transform: scale(0.95); }
         .lang-btn.active {
             opacity: 1;
             filter: grayscale(0);
@@ -132,12 +101,7 @@
             border-radius: 50%;
             box-shadow: 0 0 16px rgba(255, 180, 0, 0.15);
         }
-
-        .lang-btn .flag {
-            font-size: 20px;
-            line-height: 1;
-            display: block;
-        }
+        .lang-btn .flag { font-size: 20px; line-height: 1; display: block; }
 
         /* ===== ШАПКА ===== */
         .header {
@@ -150,31 +114,10 @@
             z-index: 1;
         }
 
-        .user-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .user-name {
-            font-size: 22px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 0.3px;
-        }
-
-        .user-email {
-            font-size: 13px;
-            color: #8899aa;
-            margin-top: 2px;
-        }
-
-        .user-uid {
-            font-size: 10px;
-            color: #556677;
-            margin-top: 2px;
-            font-family: 'SF Mono', monospace;
-        }
+        .user-info { display: flex; flex-direction: column; align-items: flex-start; }
+        .user-name { font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: 0.3px; }
+        .user-email { font-size: 13px; color: #8899aa; margin-top: 2px; }
+        .user-uid { font-size: 10px; color: #556677; margin-top: 2px; font-family: 'SF Mono', monospace; }
 
         .logout-btn {
             background: rgba(255, 70, 70, 0.08);
@@ -189,18 +132,10 @@
             font-family: inherit;
             white-space: nowrap;
         }
+        .logout-btn:hover { background: rgba(255, 70, 70, 0.18); border-color: #ff6b6b; transform: scale(1.02); }
+        .logout-btn:active { transform: scale(0.95); }
 
-        .logout-btn:hover {
-            background: rgba(255, 70, 70, 0.18);
-            border-color: #ff6b6b;
-            transform: scale(1.02);
-        }
-
-        .logout-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* ===== СТАТИСТИКА (4 КАРТОЧКИ) ===== */
+        /* ===== СТАТИСТИКА ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -220,33 +155,14 @@
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
         }
-
         .stat-card:hover {
             background: rgba(255, 255, 255, 0.06);
             border-color: rgba(255, 180, 0, 0.08);
             transform: translateY(-2px);
         }
-
-        .stat-card .icon {
-            font-size: 20px;
-            margin-bottom: 4px;
-        }
-
-        .stat-card .label {
-            font-size: 11px;
-            color: #8899aa;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-
-        .stat-card .value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #ffffff;
-            margin-top: 4px;
-        }
-
+        .stat-card .icon { font-size: 20px; margin-bottom: 4px; }
+        .stat-card .label { font-size: 11px; color: #8899aa; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .stat-card .value { font-size: 24px; font-weight: 700; color: #ffffff; margin-top: 4px; }
         .stat-card .value.gold { color: #ffb000; }
         .stat-card .value.negative { color: #ff6b6b; }
         .stat-card .value.positive { color: #4ade80; }
@@ -274,15 +190,8 @@
             z-index: 1;
             letter-spacing: 0.3px;
         }
-
-        .order-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(255, 140, 0, 0.35);
-        }
-
-        .order-btn:active {
-            transform: scale(0.97);
-        }
+        .order-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(255, 140, 0, 0.35); }
+        .order-btn:active { transform: scale(0.97); }
 
         /* ===== ИСТОРИЯ ===== */
         .history-section {
@@ -301,29 +210,16 @@
             justify-content: space-between;
             align-items: center;
         }
-
-        .history-title .badge {
-            font-size: 11px;
-            color: #667788;
-            font-weight: 400;
-        }
+        .history-title .badge { font-size: 11px; color: #667788; font-weight: 400; }
 
         .history-list {
             max-height: 260px;
             overflow-y: auto;
             padding-right: 4px;
         }
-
-        .history-list::-webkit-scrollbar {
-            width: 3px;
-        }
-        .history-list::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .history-list::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
-        }
+        .history-list::-webkit-scrollbar { width: 3px; }
+        .history-list::-webkit-scrollbar-track { background: transparent; }
+        .history-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
 
         .transaction-item {
             background: rgba(255, 255, 255, 0.02);
@@ -336,58 +232,20 @@
             border: 1px solid rgba(255, 255, 255, 0.03);
             transition: all 0.2s ease;
         }
-
         .transaction-item:hover {
             background: rgba(255, 255, 255, 0.04);
             border-color: rgba(255, 255, 255, 0.06);
         }
-
-        .transaction-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            flex: 1;
-        }
-
-        .transaction-desc {
-            font-size: 14px;
-            font-weight: 500;
-            color: #e0e8f0;
-        }
-
-        .transaction-date {
-            font-size: 11px;
-            color: #667788;
-            margin-top: 2px;
-        }
-
-        .transaction-amount {
-            font-size: 16px;
-            font-weight: 700;
-            flex-shrink: 0;
-            margin-left: 12px;
-        }
-
+        .transaction-info { display: flex; flex-direction: column; align-items: flex-start; flex: 1; }
+        .transaction-desc { font-size: 14px; font-weight: 500; color: #e0e8f0; }
+        .transaction-date { font-size: 11px; color: #667788; margin-top: 2px; }
+        .transaction-amount { font-size: 16px; font-weight: 700; flex-shrink: 0; margin-left: 12px; }
         .transaction-amount.positive { color: #4ade80; }
         .transaction-amount.negative { color: #ff6b6b; }
 
-        .empty-history {
-            color: #667788;
-            font-size: 14px;
-            text-align: center;
-            padding: 30px 0;
-        }
+        .empty-history { color: #667788; font-size: 14px; text-align: center; padding: 30px 0; }
+        .loading { display: flex; justify-content: center; align-items: center; height: 100px; color: #8899aa; font-size: 14px; }
 
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100px;
-            color: #8899aa;
-            font-size: 14px;
-        }
-
-        /* ===== ИНДИКАТОР ===== */
         .home-indicator {
             margin-top: 20px;
             width: 120px;
@@ -400,7 +258,6 @@
             z-index: 1;
         }
 
-        /* ===== АДАПТИВНОСТЬ ===== */
         @media (max-width: 480px) {
             .container {
                 border-radius: 0;
@@ -415,26 +272,10 @@
                 flex-direction: column;
                 justify-content: center;
             }
-
-            .lang-switcher {
-                top: 14px;
-                right: 14px;
-                padding: 3px 6px;
-                gap: 2px;
-            }
-
-            body[dir="rtl"] .lang-switcher {
-                right: auto;
-                left: 14px;
-            }
-
-            .lang-btn {
-                width: 26px;
-                height: 26px;
-                font-size: 15px;
-            }
+            .lang-switcher { top: 14px; right: 14px; padding: 3px 6px; gap: 2px; }
+            body[dir="rtl"] .lang-switcher { right: auto; left: 14px; }
+            .lang-btn { width: 26px; height: 26px; font-size: 15px; }
             .lang-btn .flag { font-size: 17px; }
-
             .user-name { font-size: 19px; }
             .stat-card .value { font-size: 20px; }
             .order-btn { font-size: 15px; padding: 14px; }
@@ -442,14 +283,8 @@
             .stat-card { padding: 14px 10px; }
         }
 
-        /* ===== RTL ===== */
-        body[dir="rtl"] .transaction-amount {
-            margin-left: 0;
-            margin-right: 12px;
-        }
-        body[dir="rtl"] .user-info {
-            align-items: flex-end;
-        }
+        body[dir="rtl"] .transaction-amount { margin-left: 0; margin-right: 12px; }
+        body[dir="rtl"] .user-info { align-items: flex-end; }
     </style>
 </head>
 <body>
@@ -458,18 +293,10 @@
 
     <!-- ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== -->
     <div class="lang-switcher">
-        <button class="lang-btn" data-lang="he" title="עברית">
-            <span class="flag">🇮🇱</span>
-        </button>
-        <button class="lang-btn" data-lang="ar" title="العربية">
-            <span class="flag">🇸🇦</span>
-        </button>
-        <button class="lang-btn active" data-lang="ru" title="Русский">
-            <span class="flag">🇷🇺</span>
-        </button>
-        <button class="lang-btn" data-lang="en" title="English">
-            <span class="flag">🇬🇧</span>
-        </button>
+        <button class="lang-btn" data-lang="he" title="עברית"><span class="flag">🇮🇱</span></button>
+        <button class="lang-btn" data-lang="ar" title="العربية"><span class="flag">🇸🇦</span></button>
+        <button class="lang-btn active" data-lang="ru" title="Русский"><span class="flag">🇷🇺</span></button>
+        <button class="lang-btn" data-lang="en" title="English"><span class="flag">🇬🇧</span></button>
     </div>
 
     <!-- ===== ШАПКА ===== -->
@@ -484,43 +311,19 @@
 
     <!-- ===== СТАТИСТИКА ===== -->
     <div class="stats-grid">
-        <div class="stat-card">
-            <div class="icon">💰</div>
-            <div class="label" data-i18n="balance">Баланс</div>
-            <div class="value gold" id="balance">0 ₽</div>
-        </div>
-        <div class="stat-card">
-            <div class="icon">⭐</div>
-            <div class="label" data-i18n="rating">Рейтинг</div>
-            <div class="value rating" id="rating">0.0</div>
-        </div>
-        <div class="stat-card">
-            <div class="icon">🎁</div>
-            <div class="label" data-i18n="bonus">Бонусы</div>
-            <div class="value gold" id="bonus">0</div>
-        </div>
-        <div class="stat-card">
-            <div class="icon">📊</div>
-            <div class="label" data-i18n="spent">Потрачено</div>
-            <div class="value negative" id="totalSpent">0 ₽</div>
-        </div>
+        <div class="stat-card"><div class="icon">💰</div><div class="label" data-i18n="balance">Баланс</div><div class="value gold" id="balance">0 ₽</div></div>
+        <div class="stat-card"><div class="icon">⭐</div><div class="label" data-i18n="rating">Рейтинг</div><div class="value rating" id="rating">0.0</div></div>
+        <div class="stat-card"><div class="icon">🎁</div><div class="label" data-i18n="bonus">Бонусы</div><div class="value gold" id="bonus">0</div></div>
+        <div class="stat-card"><div class="icon">📊</div><div class="label" data-i18n="spent">Потрачено</div><div class="value negative" id="totalSpent">0 ₽</div></div>
     </div>
 
     <!-- ===== КНОПКА ЗАКАЗА ===== -->
-    <button class="order-btn" id="orderBtn">
-        <span>📍</span>
-        <span data-i18n="orderBtn">Заказать такси</span>
-    </button>
+    <button class="order-btn" id="orderBtn"><span>📍</span> <span data-i18n="orderBtn">Заказать такси</span></button>
 
     <!-- ===== ИСТОРИЯ ===== -->
     <div class="history-section">
-        <div class="history-title">
-            <span>📋 <span data-i18n="history">История операций</span></span>
-            <span class="badge" data-i18n="last10">последние 10</span>
-        </div>
-        <div class="history-list" id="historyList">
-            <div class="loading">⏳ <span data-i18n="loading">Загрузка...</span></div>
-        </div>
+        <div class="history-title"><span>📋 <span data-i18n="history">История операций</span></span><span class="badge" data-i18n="last10">последние 10</span></div>
+        <div class="history-list" id="historyList"><div class="loading">⏳ <span data-i18n="loading">Загрузка...</span></div></div>
     </div>
 
     <div class="home-indicator"></div>
@@ -528,61 +331,16 @@
 
 <script>
     // ============================================================
-    // 1. ПЕРЕВОДЫ
+    // ПЕРЕВОДЫ
     // ============================================================
     const translations = {
-        ru: {
-            logout: "Выйти",
-            balance: "Баланс",
-            rating: "Рейтинг",
-            bonus: "Бонусы",
-            spent: "Потрачено",
-            orderBtn: "Заказать такси",
-            history: "История операций",
-            last10: "последние 10",
-            loading: "Загрузка...",
-            noTransactions: "Нет операций"
-        },
-        en: {
-            logout: "Log out",
-            balance: "Balance",
-            rating: "Rating",
-            bonus: "Bonuses",
-            spent: "Spent",
-            orderBtn: "Order taxi",
-            history: "Transaction history",
-            last10: "last 10",
-            loading: "Loading...",
-            noTransactions: "No transactions"
-        },
-        he: {
-            logout: "התנתק",
-            balance: "יתרה",
-            rating: "דירוג",
-            bonus: "בונוסים",
-            spent: "הוצאות",
-            orderBtn: "הזמן מונית",
-            history: "היסטוריית פעולות",
-            last10: "10 אחרונים",
-            loading: "טוען...",
-            noTransactions: "אין פעולות"
-        },
-        ar: {
-            logout: "تسجيل خروج",
-            balance: "الرصيد",
-            rating: "التقييم",
-            bonus: "المكافآت",
-            spent: "الإنفاق",
-            orderBtn: "اطلب سيارة",
-            history: "سجل العمليات",
-            last10: "آخر 10",
-            loading: "جاري التحميل...",
-            noTransactions: "لا توجد عمليات"
-        }
+        ru: { logout: "Выйти", balance: "Баланс", rating: "Рейтинг", bonus: "Бонусы", spent: "Потрачено", orderBtn: "Заказать такси", history: "История операций", last10: "последние 10", loading: "Загрузка...", noTransactions: "Нет операций" },
+        en: { logout: "Log out", balance: "Balance", rating: "Rating", bonus: "Bonuses", spent: "Spent", orderBtn: "Order taxi", history: "Transaction history", last10: "last 10", loading: "Loading...", noTransactions: "No transactions" },
+        he: { logout: "התנתק", balance: "יתרה", rating: "דירוג", bonus: "בונוסים", spent: "הוצאות", orderBtn: "הזמן מונית", history: "היסטוריית פעולות", last10: "10 אחרונים", loading: "טוען...", noTransactions: "אין פעולות" },
+        ar: { logout: "تسجيل خروج", balance: "الرصيد", rating: "التقييم", bonus: "المكافآت", spent: "الإنفاق", orderBtn: "اطلب سيارة", history: "سجل العمليات", last10: "آخر 10", loading: "جاري التحميل...", noTransactions: "لا توجد عمليات" }
     };
 
     let currentLang = 'ru';
-
     function switchLanguage(lang) {
         currentLang = lang;
         const t = translations[lang];
@@ -613,7 +371,28 @@
     if (savedLang && translations[savedLang]) switchLanguage(savedLang);
 
     // ============================================================
-    // 2. ЭЛЕМЕНТЫ
+    // FIREBASE ИНИЦИАЛИЗАЦИЯ
+    // ============================================================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, doc, getDoc, collection, query, where, orderBy, limit, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+        authDomain: "taxi-ai-app-69628.firebaseapp.com",
+        projectId: "taxi-ai-app-69628",
+        storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+        messagingSenderId: "952357992434",
+        appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+        measurementId: "G-Z9NJFSSXH6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ============================================================
+    // ЭЛЕМЕНТЫ
     // ============================================================
     const userNameEl = document.getElementById('userName');
     const userEmailEl = document.getElementById('userEmail');
@@ -628,7 +407,7 @@
     let unsubTx = null;
 
     // ============================================================
-    // 3. ФУНКЦИИ ОБНОВЛЕНИЯ
+    // ФУНКЦИИ ОБНОВЛЕНИЯ
     // ============================================================
     function updateUI(data) {
         if (!data) return;
@@ -672,26 +451,26 @@
     }
 
     // ============================================================
-    // 4. ОСНОВНАЯ ЛОГИКА
+    // ОСНОВНАЯ ЛОГИКА
     // ============================================================
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         console.log('🔐 onAuthStateChanged, user:', user ? user.uid : 'null');
 
         if (!user) {
+            console.log('❌ Пользователь не авторизован, редирект на index.html');
             window.location.href = 'index.html';
             return;
         }
 
         userUidEl.textContent = 'UID: ' + user.uid;
-        const userDocRef = doc(db, 'users', user.uid);
 
-        // === ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ ===
-        getDoc(userDocRef).then((docSnap) => {
-            console.log('📥 getDoc:', docSnap.exists() ? 'существует' : 'НЕ СУЩЕСТВУЕТ');
+        try {
+            const userDocRef = doc(db, 'users', user.uid);
+            const docSnap = await getDoc(userDocRef);
+            console.log('📥 getDoc результат:', docSnap.exists() ? '✅ существует' : '❌ НЕ СУЩЕСТВУЕТ');
 
             if (!docSnap.exists()) {
-                // Документа нет — создаём
-                console.log('⚠️ Создаём документ...');
+                console.log('⚠️ Документа нет, создаём...');
                 const newData = {
                     uid: user.uid,
                     email: user.email,
@@ -707,20 +486,19 @@
                     driverData: null,
                     createdAt: serverTimestamp()
                 };
-                setDoc(userDocRef, newData).then(() => {
-                    console.log('✅ Документ создан');
-                    userNameEl.textContent = newData.displayName;
-                    userEmailEl.textContent = user.email;
-                    updateUI(newData);
-                    subscribeToUser(userDocRef);
-                    subscribeToTransactions(user.uid);
-                });
+                await setDoc(userDocRef, newData);
+                console.log('✅ Документ создан');
+                userNameEl.textContent = newData.displayName;
+                userEmailEl.textContent = user.email;
+                updateUI(newData);
+                subscribeToUser(userDocRef);
+                subscribeToTransactions(user.uid);
                 return;
             }
 
             // Документ есть
             const data = docSnap.data();
-            console.log('✅ Данные:', data);
+            console.log('✅ Данные пользователя:', data);
             userNameEl.textContent = data.displayName || 'Пользователь';
             userEmailEl.textContent = user.email || '';
             updateUI(data);
@@ -728,14 +506,14 @@
             subscribeToUser(userDocRef);
             subscribeToTransactions(user.uid);
 
-        }).catch((error) => {
-            console.error('❌ Ошибка:', error);
-            historyList.innerHTML = `<div class="empty-history">❌ ${translations[currentLang].loading}</div>`;
-        });
+        } catch (error) {
+            console.error('❌ Ошибка загрузки:', error);
+            historyList.innerHTML = `<div class="empty-history">❌ Ошибка загрузки данных</div>`;
+        }
     });
 
     // ============================================================
-    // 5. ПОДПИСКИ REAL-TIME
+    // ПОДПИСКИ REAL-TIME
     // ============================================================
     function subscribeToUser(userDocRef) {
         if (unsubUser) unsubUser();
@@ -765,15 +543,13 @@
             renderTransactions(transactions);
         }, (error) => {
             console.error('❌ Ошибка подписки на транзакции:', error);
-            historyList.innerHTML = `<div class="empty-history">❌ ${translations[currentLang].loading}</div>`;
+            historyList.innerHTML = `<div class="empty-history">❌ Ошибка загрузки</div>`;
         });
     }
 
     // ============================================================
-    // 6. ОБРАБОТЧИКИ
+    // ОБРАБОТЧИКИ
     // ============================================================
-
-    // Выход
     document.getElementById('logoutBtn').addEventListener('click', async () => {
         console.log('🚪 Выход');
         try {
@@ -787,7 +563,6 @@
         }
     });
 
-    // Заказать такси
     document.getElementById('orderBtn').addEventListener('click', () => {
         window.location.href = 'order.html';
     });
