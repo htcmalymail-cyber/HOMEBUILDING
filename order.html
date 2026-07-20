@@ -143,6 +143,84 @@
             color: #667788 !important;
         }
 
+        /* ===== АВТОКОМПЛИТ (выпадающий список) ===== */
+        .autocomplete-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        .autocomplete-wrapper input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1.5px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.04);
+            color: #ffffff;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .autocomplete-wrapper input:focus {
+            border-color: #ffb000;
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 0 4px rgba(255, 180, 0, 0.06);
+        }
+
+        .autocomplete-wrapper input::placeholder {
+            color: #556677;
+        }
+
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #1a1e26;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            margin-top: 4px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .autocomplete-list .item {
+            padding: 10px 14px;
+            cursor: pointer;
+            color: #e0e8f0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.2s ease;
+        }
+
+        .autocomplete-list .item:hover {
+            background: rgba(255, 180, 0, 0.08);
+        }
+
+        .autocomplete-list .item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-list .item .highlight {
+            color: #ffb000;
+            font-weight: 600;
+        }
+
+        .autocomplete-list::-webkit-scrollbar {
+            width: 3px;
+        }
+        .autocomplete-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .autocomplete-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+
         /* ===== ФОРМА ===== */
         .form-section {
             position: relative;
@@ -161,35 +239,6 @@
             flex-shrink: 0;
             width: 30px;
             text-align: center;
-        }
-
-        .form-row input {
-            flex: 1;
-            padding: 12px 14px;
-            border-radius: 14px;
-            border: 1.5px solid rgba(255, 255, 255, 0.06);
-            background: rgba(255, 255, 255, 0.04);
-            color: #ffffff;
-            font-size: 14px;
-            font-family: inherit;
-            outline: none;
-            transition: all 0.3s ease;
-            min-width: 0;
-        }
-
-        .form-row input:focus {
-            border-color: #ffb000;
-            background: rgba(255, 255, 255, 0.06);
-            box-shadow: 0 0 0 4px rgba(255, 180, 0, 0.06);
-        }
-
-        .form-row input::placeholder {
-            color: #556677;
-        }
-
-        .form-row input:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
         }
 
         .geo-btn {
@@ -422,7 +471,7 @@
                 font-size: 12px;
                 padding: 4px 10px;
             }
-            .form-row input {
+            .autocomplete-wrapper input {
                 font-size: 13px;
                 padding: 10px 12px;
             }
@@ -492,14 +541,20 @@
             <!-- Откуда -->
             <div class="form-row">
                 <span class="icon">📍</span>
-                <input type="text" id="pickupInput" placeholder="Откуда (адрес или геолокация)" autocomplete="address-line1">
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="pickupInput" placeholder="Откуда (адрес или геолокация)" autocomplete="off">
+                    <div class="autocomplete-list" id="pickupAutocomplete"></div>
+                </div>
                 <button class="geo-btn" id="geoBtn">📍 Определить</button>
             </div>
 
             <!-- Куда -->
             <div class="form-row">
                 <span class="icon">🏁</span>
-                <input type="text" id="destinationInput" placeholder="Куда (введите адрес)" autocomplete="address-line2">
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="destinationInput" placeholder="Куда (введите адрес)" autocomplete="off">
+                    <div class="autocomplete-list" id="destinationAutocomplete"></div>
+                </div>
             </div>
 
             <!-- Время -->
@@ -572,6 +627,8 @@
         // ============================================================
         let map;
         let userMarker;
+        let pickupMarker = null;
+        let destinationMarker = null;
         let userLocation = null;
         let pickupLocation = null;
         let destinationLocation = null;
@@ -587,6 +644,8 @@
             map: document.getElementById('map'),
             pickupInput: document.getElementById('pickupInput'),
             destinationInput: document.getElementById('destinationInput'),
+            pickupAutocomplete: document.getElementById('pickupAutocomplete'),
+            destinationAutocomplete: document.getElementById('destinationAutocomplete'),
             timeInput: document.getElementById('timeInput'),
             geoBtn: document.getElementById('geoBtn'),
             orderBtn: document.getElementById('orderBtn'),
@@ -699,7 +758,79 @@
         }
 
         // ============================================================
-        // 7. РАСЧЁТ РАССТОЯНИЯ (Haversine)
+        // 7. АВТОДОПОЛНЕНИЕ (поиск адресов)
+        // ============================================================
+        let searchTimeout = null;
+
+        function setupAutocomplete(input, listEl, onSelect) {
+            input.addEventListener('input', function() {
+                const query = this.value.trim();
+                if (query.length < 2) {
+                    listEl.style.display = 'none';
+                    return;
+                }
+
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(async function() {
+                    try {
+                        const url =
+                            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1&countrycodes=il`;
+                        const response = await fetch(url);
+                        const data = await response.json();
+
+                        if (data && data.length > 0) {
+                            listEl.innerHTML = '';
+                            data.forEach(function(item) {
+                                const div = document.createElement('div');
+                                div.className = 'item';
+                                const displayName = item.display_name || item.name || 'Неизвестный адрес';
+                                // Подсветка совпадения
+                                const highlighted = displayName.replace(
+                                    new RegExp(query, 'gi'),
+                                    match => `<span class="highlight">${match}</span>`
+                                );
+                                div.innerHTML = highlighted;
+                                div.addEventListener('click', function() {
+                                    input.value = displayName;
+                                    listEl.style.display = 'none';
+                                    if (onSelect) {
+                                        onSelect({
+                                            lat: parseFloat(item.lat),
+                                            lng: parseFloat(item.lon),
+                                            displayName: displayName
+                                        });
+                                    }
+                                });
+                                listEl.appendChild(div);
+                            });
+                            listEl.style.display = 'block';
+                        } else {
+                            listEl.style.display = 'none';
+                        }
+                    } catch (error) {
+                        console.error('Ошибка автодополнения:', error);
+                        listEl.style.display = 'none';
+                    }
+                }, 400);
+            });
+
+            // Закрытие при клике вне
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !listEl.contains(e.target)) {
+                    listEl.style.display = 'none';
+                }
+            });
+
+            // Закрытие при нажатии Escape
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    listEl.style.display = 'none';
+                }
+            });
+        }
+
+        // ============================================================
+        // 8. РАСЧЁТ РАССТОЯНИЯ (Haversine)
         // ============================================================
         function haversineDistance(lat1, lng1, lat2, lng2) {
             const R = 6371;
@@ -713,7 +844,7 @@
         }
 
         // ============================================================
-        // 8. КАРТА
+        // 9. КАРТА
         // ============================================================
         function initMap() {
             map = L.map('map').setView([32.0853, 34.7818], 13);
@@ -724,7 +855,7 @@
                 minZoom: 10
             }).addTo(map);
 
-            // Клик по карте — установка точки отправления
+            // Клик по карте — установка точки отправления (зелёный маркер)
             map.on('click', function(e) {
                 const lat = e.latlng.lat;
                 const lng = e.latlng.lng;
@@ -738,7 +869,7 @@
                 calculateAndUpdate();
             });
 
-            // Клик правой кнопкой — установка точки назначения
+            // Правый клик — установка точки назначения (красный маркер)
             map.on('contextmenu', function(e) {
                 const lat = e.latlng.lat;
                 const lng = e.latlng.lng;
@@ -753,35 +884,54 @@
             });
 
             console.log('🗺️ Карта инициализирована');
+            console.log('📌 Левый клик — точка отправления (🟢)');
+            console.log('📌 Правый клик — точка назначения (🔴)');
         }
 
         // ============================================================
-        // 9. МАРКЕРЫ
+        // 10. МАРКЕРЫ
         // ============================================================
         function updatePickupMarker() {
             if (!pickupLocation) return;
-            if (userMarker) {
-                map.removeLayer(userMarker);
+            // Удаляем старый маркер отправления
+            if (pickupMarker) {
+                map.removeLayer(pickupMarker);
+                pickupMarker = null;
             }
-            const icon = L.divIcon({
+            // Зелёный маркер для отправления
+            const greenIcon = L.divIcon({
                 html: '🟢',
                 className: '',
                 iconSize: [30, 30],
                 iconAnchor: [15, 30]
             });
-            userMarker = L.marker([pickupLocation.lat, pickupLocation.lng], { icon: icon })
+            pickupMarker = L.marker([pickupLocation.lat, pickupLocation.lng], { icon: greenIcon })
                 .addTo(map)
                 .bindPopup('📍 Отправление');
             map.setView([pickupLocation.lat, pickupLocation.lng], 15);
         }
 
         function updateDestinationMarker() {
-            // Для простоты — используем стандартный маркер
-            // Но пока не реализуем отдельный маркер для назначения
+            if (!destinationLocation) return;
+            // Удаляем старый маркер назначения
+            if (destinationMarker) {
+                map.removeLayer(destinationMarker);
+                destinationMarker = null;
+            }
+            // Красный маркер для назначения
+            const redIcon = L.divIcon({
+                html: '🔴',
+                className: '',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            });
+            destinationMarker = L.marker([destinationLocation.lat, destinationLocation.lng], { icon: redIcon })
+                .addTo(map)
+                .bindPopup('🏁 Назначение');
         }
 
         // ============================================================
-        // 10. ОБРАТНЫЙ ГЕОКОДИНГ (координаты → адрес)
+        // 11. ОБРАТНЫЙ ГЕОКОДИНГ (координаты → адрес)
         // ============================================================
         function reverseGeocode(lat, lng, callback) {
             const url =
@@ -799,7 +949,7 @@
         }
 
         // ============================================================
-        // 11. ОПРЕДЕЛЕНИЕ ГЕОЛОКАЦИИ
+        // 12. ОПРЕДЕЛЕНИЕ ГЕОЛОКАЦИИ
         // ============================================================
         function getCurrentLocation() {
             el.geoBtn.textContent = '⏳ ...';
@@ -821,22 +971,8 @@
                     userLocation = { lat, lng };
                     pickupLocation = { lat, lng };
 
-                    // Обновляем карту
-                    if (userMarker) {
-                        map.removeLayer(userMarker);
-                    }
-                    const icon = L.divIcon({
-                        html: '🟢',
-                        className: '',
-                        iconSize: [30, 30],
-                        iconAnchor: [15, 30]
-                    });
-                    userMarker = L.marker([lat, lng], { icon: icon })
-                        .addTo(map)
-                        .bindPopup('📍 Ваше местоположение');
-                    map.setView([lat, lng], 15);
+                    updatePickupMarker();
 
-                    // Получаем адрес
                     reverseGeocode(lat, lng, function(address) {
                         if (address) {
                             el.pickupInput.value = address;
@@ -869,7 +1005,7 @@
         }
 
         // ============================================================
-        // 12. ПОИСК ВОДИТЕЛЕЙ (в радиусе 5 км)
+        // 13. ПОИСК ВОДИТЕЛЕЙ (в радиусе 5 км)
         // ============================================================
         function loadDrivers(lat, lng) {
             console.log('🔍 Поиск водителей рядом...');
@@ -945,7 +1081,7 @@
         }
 
         // ============================================================
-        // 13. РАСЧЁТ И ОБНОВЛЕНИЕ
+        // 14. РАСЧЁТ И ОБНОВЛЕНИЕ
         // ============================================================
         function calculateAndUpdate() {
             if (!pickupLocation || !destinationLocation) {
@@ -961,7 +1097,7 @@
             );
 
             const price = calculatePrice(distance);
-            const duration = distance * 3; // Примерно 3 минуты на км
+            const duration = distance * 3;
 
             el.priceDisplay.textContent = formatPrice(price);
             el.distanceDisplay.textContent = formatDistance(distance);
@@ -969,7 +1105,25 @@
         }
 
         // ============================================================
-        // 14. СОЗДАНИЕ ЗАКАЗА
+        // 15. ОБРАБОТКА ВЫБОРА АДРЕСА ИЗ АВТОДОПОЛНЕНИЯ
+        // ============================================================
+        function handlePickupSelect(result) {
+            pickupLocation = { lat: result.lat, lng: result.lng };
+            updatePickupMarker();
+            calculateAndUpdate();
+            loadDrivers(result.lat, result.lng);
+            showMessage(`📍 Адрес отправления: ${result.displayName}`, 'success');
+        }
+
+        function handleDestinationSelect(result) {
+            destinationLocation = { lat: result.lat, lng: result.lng };
+            updateDestinationMarker();
+            calculateAndUpdate();
+            showMessage(`🏁 Адрес назначения: ${result.displayName}`, 'success');
+        }
+
+        // ============================================================
+        // 16. СОЗДАНИЕ ЗАКАЗА
         // ============================================================
         async function createOrder() {
             const pickupAddress = el.pickupInput.value.trim();
@@ -985,19 +1139,29 @@
                 return;
             }
 
+            // Если нет геолокации отправления — пытаемся геокодировать
             if (!pickupLocation) {
-                showMessage('Не удалось определить местоположение отправления', 'error');
-                return;
+                const geoResult = await geocodeAddress(pickupAddress);
+                if (geoResult) {
+                    pickupLocation = { lat: geoResult.lat, lng: geoResult.lng };
+                    updatePickupMarker();
+                } else {
+                    // Если не удалось — сохраняем только текстовый адрес
+                    pickupLocation = null;
+                    showMessage('📍 Адрес отправления сохранён как текстовый', 'info');
+                }
             }
 
+            // Если нет геолокации назначения — пытаемся геокодировать
             if (!destinationLocation) {
-                // Пытаемся геокодировать адрес назначения
                 const geoResult = await geocodeAddress(destinationAddress);
                 if (geoResult) {
                     destinationLocation = { lat: geoResult.lat, lng: geoResult.lng };
+                    updateDestinationMarker();
                 } else {
-                    // Если геолокация не определена — сохраняем только текстовый адрес
+                    // Если не удалось — сохраняем только текстовый адрес
                     destinationLocation = null;
+                    showMessage('📍 Адрес назначения сохранён как текстовый', 'info');
                 }
             }
 
@@ -1056,13 +1220,11 @@
 
                 showMessage(`✅ Заказ создан! ID: ${currentOrderId.substring(0, 8)}`, 'success');
 
-                // Обновляем кнопки
                 el.orderBtn.textContent = '✅ Заказ создан';
                 el.orderBtn.disabled = true;
                 el.cancelBtn.disabled = false;
                 el.cancelBtn.textContent = '❌ Отменить заказ';
 
-                // Подписываемся на изменения статуса
                 subscribeToOrder(currentOrderId);
 
             } catch (error) {
@@ -1074,7 +1236,7 @@
         }
 
         // ============================================================
-        // 15. ПОДПИСКА НА ЗАКАЗ (REAL-TIME)
+        // 17. ПОДПИСКА НА ЗАКАЗ (REAL-TIME)
         // ============================================================
         let unsubOrder = null;
 
@@ -1130,7 +1292,7 @@
         }
 
         // ============================================================
-        // 16. ОТМЕНА ЗАКАЗА
+        // 18. ОТМЕНА ЗАКАЗА
         // ============================================================
         function cancelOrder() {
             if (!currentOrderId) {
@@ -1156,12 +1318,10 @@
                 const data = doc.data();
                 let penalty = 0;
 
-                // Проверяем штраф
                 if (data.status === 'assigned' || data.status === 'in_progress') {
-                    // Проверяем время с момента назначения
                     if (data.assignedAt) {
                         const assignedTime = data.assignedAt.toDate ? data.assignedAt.toDate() : new Date(data
-                        .assignedAt);
+                            .assignedAt);
                         const elapsed = (Date.now() - assignedTime.getTime()) / 60000;
                         if (elapsed > 2) {
                             penalty = TARIFF.PENALTY_CANCEL;
@@ -1172,7 +1332,6 @@
                     }
                 }
 
-                // Обновляем заказ
                 return orderRef.update({
                     status: 'cancelled',
                     cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1180,7 +1339,6 @@
                     cancellationReason: 'Отменено клиентом'
                 }).then(function() {
                     if (penalty > 0) {
-                        // Списываем штраф с баланса клиента
                         const user = auth.currentUser;
                         if (user) {
                             const userRef = db.collection('users').doc(user.uid);
@@ -1208,7 +1366,7 @@
         }
 
         // ============================================================
-        // 17. ОБНОВЛЕНИЕ БАЛАНСА
+        // 19. ОБНОВЛЕНИЕ БАЛАНСА
         // ============================================================
         function updateBalance() {
             const user = auth.currentUser;
@@ -1228,7 +1386,7 @@
         }
 
         // ============================================================
-        // 18. АВТОРИЗАЦИЯ
+        // 20. АВТОРИЗАЦИЯ
         // ============================================================
         auth.onAuthStateChanged(function(user) {
             if (!user) {
@@ -1238,20 +1396,21 @@
             currentUser = user;
             updateBalance();
 
-            // Устанавливаем время по умолчанию (сейчас + 15 минут)
             const now = new Date();
             now.setMinutes(now.getMinutes() + 15);
             el.timeInput.value = now.toISOString().slice(0, 16);
 
-            // Инициализируем карту
             initMap();
 
-            // Пытаемся определить геолокацию
+            // === Настройка автодополнения ===
+            setupAutocomplete(el.pickupInput, el.pickupAutocomplete, handlePickupSelect);
+            setupAutocomplete(el.destinationInput, el.destinationAutocomplete, handleDestinationSelect);
+
             setTimeout(getCurrentLocation, 500);
         });
 
         // ============================================================
-        // 19. ОБРАБОТЧИКИ СОБЫТИЙ
+        // 21. ОБРАБОТЧИКИ СОБЫТИЙ
         // ============================================================
 
         // === Кнопка "Назад" ===
@@ -1262,33 +1421,31 @@
         // === Кнопка "Определить геолокацию" ===
         el.geoBtn.addEventListener('click', getCurrentLocation);
 
-        // === Ввод адреса "Откуда" ===
-        el.pickupInput.addEventListener('change', function() {
+        // === Ввод адреса "Откуда" (ручной ввод) ===
+        el.pickupInput.addEventListener('blur', function() {
             const address = this.value.trim();
-            if (address) {
+            if (address && !pickupLocation) {
                 geocodeAddress(address).then(function(result) {
                     if (result) {
                         pickupLocation = { lat: result.lat, lng: result.lng };
                         updatePickupMarker();
                         calculateAndUpdate();
                         loadDrivers(result.lat, result.lng);
-                    } else {
-                        showMessage('⚠️ Не удалось определить адрес по карте', 'warning');
                     }
                 });
             }
         });
 
-        // === Ввод адреса "Куда" ===
-        el.destinationInput.addEventListener('change', function() {
+        // === Ввод адреса "Куда" (ручной ввод) ===
+        el.destinationInput.addEventListener('blur', function() {
             const address = this.value.trim();
-            if (address) {
+            if (address && !destinationLocation) {
                 geocodeAddress(address).then(function(result) {
                     if (result) {
                         destinationLocation = { lat: result.lat, lng: result.lng };
+                        updateDestinationMarker();
                         calculateAndUpdate();
                     } else {
-                        // Не удалось определить геолокацию — сохраняем только текстовый адрес
                         destinationLocation = null;
                         calculateAndUpdate();
                         showMessage('📍 Адрес сохранён как текстовый', 'info');
@@ -1306,11 +1463,12 @@
         console.log('✅ Страница заказа готова');
         console.log('📌 Инструкция:');
         console.log('  1. Нажмите "📍 Определить" для геолокации');
-        console.log('  2. Введите адрес назначения');
+        console.log('  2. Введите адрес назначения (появятся подсказки)');
         console.log('  3. Нажмите "Заказать такси"');
         console.log('  4. Для отмены нажмите "Отменить"');
         console.log('  5. Штраф 7 ₪ при отмене после подтверждения водителя');
-        console.log('  6. Кнопка "Назад" → личный кабинет');
+        console.log('  6. Левый клик по карте — точка отправления (🟢)');
+        console.log('  7. Правый клик по карте — точка назначения (🔴)');
     </script>
 
 </body>
