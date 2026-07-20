@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>WHEEL — Вход</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Форма входа -->
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email">
+            <input type="password" id="loginPassword" placeholder="Пароль">
+            <button type="submit">Войти</button>
+        </form>
+
+        <!-- Форма регистрации -->
+        <form id="registerForm">
+            <input type="text" id="regName" placeholder="Имя">
+            <input type="email" id="regEmail" placeholder="Email">
+            <input type="password" id="regPassword" placeholder="Пароль">
+            <select id="regRole">
+                <option value="client">Клиент</option>
+                <option value="driver">Водитель</option>
+                <option value="admin">Администратор</option>
+            </select>
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+    </div>
+
+    <script type="module">
+        import { login, register, onAuthChange, logout } from './auth.js';
+        import { getUser, setUser } from './db.js';
+
+        // === ВХОД ===
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            try {
+                const cred = await login(email, password);
+                const userData = await getUser(cred.user.uid);
+                const role = userData?.role || 'client';
+                redirectByRole(role);
+            } catch (error) {
+                alert('Ошибка входа: ' + error.message);
+            }
+        });
+
+        // === РЕГИСТРАЦИЯ ===
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const role = document.getElementById('regRole').value;
+
+            try {
+                const cred = await register(email, password);
+                await setUser(cred.user.uid, {
+                    uid: cred.user.uid,
+                    email: email,
+                    role: role,
+                    displayName: name,
+                    balance: 0,
+                    rating: 0,
+                    bonus: 0,
+                    penalty: 0,
+                    premium: 0,
+                    totalEarned: 0,
+                    totalSpent: 0,
+                    driverData: null
+                });
+                alert('Регистрация успешна! Теперь войдите.');
+            } catch (error) {
+                alert('Ошибка регистрации: ' + error.message);
+            }
+        });
+
+        // === ПЕРЕНАПРАВЛЕНИЕ ПО РОЛИ ===
+        function redirectByRole(role) {
+            if (role === 'admin') window.location.href = 'admin.html';
+            else if (role === 'driver') window.location.href = 'driver.html';
+            else window.location.href = 'cabinet.html';
+        }
+
+        // === ПРОВЕРКА АВТОРИЗАЦИИ ===
+        onAuthChange(async (user) => {
+            if (user) {
+                const userData = await getUser(user.uid);
+                const role = userData?.role || 'client';
+                redirectByRole(role);
+            }
+        });
+    </script>
+</body>
+</html>
