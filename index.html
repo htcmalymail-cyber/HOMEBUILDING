@@ -13,8 +13,7 @@
             signInWithEmailAndPassword,
             createUserWithEmailAndPassword,
             onAuthStateChanged,
-            signOut,
-            deleteUser
+            signOut
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import {
             getFirestore,
@@ -44,7 +43,6 @@
         window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
         window.onAuthStateChanged = onAuthStateChanged;
         window.signOut = signOut;
-        window.deleteUser = deleteUser;
         window.doc = doc;
         window.setDoc = setDoc;
         window.getDoc = getDoc;
@@ -558,8 +556,7 @@
                 regError: "❌ Ошибка регистрации: ",
                 regEmailExists: "⚠️ Этот email уже зарегистрирован. Мы переключили вас на вход.",
                 regWeakPass: "❌ Пароль должен быть не менее 6 символов",
-                fillAll: "❌ Заполните все поля",
-                switchToLogin: "Переключиться на вход"
+                fillAll: "❌ Заполните все поля"
             },
             en: {
                 slogan: "Welcome",
@@ -587,8 +584,7 @@
                 regError: "❌ Registration error: ",
                 regEmailExists: "⚠️ This email is already registered. We switched you to login.",
                 regWeakPass: "❌ Password must be at least 6 characters",
-                fillAll: "❌ Please fill in all fields",
-                switchToLogin: "Switch to login"
+                fillAll: "❌ Please fill in all fields"
             },
             he: {
                 slogan: "ברוכים הבאים",
@@ -616,8 +612,7 @@
                 regError: "❌ שגיאת הרשמה: ",
                 regEmailExists: "⚠️ אימייל זה כבר רשום. עברנו אותך לכניסה.",
                 regWeakPass: "❌ סיסמה חייבת להכיל לפחות 6 תווים",
-                fillAll: "❌ אנא מלא את כל השדות",
-                switchToLogin: "עבור לכניסה"
+                fillAll: "❌ אנא מלא את כל השדות"
             },
             ar: {
                 slogan: "مرحباً بكم",
@@ -645,8 +640,7 @@
                 regError: "❌ خطأ في التسجيل: ",
                 regEmailExists: "⚠️ هذا البريد الإلكتروني مسجل بالفعل. قمنا بتحويلك إلى تسجيل الدخول.",
                 regWeakPass: "❌ يجب أن تتكون كلمة المرور من 6 أحرف على الأقل",
-                fillAll: "❌ يرجى ملء جميع الحقول",
-                switchToLogin: "التحويل إلى تسجيل الدخول"
+                fillAll: "❌ يرجى ملء جميع الحقول"
             }
         };
 
@@ -768,11 +762,11 @@
 
                 showMessage(msgEl, translations[currentLang].loginSuccess, 'success');
 
-                // Перенаправляем через 1 секунду
+                // ========== ИСПРАВЛЕННЫЙ РЕДИРЕКТ (без слеша) ==========
                 setTimeout(() => {
-                    let redirect = '/client.html';
-                    if (role === 'admin') redirect = '/admin.html';
-                    else if (role === 'driver') redirect = '/driver.html';
+                    let redirect = 'client.html';
+                    if (role === 'admin') redirect = 'admin.html';
+                    else if (role === 'driver') redirect = 'driver.html';
                     window.location.href = redirect;
                 }, 1000);
 
@@ -925,11 +919,12 @@
                         });
                         role = 'client';
                     }
-                    // Редирект, если мы на главной
-                    if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
-                        let redirect = '/client.html';
-                        if (role === 'admin') redirect = '/admin.html';
-                        else if (role === 'driver') redirect = '/driver.html';
+                    // Редирект, если мы на главной странице
+                    const path = window.location.pathname;
+                    if (path === '/' || path === '/index.html' || path.endsWith('/index.html')) {
+                        let redirect = 'client.html';
+                        if (role === 'admin') redirect = 'admin.html';
+                        else if (role === 'driver') redirect = 'driver.html';
                         window.location.href = redirect;
                     }
                 } catch (e) {
