@@ -55,7 +55,7 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'SF Pro Display', 'Inter', sans-serif;
             background: #0a0c10;
             display: flex;
             justify-content: center;
@@ -180,8 +180,9 @@
 </div>
 
 <script>
-    // Проверка авторизации и подписка на данные
-    let currentUser = null;
+    // ============================================================
+    // ПРОВЕРКА АВТОРИЗАЦИИ И ПОДПИСКА НА ДАННЫЕ
+    // ============================================================
     const userNameEl = document.getElementById('userName');
     const userEmailEl = document.getElementById('userEmail');
     const balanceEl = document.getElementById('balance');
@@ -190,8 +191,15 @@
     const totalSpentEl = document.getElementById('totalSpent');
     const historyList = document.getElementById('historyList');
 
+    let unsubUser = null;
+    let unsubTx = null;
+
     function updateStats(userData) {
-        if (!userData) return;
+        if (!userData) {
+            console.warn('Нет данных пользователя');
+            return;
+        }
+        console.log('Обновление статистики:', userData);
         balanceEl.textContent = (userData.balance || 0).toFixed(2) + ' ₽';
         ratingEl.textContent = (userData.rating || 0).toFixed(1);
         bonusEl.textContent = userData.bonus || 0;
@@ -201,14 +209,23 @@
     function renderTransactions(transactions) {
         if (!transactions || transactions.length === 0) {
             historyList.innerHTML = '<div class="empty-history">Нет операций</div>';
+            console.log('Транзакций нет');
             return;
         }
+        console.log('Загружено транзакций:', transactions.length);
         let html = '';
         transactions.forEach(tx => {
             const amount = tx.amount || 0;
             const sign = amount >= 0 ? '+' : '';
             const cls = amount >= 0 ? 'positive' : 'negative';
-            const date = tx.timestamp ? new Date(tx.timestamp.toDate()).toLocaleString('ru-RU') : '';
+            let date = '—';
+            if (tx.timestamp) {
+                try {
+                    date = new Date(tx.timestamp.seconds * 1000 || tx.timestamp).toLocaleString('ru-RU');
+                } catch {
+                    date = '—';
+                }
+            }
             html += `
                 <div class="transaction-item">
                     <div class="transaction-info">
@@ -222,63 +239,97 @@
         historyList.innerHTML = html;
     }
 
+    // ============================================================
+    // АВТОРИЗАЦИЯ
+    // ============================================================
     onAuthStateChanged(auth, (user) => {
+        console.log('authStateChanged, user:', user ? user.uid : 'null');
+
         if (user) {
-            currentUser = user;
+            // === 1. Подписываемся на пользователя из коллекции "users" ===
             const userDocRef = doc(db, 'users', user.uid);
+            
+            // Проверяем, что документ существует
             getDoc(userDocRef).then(docSnap => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (data.role && data.role !== 'client') {
-                        alert('Вы не клиент. Перенаправление...');
-                        if (data.role === 'driver') window.location.href = 'driver.html';
-                        else if (data.role === 'admin') window.location.href = 'admin.html';
-                        else window.location.href = 'index.html';
-                        return;
-                    }
-                    // Подписываемся на изменения пользователя
-                    const unsubUser = onSnapshot(userDocRef, (docSnap) => {
-                        if (docSnap.exists()) {
-                            const userData = docSnap.data();
-                            userNameEl.textContent = userData.displayName || 'Пользователь';
-                            userEmailEl.textContent = userData.email || '';
-                            updateStats(userData);
-                        }
-                    });
-                    // Подписываемся на транзакции
-                    const q = query(
-                        collection(db, 'transactions'),
-                        where('userId', '==', user.uid),
-                        orderBy('timestamp', 'desc'),
-                        limit(10)
-                    );
-                    const unsubTx = onSnapshot(q, (snapshot) => {
-                        const transactions = [];
-                        snapshot.forEach(doc => {
-                            transactions.push({ id: doc.id, ...doc.data() });
-                        });
-                        renderTransactions(transactions);
-                    });
-                    // Сохраняем отписки
-                    window._unsubUser = unsubUser;
-                    window._unsubTx = unsubTx;
-                } else {
-                    alert('Профиль не найден. Пожалуйста, зарегистрируйтесь заново.');
-                    signOut(auth);
-                    window.location.href = 'index.html';
+                if (!docSnap.exists()) {
+                    console.error('Документ пользователя не найден в коллекции users');
+                    historyList.innerHTML = '<div class="empty-history">Профиль не найден</div>';
+                    return;
                 }
+                const data = docSnap.data();
+                console.log('Данные пользователя загружены:', data);
+
+                // Проверяем роль
+                if (data.role && data.role !== 'client') {
+                    alert('Вы не клиент. Перенаправление...');
+                    if (data.role === 'driver') window.location.href = 'driver.html';
+                    else if (data.role === 'admin') window.location.href = 'admin.html';
+                    else window.location.href = 'index.html';
+                    return;
+                }
+
+                // Обновляем UI
+                userNameEl.textContent = data.displayName || 'Пользователь';
+                userEmailEl.textContent = user.email || '';
+                updateStats(data);
+
+                // === 2. Подписываемся на изменения пользователя (real-time) ===
+                if (unsubUser) unsubUser();
+                unsubUser = onSnapshot(userDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const newData = docSnap.data();
+                        console.log('Обновление пользователя в реальном времени:', newData);
+                        userNameEl.textContent = newData.displayName || 'Пользователь';
+                        userEmailEl.textContent = user.email || '';
+                        updateStats(newData);
+                    }
+                }, (error) => {
+                    console.error('Ошибка подписки на пользователя:', error);
+                });
+
+                // === 3. Подписываемся на транзакции (real-time) ===
+                const q = query(
+                    collection(db, 'transactions'),
+                    where('userId', '==', user.uid),
+                    orderBy('timestamp', 'desc'),
+                    limit(10)
+                );
+
+                if (unsubTx) unsubTx();
+                unsubTx = onSnapshot(q, (snapshot) => {
+                    const transactions = [];
+                    snapshot.forEach(doc => {
+                        transactions.push({ id: doc.id, ...doc.data() });
+                    });
+                    console.log('Транзакции обновлены:', transactions.length);
+                    renderTransactions(transactions);
+                }, (error) => {
+                    console.error('Ошибка подписки на транзакции:', error);
+                    historyList.innerHTML = '<div class="empty-history">Ошибка загрузки истории</div>';
+                });
+
             }).catch(err => {
-                console.error('Ошибка получения данных пользователя:', err);
+                console.error('Ошибка получения пользователя:', err);
+                historyList.innerHTML = '<div class="empty-history">Ошибка загрузки профиля</div>';
             });
+
         } else {
+            // Не авторизован – редирект на вход
+            console.log('Пользователь не авторизован, редирект на index.html');
             window.location.href = 'index.html';
         }
     });
 
+    // ============================================================
+    // ОБРАБОТЧИКИ
+    // ============================================================
+
+    // Выход
     document.getElementById('logoutBtn').addEventListener('click', async () => {
         try {
-            if (window._unsubUser) window._unsubUser();
-            if (window._unsubTx) window._unsubTx();
+            // Отписываемся от слушателей
+            if (unsubUser) unsubUser();
+            if (unsubTx) unsubTx();
             await signOut(auth);
             window.location.href = 'index.html';
         } catch (error) {
@@ -286,6 +337,7 @@
         }
     });
 
+    // Кнопка "Заказать такси"
     document.getElementById('orderBtn').addEventListener('click', () => {
         window.location.href = 'order.html';
     });
