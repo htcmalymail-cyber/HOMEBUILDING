@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Завершение поездки — WHEEL</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js">
+    </script>
+
+    <style>
+        /* ===== ОСНОВНЫЕ СТИЛИ ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0c10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.06) 0%, transparent 45%),
+                radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.05) 0%, transparent 45%);
+            background-attachment: fixed;
+            color: #ffffff;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(18, 22, 28, 0.85);
+            backdrop-filter: blur(30px);
+            border-radius: 32px;
+            padding: 28px 24px 32px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(255, 180, 0, 0.03), transparent 60%);
+            pointer-events: none;
+            animation: rotateBg 30s linear infinite;
+        }
+
+        @keyframes rotateBg {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ===== ШАПКА ===== */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8899aa;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: inherit;
+        }
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+        }
+        .back-btn:active {
+            transform: scale(0.92);
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            color: #ffffff;
+        }
+
+        /* ===== СТАТУС ===== */
+        .status-icon {
+            text-align: center;
+            margin: 8px 0 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-icon .icon {
+            font-size: 56px;
+            display: block;
+        }
+        .status-icon .label {
+            font-size: 14px;
+            color: #8899aa;
+            margin-top: 4px;
+        }
+        .status-icon .label.success {
+            color: #4ade80;
+        }
+
+        /* ===== ИНФОРМАЦИЯ О ПОЕЗДКЕ ===== */
+        .trip-info {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .trip-info .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .trip-info .row:last-child {
+            border-bottom: none;
+        }
+
+        .trip-info .row .label {
+            font-size: 13px;
+            color: #8899aa;
+        }
+        .trip-info .row .value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e0e8f0;
+            text-align: right;
+        }
+        .trip-info .row .value.gold {
+            color: #ffb000;
+        }
+        .trip-info .row .value.green {
+            color: #4ade80;
+        }
+        .trip-info .row .value.blue {
+            color: #60a5fa;
+        }
+        .trip-info .row .value.red {
+            color: #ff6b6b;
+        }
+
+        /* ===== ВЫБОР СПОСОБА ОПЛАТЫ ===== */
+        .payment-section {
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .payment-section .title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e0e8f0;
+            margin-bottom: 10px;
+        }
+
+        .payment-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .payment-option {
+            flex: 1;
+            padding: 12px;
+            border-radius: 14px;
+            border: 1.5px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.02);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            color: #8899aa;
+        }
+
+        .payment-option .icon {
+            font-size: 28px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .payment-option .name {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .payment-option:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .payment-option.active {
+            border-color: #ffb000;
+            background: rgba(255, 180, 0, 0.06);
+            color: #ffb000;
+        }
+
+        .payment-option.active .name {
+            color: #ffb000;
+        }
+
+        /* ===== КНОПКИ ===== */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #0a0c10;
+        }
+        .btn-success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(74, 222, 128, 0.25);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ffb000, #ff6a00);
+            color: #0a0c10;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(255, 180, 0, 0.25);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #8899aa;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
+        /* ===== СООБЩЕНИЯ ===== */
+        .message {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            display: none;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.08);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.12);
+            display: block;
+        }
+
+        .message.success {
+            background: rgba(74, 222, 128, 0.08);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.12);
+            display: block;
+        }
+
+        .message.info {
+            background: rgba(255, 180, 0, 0.08);
+            color: #ffb000;
+            border: 1px solid rgba(255, 180, 0, 0.12);
+            display: block;
+        }
+
+        /* ===== ИНДИКАТОР ===== */
+        .home-indicator {
+            margin-top: 16px;
+            width: 100px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== АДАПТИВНОСТЬ ===== */
+        @media (max-width: 420px) {
+            .container {
+                border-radius: 0;
+                padding: 20px 16px 24px;
+                min-height: 100vh;
+                background: rgba(10, 12, 16, 0.96);
+                backdrop-filter: blur(20px);
+                border: none;
+                box-shadow: none;
+                max-width: 100%;
+            }
+            .header-title {
+                font-size: 18px;
+            }
+            .status-icon .icon {
+                font-size: 44px;
+            }
+            .payment-options {
+                gap: 6px;
+            }
+            .payment-option {
+                padding: 10px;
+            }
+            .payment-option .icon {
+                font-size: 22px;
+            }
+            .payment-option .name {
+                font-size: 12px;
+            }
+            .btn {
+                font-size: 14px;
+                padding: 12px;
+            }
+            .trip-info .row .label {
+                font-size: 12px;
+            }
+            .trip-info .row .value {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- ===== ШАПКА ===== -->
+        <div class="header">
+            <button class="back-btn" id="backBtn">←</button>
+            <span class="header-title">💳 Завершение поездки</span>
+        </div>
+
+        <!-- ===== СТАТУС ===== -->
+        <div class="status-icon">
+            <span class="icon">✅</span>
+            <span class="label success">Поездка завершена!</span>
+        </div>
+
+        <!-- ===== ИНФОРМАЦИЯ О ПОЕЗДКЕ ===== -->
+        <div class="trip-info" id="tripInfo">
+            <div class="row">
+                <span class="label">🚖 Заказ</span>
+                <span class="value" id="orderId">—</span>
+            </div>
+            <div class="row">
+                <span class="label">📍 Откуда</span>
+                <span class="value" id="pickupAddress">—</span>
+            </div>
+            <div class="row">
+                <span class="label">🏁 Куда</span>
+                <span class="value" id="destinationAddress">—</span>
+            </div>
+            <div class="row">
+                <span class="label">📏 Расстояние (план)</span>
+                <span class="value blue" id="plannedDistance">—</span>
+            </div>
+            <div class="row">
+                <span class="label">📏 Реальное расстояние</span>
+                <span class="value blue" id="realDistance">—</span>
+            </div>
+            <div class="row">
+                <span class="label">💵 Предварительная цена</span>
+                <span class="value gold" id="plannedPrice">—</span>
+            </div>
+            <div class="row" style="border-bottom: 2px solid rgba(255,180,0,0.15); padding-bottom: 8px;">
+                <span class="label" style="font-weight:600; color:#e0e8f0;">💰 Итоговая стоимость</span>
+                <span class="value gold" id="finalPrice" style="font-size:20px;">—</span>
+            </div>
+            <div class="row">
+                <span class="label">💳 Комиссия платформы (10%)</span>
+                <span class="value red" id="commission">—</span>
+            </div>
+            <div class="row">
+                <span class="label">🚗 Заработок водителя (90%)</span>
+                <span class="value green" id="driverEarn">—</span>
+            </div>
+            <div class="row">
+                <span class="label">👤 Клиент</span>
+                <span class="value" id="clientName">—</span>
+            </div>
+            <div class="row">
+                <span class="label">🚗 Водитель</span>
+                <span class="value" id="driverName">—</span>
+            </div>
+        </div>
+
+        <!-- ===== ВЫБОР СПОСОБА ОПЛАТЫ ===== -->
+        <div class="payment-section">
+            <div class="title">💳 Способ оплаты</div>
+            <div class="payment-options">
+                <button class="payment-option active" data-method="wallet" id="walletOption">
+                    <span class="icon">📱</span>
+                    <span class="name">Кошелёк</span>
+                </button>
+                <button class="payment-option" data-method="cash" id="cashOption">
+                    <span class="icon">💵</span>
+                    <span class="name">Наличные</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== КНОПКИ ===== -->
+        <div class="btn-group">
+            <button class="btn btn-success" id="confirmBtn">✅ Подтвердить оплату</button>
+            <button class="btn btn-secondary" id="cancelBtn">↩️ Назад</button>
+        </div>
+
+        <!-- ===== СООБЩЕНИЯ ===== -->
+        <div class="message" id="message"></div>
+
+        <div class="home-indicator"></div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- JAVASCRIPT -->
+    <!-- ============================================================ -->
+    <script>
+        // ============================================================
+        // FIREBASE КОНФИГ
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+            authDomain: "taxi-ai-app-69628.firebaseapp.com",
+            projectId: "taxi-ai-app-69628",
+            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+            messagingSenderId: "952357992434",
+            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+            measurementId: "G-Z9NJFSSXH6"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        console.log('🔥 Firebase готов');
+
+        // ============================================================
+        // ПЕРЕМЕННЫЕ
+        // ============================================================
+        let orderData = null;
+        let orderId = null;
+        let selectedMethod = 'wallet';
+        let currentUser = null;
+
+        // ============================================================
+        // ЭЛЕМЕНТЫ
+        // ============================================================
+        const el = {
+            backBtn: document.getElementById('backBtn'),
+            orderId: document.getElementById('orderId'),
+            pickupAddress: document.getElementById('pickupAddress'),
+            destinationAddress: document.getElementById('destinationAddress'),
+            plannedDistance: document.getElementById('plannedDistance'),
+            realDistance: document.getElementById('realDistance'),
+            plannedPrice: document.getElementById('plannedPrice'),
+            finalPrice: document.getElementById('finalPrice'),
+            commission: document.getElementById('commission'),
+            driverEarn: document.getElementById('driverEarn'),
+            clientName: document.getElementById('clientName'),
+            driverName: document.getElementById('driverName'),
+            walletOption: document.getElementById('walletOption'),
+            cashOption: document.getElementById('cashOption'),
+            confirmBtn: document.getElementById('confirmBtn'),
+            cancelBtn: document.getElementById('cancelBtn'),
+            message: document.getElementById('message')
+        };
+
+        // ============================================================
+        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ============================================================
+        function formatPrice(p) {
+            return (p || 0).toFixed(2) + ' ₪';
+        }
+
+        function formatDistance(km) {
+            if (!km) return '—';
+            if (km < 1) return (km * 1000).toFixed(0) + ' м';
+            return km.toFixed(1) + ' км';
+        }
+
+        function showMessage(text, type = 'info') {
+            el.message.className = 'message ' + type;
+            el.message.textContent = text;
+            el.message.style.display = 'block';
+            setTimeout(() => {
+                el.message.style.display = 'none';
+            }, 5000);
+        }
+
+        // ============================================================
+        // ЗАГРУЗКА ДАННЫХ ЗАКАЗА
+        // ============================================================
+        function loadOrderData() {
+            // Получаем orderId из URL параметров
+            const params = new URLSearchParams(window.location.search);
+            orderId = params.get('orderId');
+
+            if (!orderId) {
+                showMessage('❌ Не указан заказ', 'error');
+                return;
+            }
+
+            console.log('📦 Загрузка заказа:', orderId);
+
+            db.collection('orders').doc(orderId).get()
+                .then(function(doc) {
+                    if (!doc.exists) {
+                        showMessage('❌ Заказ не найден', 'error');
+                        return;
+                    }
+
+                    orderData = doc.data();
+                    console.log('✅ Данные заказа:', orderData);
+
+                    // Заполняем информацию
+                    el.orderId.textContent = '#' + orderId.substring(0, 8);
+                    el.pickupAddress.textContent = orderData.pickup?.address || '—';
+                    el.destinationAddress.textContent = orderData.destination?.address || '—';
+                    el.plannedDistance.textContent = formatDistance(orderData.distance);
+                    el.plannedPrice.textContent = formatPrice(orderData.price);
+
+                    // Реальное расстояние (из трека)
+                    const realDist = orderData.realDistance || orderData.distance || 0;
+                    el.realDistance.textContent = formatDistance(realDist);
+
+                    // Финальная цена (из трека или плановая)
+                    const finalPrice = orderData.finalPrice || orderData.price || 0;
+                    el.finalPrice.textContent = formatPrice(finalPrice);
+
+                    // Комиссия и заработок
+                    const commission = finalPrice * 0.10;
+                    const driverEarn = finalPrice - commission;
+                    el.commission.textContent = formatPrice(commission);
+                    el.driverEarn.textContent = formatPrice(driverEarn);
+
+                    // Имена
+                    el.clientName.textContent = orderData.clientName || 'Клиент';
+                    el.driverName.textContent = orderData.driverName || 'Водитель';
+
+                })
+                .catch(function(err) {
+                    console.error('❌ Ошибка загрузки заказа:', err);
+                    showMessage('❌ Ошибка загрузки заказа', 'error');
+                });
+        }
+
+        // ============================================================
+        // ВЫБОР СПОСОБА ОПЛАТЫ
+        // ============================================================
+        el.walletOption.addEventListener('click', function() {
+            document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('active'));
+            this.classList.add('active');
+            selectedMethod = 'wallet';
+        });
+
+        el.cashOption.addEventListener('click', function() {
+            document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('active'));
+            this.classList.add('active');
+            selectedMethod = 'cash';
+        });
+
+        // ============================================================
+        // ПОДТВЕРЖДЕНИЕ ОПЛАТЫ
+        // ============================================================
+        el.confirmBtn.addEventListener('click', function() {
+            if (!orderData || !orderId) {
+                showMessage('❌ Нет данных о заказе', 'error');
+                return;
+            }
+
+            el.confirmBtn.disabled = true;
+            el.confirmBtn.textContent = '⏳ Обработка...';
+
+            const finalPrice = orderData.finalPrice || orderData.price || 0;
+            const commission = finalPrice * 0.10;
+            const driverEarn = finalPrice - commission;
+
+            console.log('💰 Подтверждение оплаты:', {
+                orderId: orderId,
+                method: selectedMethod,
+                finalPrice: finalPrice,
+                commission: commission,
+                driverEarn: driverEarn
+            });
+
+            // Создаём транзакции
+            const transactions = [];
+
+            // 1. Транзакция клиента (списание)
+            transactions.push(
+                db.collection('transactions').add({
+                    userId: orderData.clientId,
+                    orderId: orderId,
+                    type: 'payment',
+                    amount: -finalPrice,
+                    description: `Оплата поездки #${orderId.substring(0, 8)} (${selectedMethod === 'wallet' ? 'кошелёк' : 'наличные'})`,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    balanceAfter: 0
+                })
+            );
+
+            // 2. Транзакция водителя (начисление)
+            transactions.push(
+                db.collection('transactions').add({
+                    userId: orderData.driverId,
+                    orderId: orderId,
+                    type: 'earning',
+                    amount: driverEarn,
+                    description: `Заработок за поездку #${orderId.substring(0, 8)} (90%)`,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    balanceAfter: 0
+                })
+            );
+
+            // 3. Обновление баланса водителя
+            transactions.push(
+                db.collection('users').doc(orderData.driverId).update({
+                    balance: firebase.firestore.FieldValue.increment(driverEarn),
+                    totalEarned: firebase.firestore.FieldValue.increment(driverEarn)
+                })
+            );
+
+            // 4. Если оплата через кошелёк — списываем с клиента
+            if (selectedMethod === 'wallet') {
+                transactions.push(
+                    db.collection('users').doc(orderData.clientId).update({
+                        balance: firebase.firestore.FieldValue.increment(-finalPrice),
+                        totalSpent: firebase.firestore.FieldValue.increment(finalPrice)
+                    })
+                );
+            }
+
+            // Выполняем все операции
+            Promise.all(transactions)
+                .then(function() {
+                    console.log('✅ Все транзакции созданы');
+
+                    // Обновляем статус заказа
+                    return db.collection('orders').doc(orderId).update({
+                        paymentMethod: selectedMethod,
+                        paymentCompleted: true,
+                        paidAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                })
+                .then(function() {
+                    showMessage('✅ Оплата подтверждена!', 'success');
+                    el.confirmBtn.textContent = '✅ Готово!';
+                    el.confirmBtn.disabled = true;
+
+                    // Перенаправление через 2 секунды
+                    setTimeout(function() {
+                        window.location.href = 'driver-work.html';
+                    }, 2000);
+                })
+                .catch(function(err) {
+                    console.error('❌ Ошибка обработки оплаты:', err);
+                    showMessage('❌ Ошибка: ' + err.message, 'error');
+                    el.confirmBtn.disabled = false;
+                    el.confirmBtn.textContent = '✅ Подтвердить оплату';
+                });
+        });
+
+        // ============================================================
+        // НАЗАД
+        // ============================================================
+        el.backBtn.addEventListener('click', function() {
+            window.location.href = 'driver-work.html';
+        });
+
+        el.cancelBtn.addEventListener('click', function() {
+            window.location.href = 'driver-work.html';
+        });
+
+        // ============================================================
+        // АВТОРИЗАЦИЯ
+        // ============================================================
+        auth.onAuthStateChanged(function(user) {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+            currentUser = user;
+            loadOrderData();
+        });
+
+        console.log('✅ Страница завершения поездки готова');
+        console.log('📌 Функции:');
+        console.log('  💳 Отображение итоговой стоимости');
+        console.log('  📊 Реальное расстояние и цена');
+        console.log('  💵 Выбор способа оплаты (кошелёк/наличные)');
+        console.log('  ✅ Подтверждение оплаты');
+        console.log('  📝 Создание транзакций');
+    </script>
+
+</body>
+</html>
