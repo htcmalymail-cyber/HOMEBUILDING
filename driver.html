@@ -180,13 +180,13 @@
             color: #ffffff;
         }
 
-        /* ===== СТАТИСТИКА (4 КАРТОЧКИ) ===== */
+        /* ===== СТАТИСТИКА ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             position: relative;
             z-index: 1;
         }
@@ -233,6 +233,37 @@
         }
         .stat-card .value.blue {
             color: #60a5fa;
+        }
+
+        /* ===== КНОПКА "РАБОТАТЬ" ===== */
+        .btn-work {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #0a0c10;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            box-shadow: 0 8px 24px rgba(74, 222, 128, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+            margin-bottom: 16px;
+        }
+
+        .btn-work:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(74, 222, 128, 0.35);
+        }
+        .btn-work:active {
+            transform: scale(0.97);
         }
 
         /* ===== РАЗДЕЛЫ ===== */
@@ -441,6 +472,10 @@
             .stats-grid {
                 gap: 8px;
             }
+            .btn-work {
+                font-size: 15px;
+                padding: 14px;
+            }
         }
     </style>
 </head>
@@ -489,6 +524,11 @@
             </div>
         </div>
 
+        <!-- ===== КНОПКА "РАБОТАТЬ" ===== -->
+        <button class="btn-work" onclick="window.location.href='driver-work.html'">
+            🚗 Работать
+        </button>
+
         <!-- ===== ЗАКАЗЫ ===== -->
         <div class="section">
             <div class="section-title">
@@ -515,7 +555,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- JAVASCRIPT -->
+    <!-- JAVASCRIPT (ПОЛНАЯ ВЕРСИЯ) -->
     <!-- ============================================================ -->
     <script>
         // ============================================================
@@ -692,12 +732,11 @@
             el.transactionsList.innerHTML = html;
             el.transactionsCount.textContent = `(${driverTransactions.length})`;
 
-            // Обновляем статистику (из транзакций)
+            // Обновляем статистику
             el.totalEarned.textContent = formatPrice(totalEarned);
             el.totalPenalty.textContent = formatPrice(totalPenalty);
             el.totalBonus.textContent = totalBonus.toFixed(0);
 
-            // Бонусы также берём из документа пользователя (если есть)
             if (userData && userData.bonus !== undefined) {
                 el.totalBonus.textContent = userData.bonus.toFixed(0);
             }
@@ -718,12 +757,10 @@
                     el.driverEmail.textContent = userData.email || '';
                     el.balance.textContent = formatPrice(userData.balance || 0);
 
-                    // Бонусы из документа пользователя
                     if (userData.bonus !== undefined) {
                         el.totalBonus.textContent = userData.bonus.toFixed(0);
                     }
 
-                    // Статус
                     const status = userData.driverData?.isAvailable ? 'online' : 'offline';
                     updateStatusUI(status);
                 }
@@ -844,6 +881,7 @@
         console.log('  📋 Список заказов с суммами');
         console.log('  💳 История операций');
         console.log('  🟢 Переключение статуса Онлайн/Офлайн');
+        console.log('  🚗 Кнопка "Работать" → driver-work.html');
     </script>
 
 </body>
