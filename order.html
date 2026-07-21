@@ -898,6 +898,35 @@
         }
 
         // ============================================================
+        // ПОСТРОЕНИЕ МАРШРУТА (OSRM)
+        // ============================================================
+        async function buildRoute(startLat, startLng, endLat, endLng) {
+            try {
+                const url =
+                    `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data && data.routes && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                    const distance = route.distance / 1000; // в километрах
+                    const duration = route.duration / 60; // в минутах
+
+                    return {
+                        coordinates: coordinates,
+                        distance: distance,
+                        duration: duration
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error('Ошибка построения маршрута:', error);
+                return null;
+            }
+        }
+
+        // ============================================================
         // КАРТА
         // ============================================================
         function initMap() {
@@ -1001,28 +1030,114 @@
                 .bindPopup('🏁 Назначение');
         }
 
-        function drawRoute() {
+        async function drawRoute() {
             if (!pickupLocation || !destinationLocation) return;
+
+            // Удаляем старый маршрут
             if (routeLine) {
                 map.removeLayer(routeLine);
                 routeLine = null;
             }
 
-            const latlngs = [
-                [pickupLocation.lat, pickupLocation.lng],
-                [destinationLocation.lat, destinationLocation.lng]
-            ];
+            // Строим маршрут через OSRM
+            const routeData = await buildRoute(
+                pickupLocation.lat, pickupLocation.lng,
+                destinationLocation.lat, destinationLocation.lng
+            );
 
-            routeLine = L.polyline(latlngs, {
-                color: '#4ade80',
-                weight: 4,
-                opacity: 0.8,
-                dashArray: '10, 6'
-            }).addTo(map);
+            if (routeData && routeData.coordinates.length > 0) {
+                routeLine = L.polyline(routeData.coordinates, {
+                    color: '#4ade80',
+                    weight: 4,
+                    opacity: 0.8,
+                    dashArray: '8, 6'
+                }).addTo(map);
 
-            // Подгоняем карту под маршрут
-            const bounds = L.latLngBounds(latlngs);
-            map.fitBounds(bounds, { padding: [40, 40] });
+                // Обновляем информацию
+                const result = calculatePriceAndCommission(routeData.distance);
+                el.priceDisplay.textContent = formatPrice(result.price);
+                el.distanceDisplay.textContent = formatDistance(routeData.distance);
+                el.durationDisplay.textContent = formatDuration(routeData.duration);
+
+                // Подгоняем карту под маршрут
+                const bounds = L.latLngBounds(routeData.coordinates);
+                map.fitBounds(bounds, { padding: [40, 40] });
+
+                console.log('✅ Маршрут построен:', routeData.distance.toFixed(1), 'км', routeData.duration.toFixed(0), 'мин');
+
+            } else {
+                // Если маршрут не построен — рисуем прямую линию
+                const latlngs = [
+                    [pickupLocation.lat, pickupLocation.lng],
+                    [destinationLocation.lat, destinationLocation.lng]
+                ];
+                routeLine = L.polyline(latlngs, {
+                    color: '#4ade80',
+                    weight: 3,
+                    opacity: 0.5,
+                    dashArray: '5, 5'
+                }).addTo(map);
+
+                const distance = haversineDistance(
+                    pickupLocation.lat, pickupLocation.lng,
+                    destinationLocation.lat, destinationLocation.lng
+                );
+                const result = calculatePriceAndCommission(distance);
+                el.priceDisplay.textContent = formatPrice(result.price);
+                el.distanceDisplay.textContent = formatDistance(distance);
+                el.durationDisplay.textContent = formatDuration(distance * 3);
+
+                const bounds = L.latLngBounds(latlngs);
+                map.fitBounds(bounds, { padding: [40, 40] });
+
+                showMessage('⚠️ Маршрут построен по прямой (приблизительно)', 'warning');
+            }
+        }
+
+        // ============================================================
+        // РАСЧЁТ (используется при ручном вводе)
+        // ============================================================
+        function calculateAndUpdate() {
+            if (!pickupLocation || !destinationLocation) {
+                el.priceDisplay.textContent = '—';
+                el.distanceDisplay.textContent = '—';
+                el.durationDisplay.textContent = '—';
+                return;
+            }
+
+            const distance = haversineDistance(
+                pickupLocation.lat, pickupLocation.lng,
+                destinationLocation.lat, destinationLocation.lng
+            );
+
+            if (distance === 0) {
+                el.priceDisplay.textContent = '—';
+                el.distanceDisplay.textContent = '—';
+                el.durationDisplay.textContent = '—';
+                return;
+            }
+
+            const result = calculatePriceAndCommission(distance);
+            el.priceDisplay.textContent = formatPrice(result.price);
+            el.distanceDisplay.textContent = formatDistance(distance);
+            el.durationDisplay.textContent = formatDuration(distance * 3);
+        }
+
+        // ============================================================
+        // ОБРАБОТКА ВЫБОРА АДРЕСА
+        // ============================================================
+        function handlePickupSelect(result) {
+            pickupLocation = { lat: result.lat, lng: result.lng };
+            updatePickupMarker();
+            drawRoute();
+            showMessage(`📍 Отправление: ${result.displayName}`, 'success');
+        }
+
+        function handleDestinationSelect(result) {
+            destinationLocation = { lat: result.lat, lng: result.lng };
+            updateDestinationMarker();
+            drawRoute();
+            showMessage(`🏁 Назначение: ${result.displayName}`, 'success');
         }
 
         // ============================================================
@@ -1060,6 +1175,7 @@
                     el.geoBtn.textContent = '📍 Определить';
                     el.geoBtn.classList.remove('loading');
                     el.geoBtn.disabled = false;
+                    drawRoute();
                 },
                 function(error) {
                     console.error('Ошибка геолокации:', error);
@@ -1076,112 +1192,90 @@
         }
 
         // ============================================================
-        // РАСЧЁТ
-        // ============================================================
-        function calculateAndUpdate() {
-            if (!pickupLocation || !destinationLocation) {
-                el.priceDisplay.textContent = '—';
-                el.distanceDisplay.textContent = '—';
-                el.durationDisplay.textContent = '—';
-                return;
-            }
-
-            const distance = haversineDistance(
-                pickupLocation.lat, pickupLocation.lng,
-                destinationLocation.lat, destinationLocation.lng
-            );
-
-            if (distance === 0) {
-                el.priceDisplay.textContent = '—';
-                el.distanceDisplay.textContent = '—';
-                el.durationDisplay.textContent = '—';
-                return;
-            }
-
-            const result = calculatePriceAndCommission(distance);
-            const duration = distance * 3;
-
-            el.priceDisplay.textContent = formatPrice(result.price);
-            el.distanceDisplay.textContent = formatDistance(distance);
-            el.durationDisplay.textContent = formatDuration(duration);
-        }
-
-        // ============================================================
-        // ОБРАБОТКА ВЫБОРА АДРЕСА
-        // ============================================================
-        function handlePickupSelect(result) {
-            pickupLocation = { lat: result.lat, lng: result.lng };
-            updatePickupMarker();
-            calculateAndUpdate();
-            drawRoute();
-            showMessage(`📍 Отправление: ${result.displayName}`, 'success');
-        }
-
-        function handleDestinationSelect(result) {
-            destinationLocation = { lat: result.lat, lng: result.lng };
-            updateDestinationMarker();
-            calculateAndUpdate();
-            drawRoute();
-            showMessage(`🏁 Назначение: ${result.displayName}`, 'success');
-        }
-
-        // ============================================================
-        // СОЗДАНИЕ ЗАКАЗА
+        // СОЗДАНИЕ ЗАКАЗА (ИСПРАВЛЕНО)
         // ============================================================
         async function createOrder() {
             const pickupAddress = el.pickupInput.value.trim();
             const destinationAddress = el.destinationInput.value.trim();
 
-            if (!pickupAddress || !destinationAddress) {
-                showMessage('Заполните адреса отправления и назначения', 'error');
+            console.log('🔍 Создание заказа:', { pickupAddress, destinationAddress, pickupLocation, destinationLocation });
+
+            // === ВАЛИДАЦИЯ ===
+            if (!pickupAddress) {
+                showMessage('❌ Введите адрес отправления', 'error');
                 return;
             }
 
+            if (!destinationAddress) {
+                showMessage('❌ Введите адрес назначения', 'error');
+                return;
+            }
+
+            // === ПРОВЕРЯЕМ ГЕОЛОКАЦИЮ ===
             if (!pickupLocation) {
+                // Пытаемся геокодировать адрес отправления
                 const geoResult = await geocodeAddress(pickupAddress);
                 if (geoResult) {
                     pickupLocation = { lat: geoResult.lat, lng: geoResult.lng };
                     updatePickupMarker();
                 } else {
-                    showMessage('Не удалось определить геолокацию отправления', 'error');
+                    showMessage('❌ Не удалось определить геолокацию отправления', 'error');
                     return;
                 }
             }
 
             if (!destinationLocation) {
+                // Пытаемся геокодировать адрес назначения
                 const geoResult = await geocodeAddress(destinationAddress);
                 if (geoResult) {
                     destinationLocation = { lat: geoResult.lat, lng: geoResult.lng };
                     updateDestinationMarker();
                 } else {
-                    // Сохраняем только текстовый адрес
+                    // Если геолокация не определена — сохраняем только текстовый адрес
                     destinationLocation = null;
+                    showMessage('📍 Адрес назначения сохранён как текстовый', 'info');
                 }
             }
 
-            const distance = pickupLocation && destinationLocation ?
-                haversineDistance(pickupLocation.lat, pickupLocation.lng, destinationLocation.lat, destinationLocation.lng) :
-                0;
+            // === РАСЧЁТ СТОИМОСТИ ===
+            let distance = 0;
+            let price = 0;
 
-            const result = distance > 0 ? calculatePriceAndCommission(distance) : { price: 0, commission: 0, driverEarn: 0 };
+            if (pickupLocation && destinationLocation) {
+                distance = haversineDistance(
+                    pickupLocation.lat, pickupLocation.lng,
+                    destinationLocation.lat, destinationLocation.lng
+                );
+                const result = calculatePriceAndCommission(distance);
+                price = result.price;
+            } else {
+                // Если нет геолокации — цена не рассчитывается
+                price = 0;
+            }
 
-            if (balance < result.price) {
-                showMessage(`Недостаточно средств. Нужно: ${formatPrice(result.price)}`, 'error');
+            console.log('📊 Расчёт:', { distance, price });
+
+            // === ПРОВЕРКА БАЛАНСА ===
+            if (price > 0 && balance < price) {
+                showMessage(`❌ Недостаточно средств. Нужно: ${formatPrice(price)}, у вас: ${formatPrice(balance)}`,
+                'error');
                 return;
             }
 
+            // === БЛОКИРУЕМ КНОПКУ ===
             el.orderBtn.disabled = true;
             el.orderBtn.textContent = '⏳ Заказ...';
 
             try {
                 const user = auth.currentUser;
                 if (!user) {
-                    showMessage('Войдите в аккаунт', 'error');
+                    showMessage('❌ Войдите в аккаунт', 'error');
                     el.orderBtn.disabled = false;
                     el.orderBtn.textContent = '📍 Заказать такси';
                     return;
                 }
 
+                // === СОЗДАЁМ ЗАКАЗ ===
                 const orderData = {
                     clientId: user.uid,
                     clientName: user.displayName || 'Клиент',
@@ -1196,9 +1290,9 @@
                         lat: destinationLocation?.lat || null,
                         lng: destinationLocation?.lng || null
                     },
-                    price: result.price,
-                    commission: result.commission,
-                    driverEarn: result.driverEarn,
+                    price: price,
+                    commission: price * 0.10,
+                    driverEarn: price * 0.90,
                     distance: distance,
                     estimatedDuration: distance * 3,
                     isNight: isNight(),
@@ -1209,11 +1303,14 @@
                     penaltyApplied: 0
                 };
 
+                console.log('📦 Данные заказа:', orderData);
+
                 const orderRef = await db.collection('orders').add(orderData);
                 currentOrderId = orderRef.id;
                 orderStatus = 'new';
 
                 showMessage(`✅ Заказ создан! ID: ${currentOrderId.substring(0, 8)}`, 'success');
+                console.log('✅ Заказ создан:', currentOrderId);
 
                 el.orderBtn.textContent = '✅ Заказ создан';
                 el.orderBtn.disabled = true;
@@ -1223,8 +1320,8 @@
                 subscribeToOrder(currentOrderId);
 
             } catch (error) {
-                console.error('Ошибка:', error);
-                showMessage('Ошибка: ' + error.message, 'error');
+                console.error('❌ Ошибка создания заказа:', error);
+                showMessage('❌ Ошибка: ' + error.message, 'error');
                 el.orderBtn.disabled = false;
                 el.orderBtn.textContent = '📍 Заказать такси';
             }
@@ -1289,7 +1386,7 @@
         // ============================================================
         function cancelOrder() {
             if (!currentOrderId) {
-                showMessage('Нет активного заказа', 'error');
+                showMessage('❌ Нет активного заказа', 'error');
                 return;
             }
 
@@ -1302,7 +1399,7 @@
 
             orderRef.get().then(function(doc) {
                 if (!doc.exists) {
-                    showMessage('Заказ не найден', 'error');
+                    showMessage('❌ Заказ не найден', 'error');
                     el.cancelBtn.disabled = false;
                     el.cancelBtn.textContent = '❌ Отменить';
                     return;
@@ -1349,8 +1446,8 @@
                     showMessage('✅ Заказ отменён', 'info');
                 });
             }).catch(function(error) {
-                console.error('Ошибка отмены:', error);
-                showMessage('Ошибка: ' + error.message, 'error');
+                console.error('❌ Ошибка отмены:', error);
+                showMessage('❌ Ошибка: ' + error.message, 'error');
                 el.cancelBtn.disabled = false;
                 el.cancelBtn.textContent = '❌ Отменить';
             });
@@ -1420,7 +1517,6 @@
                     if (result) {
                         pickupLocation = { lat: result.lat, lng: result.lng };
                         updatePickupMarker();
-                        calculateAndUpdate();
                         drawRoute();
                     }
                 });
@@ -1434,11 +1530,10 @@
                     if (result) {
                         destinationLocation = { lat: result.lat, lng: result.lng };
                         updateDestinationMarker();
-                        calculateAndUpdate();
                         drawRoute();
                     } else {
                         destinationLocation = null;
-                        calculateAndUpdate();
+                        drawRoute();
                         showMessage('📍 Адрес сохранён как текстовый', 'info');
                     }
                 });
@@ -1449,13 +1544,12 @@
         el.cancelBtn.addEventListener('click', cancelOrder);
 
         console.log('✅ Страница заказа готова');
-        console.log('📌 Инструкция:');
-        console.log('  1. Нажмите "📍 Определить" для геолокации');
-        console.log('  2. Введите адрес назначения (появятся подсказки)');
-        console.log('  3. Нажмите "Заказать такси"');
-        console.log('  4. Для отмены нажмите "Отменить"');
-        console.log('  5. Штраф 7 ₪ при отмене после подтверждения водителя');
-        console.log('  6. На карте отображается маршрут (🟢 → 🔴)');
+        console.log('📌 Особенности:');
+        console.log('  🗺️ Маршрут строится через OSRM (по дорогам)');
+        console.log('  📊 Расчёт расстояния и времени');
+        console.log('  ✅ Создание заказа с проверкой баланса');
+        console.log('  📍 Автодополнение адресов');
+        console.log('  🟢 Зелёный — отправление, 🔴 Красный — назначение');
     </script>
 
 </body>
