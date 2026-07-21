@@ -242,6 +242,42 @@
             font-size: 11px;
         }
 
+        /* ===== ВКЛАДКИ ===== */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 11px;
+            background: transparent;
+            color: #8899aa;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .tab:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #ffb000, #ff6a00);
+            color: #0a0c10;
+            box-shadow: 0 2px 12px rgba(255, 160, 0, 0.15);
+        }
+
         /* ===== СПИСОК ЗАКАЗОВ ===== */
         .order-list,
         .driver-list {
@@ -268,6 +304,7 @@
             padding: 14px 16px;
             margin-bottom: 8px;
             border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.2s ease;
         }
         .order-item:hover {
             background: rgba(255, 255, 255, 0.04);
@@ -351,12 +388,12 @@
             background: rgba(255, 255, 255, 0.04);
         }
 
-        .driver-info .name {
+        .driver-name {
             font-size: 14px;
             font-weight: 600;
             color: #e0e8f0;
         }
-        .driver-info .car {
+        .driver-car {
             font-size: 12px;
             color: #8899aa;
         }
@@ -382,7 +419,6 @@
             font-weight: 600;
             color: #ffb000;
         }
-
         .driver-actions {
             display: flex;
             gap: 4px;
@@ -463,7 +499,6 @@
             color: #b0c0d0;
             margin-bottom: 4px;
         }
-        .modal .form-group input,
         .modal .form-group select {
             width: 100%;
             padding: 12px 14px;
@@ -476,7 +511,6 @@
             outline: none;
             transition: all 0.3s ease;
         }
-        .modal .form-group input:focus,
         .modal .form-group select:focus {
             border-color: #ffb000;
         }
@@ -574,6 +608,14 @@
             .stat-card .number {
                 font-size: 20px;
             }
+            .tabs {
+                gap: 2px;
+                padding: 2px;
+            }
+            .tab {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
         }
     </style>
 </head>
@@ -624,6 +666,16 @@
                     <div class="card-title">📋 Заказы <span class="count" id="ordersCount">(0)</span></div>
                     <button class="btn btn-primary btn-sm" id="refreshBtn">🔄 Обновить</button>
                 </div>
+
+                <!-- Вкладки (только активные статусы) -->
+                <div class="tabs" id="orderTabs">
+                    <button class="tab active" data-filter="all">Все активные</button>
+                    <button class="tab" data-filter="new">Новые</button>
+                    <button class="tab" data-filter="searching">Поиск</button>
+                    <button class="tab" data-filter="assigned">Назначены</button>
+                    <button class="tab" data-filter="in_progress">В пути</button>
+                </div>
+
                 <div class="order-list" id="orderList">
                     <div class="empty-state">
                         <div class="icon">📦</div>
@@ -660,7 +712,7 @@
                             <span class="value gold" id="totalRevenue">0 ₪</span>
                         </div>
                         <div class="finance-item">
-                            <span class="label">Комиссия (20%)</span>
+                            <span class="label">Комиссия (10%)</span>
                             <span class="value gold" id="totalCommission">0 ₪</span>
                         </div>
                         <div class="finance-item">
@@ -766,6 +818,7 @@
         // ============================================================
         let allOrders = [];
         let allDrivers = [];
+        let currentFilter = 'all';
         let selectedOrderId = null;
         let unsubOrders = null;
         let unsubDrivers = null;
@@ -814,7 +867,7 @@
             return R * c;
         }
 
-        const statusLabels = {
+        const STATUS_LABELS = {
             new: 'Новый',
             searching: 'Поиск',
             assigned: 'Назначен',
@@ -823,7 +876,7 @@
             cancelled: 'Отменён'
         };
 
-        const statusClasses = {
+        const STATUS_CLASSES = {
             new: 'new',
             searching: 'searching',
             assigned: 'assigned',
@@ -833,36 +886,77 @@
         };
 
         // ============================================================
-        // РЕНДЕРИНГ ЗАКАЗОВ
+        // ЭЛЕМЕНТЫ
+        // ============================================================
+        const el = {
+            orderList: document.getElementById('orderList'),
+            driverList: document.getElementById('driverList'),
+            ordersCount: document.getElementById('ordersCount'),
+            driversCount: document.getElementById('driversCount'),
+            ordersBadge: document.getElementById('ordersBadge'),
+            driversBadge: document.getElementById('driversBadge'),
+            statNew: document.getElementById('statNew'),
+            statSearching: document.getElementById('statSearching'),
+            statActive: document.getElementById('statActive'),
+            statCompleted: document.getElementById('statCompleted'),
+            statDrivers: document.getElementById('statDrivers'),
+            totalRevenue: document.getElementById('totalRevenue'),
+            totalCommission: document.getElementById('totalCommission'),
+            totalPenalties: document.getElementById('totalPenalties'),
+            totalRides: document.getElementById('totalRides'),
+            assignModal: document.getElementById('assignModal'),
+            assignOrderId: document.getElementById('assignOrderId'),
+            assignDriverSelect: document.getElementById('assignDriverSelect'),
+            assignConfirmBtn: document.getElementById('assignConfirmBtn'),
+            assignCancelBtn: document.getElementById('assignCancelBtn'),
+            addDriverModal: document.getElementById('addDriverModal'),
+            addDriverName: document.getElementById('addDriverName'),
+            addDriverEmail: document.getElementById('addDriverEmail'),
+            addDriverPassword: document.getElementById('addDriverPassword'),
+            addDriverCar: document.getElementById('addDriverCar'),
+            addDriverPlate: document.getElementById('addDriverPlate'),
+            addDriverPhone: document.getElementById('addDriverPhone'),
+            addDriverConfirmBtn: document.getElementById('addDriverConfirmBtn'),
+            addDriverCancelBtn: document.getElementById('addDriverCancelBtn'),
+            refreshBtn: document.getElementById('refreshBtn'),
+            logoutBtn: document.getElementById('logoutBtn')
+        };
+
+        // ============================================================
+        // РЕНДЕРИНГ ЗАКАЗОВ (только активные)
         // ============================================================
         function renderOrders() {
-            const list = document.getElementById('orderList');
+            // Фильтруем: только активные заказы (не completed и не cancelled)
+            let activeOrders = allOrders.filter(o =>
+                o.status !== 'completed' && o.status !== 'cancelled'
+            );
 
-            if (!allOrders || allOrders.length === 0) {
-                list.innerHTML = `
+            // Применяем дополнительный фильтр по вкладке
+            if (currentFilter !== 'all') {
+                activeOrders = activeOrders.filter(o => o.status === currentFilter);
+            }
+
+            if (activeOrders.length === 0) {
+                el.orderList.innerHTML = `
                         <div class="empty-state">
                             <div class="icon">📦</div>
-                            <div>Нет заказов</div>
+                            <div>Нет активных заказов</div>
                         </div>
                     `;
-                document.getElementById('ordersCount').textContent = '(0)';
-                document.getElementById('ordersBadge').textContent = '📦 Заказов: 0';
-                updateStats();
+                el.ordersCount.textContent = '(0)';
+                el.ordersBadge.textContent = '📦 Заказов: 0';
                 return;
             }
 
             let html = '';
-            allOrders.forEach(order => {
-                const label = statusLabels[order.status] || order.status;
-                const cls = statusClasses[order.status] || '';
+            activeOrders.forEach(order => {
+                const label = STATUS_LABELS[order.status] || order.status;
+                const cls = STATUS_CLASSES[order.status] || '';
                 html += `
                         <div class="order-item">
                             <div class="top">
-                                <div>
-                                    <span class="order-id">#${order.id.substring(0, 8)}</span>
-                                    <span class="order-status ${cls}">${label}</span>
-                                </div>
-                                <span style="color:#ffb000; font-weight:600;">${formatPrice(order.price)}</span>
+                                <span class="order-id">#${order.id.substring(0, 8)} <small>${formatDate(order.createdAt)}</small></span>
+                                <span class="order-status ${cls}">${label}</span>
                             </div>
                             <div class="order-details">
                                 📍 ${order.pickup?.address || '—'} → 🏁 ${order.destination?.address || '—'}
@@ -877,9 +971,7 @@
                                     <button class="btn btn-success btn-xs" onclick="openAssignModal('${order.id}')">🚖 Назначить</button>
                                     <button class="btn btn-warning btn-xs" onclick="autoAssignSingle('${order.id}')">🤖 Рекомендовать</button>
                                 ` : ''}
-                                ${(order.status !== 'completed' && order.status !== 'cancelled') ? `
-                                    <button class="btn btn-danger btn-xs" onclick="deleteOrder('${order.id}')">🗑️ Удалить</button>
-                                ` : ''}
+                                <button class="btn btn-danger btn-xs" onclick="deleteOrder('${order.id}')">🗑️ Удалить</button>
                             </div>
                             ${order.recommendedDrivers && order.recommendedDrivers.length > 0 ? `
                                 <div style="margin-top:6px; font-size:11px; color:#4ade80;">
@@ -890,9 +982,9 @@
                     `;
             });
 
-            list.innerHTML = html;
-            document.getElementById('ordersCount').textContent = `(${allOrders.length})`;
-            document.getElementById('ordersBadge').textContent = `📦 Заказов: ${allOrders.length}`;
+            el.orderList.innerHTML = html;
+            el.ordersCount.textContent = `(${activeOrders.length})`;
+            el.ordersBadge.textContent = `📦 Заказов: ${activeOrders.length}`;
             updateStats();
         }
 
@@ -900,32 +992,32 @@
         // РЕНДЕРИНГ ВОДИТЕЛЕЙ
         // ============================================================
         function renderDrivers() {
-            const list = document.getElementById('driverList');
-
             if (!allDrivers || allDrivers.length === 0) {
-                list.innerHTML = `
+                el.driverList.innerHTML = `
                         <div class="empty-state">
                             <div class="icon">🚗</div>
                             <div>Нет водителей</div>
                         </div>
                     `;
-                document.getElementById('driversCount').textContent = '(0)';
-                document.getElementById('driversBadge').textContent = '🚗 Водителей: 0';
+                el.driversCount.textContent = '(0)';
+                el.driversBadge.textContent = '🚗 Водителей: 0';
                 return;
             }
 
             let html = '';
             allDrivers.forEach(d => {
-                const dot = d.status === 'online' ? 'online' : d.status === 'busy' ? 'busy' : 'offline';
-                const label = d.status === 'online' ? 'Онлайн' : d.status === 'busy' ? 'Занят' : 'Офлайн';
+                const dot = d.status === 'online' ? 'online' :
+                    d.status === 'busy' ? 'busy' : 'offline';
+                const label = d.status === 'online' ? 'Онлайн' :
+                    d.status === 'busy' ? 'Занят' : 'Офлайн';
                 html += `
                         <div class="driver-item">
                             <div>
-                                <div class="name">
+                                <div class="driver-name">
                                     <span class="driver-status-dot ${dot}"></span>
                                     ${d.displayName || 'Водитель'}
                                 </div>
-                                <div class="car">
+                                <div class="driver-car">
                                     🚗 ${d.carModel || '—'} • ${d.licensePlate || '—'} • ${label}
                                     ${d.phone ? `• 📱 ${d.phone}` : ''}
                                 </div>
@@ -938,26 +1030,31 @@
                     `;
             });
 
-            list.innerHTML = html;
-            document.getElementById('driversCount').textContent = `(${allDrivers.length})`;
-            document.getElementById('driversBadge').textContent = `🚗 Водителей: ${allDrivers.length}`;
+            el.driverList.innerHTML = html;
+            el.driversCount.textContent = `(${allDrivers.length})`;
+            el.driversBadge.textContent = `🚗 Водителей: ${allDrivers.length}`;
         }
 
         // ============================================================
         // СТАТИСТИКА
         // ============================================================
         function updateStats() {
+            const activeOrders = allOrders.filter(o =>
+                o.status !== 'completed' && o.status !== 'cancelled'
+            );
+
             const stats = { new: 0, searching: 0, assigned: 0, in_progress: 0, completed: 0, cancelled: 0 };
             allOrders.forEach(o => {
                 if (stats[o.status] !== undefined) stats[o.status]++;
             });
-            document.getElementById('statNew').textContent = stats.new;
-            document.getElementById('statSearching').textContent = stats.searching;
-            document.getElementById('statActive').textContent = stats.assigned + stats.in_progress;
-            document.getElementById('statCompleted').textContent = stats.completed;
-            document.getElementById('statDrivers').textContent = allDrivers.length;
 
-            // Финансы
+            el.statNew.textContent = stats.new;
+            el.statSearching.textContent = stats.searching;
+            el.statActive.textContent = stats.assigned + stats.in_progress;
+            el.statCompleted.textContent = stats.completed;
+            el.statDrivers.textContent = allDrivers.length;
+
+            // Финансы (только завершённые)
             let revenue = 0,
                 commission = 0,
                 penalties = 0,
@@ -965,15 +1062,16 @@
             allOrders.forEach(o => {
                 if (o.status === 'completed' && o.price) {
                     revenue += o.price;
-                    commission += o.price * 0.2;
+                    commission += o.price * 0.10; // 10% комиссия
                     rides++;
                 }
                 if (o.penaltyApplied) penalties += o.penaltyApplied;
             });
-            document.getElementById('totalRevenue').textContent = formatPrice(revenue);
-            document.getElementById('totalCommission').textContent = formatPrice(commission);
-            document.getElementById('totalPenalties').textContent = formatPrice(penalties);
-            document.getElementById('totalRides').textContent = rides;
+
+            el.totalRevenue.textContent = formatPrice(revenue);
+            el.totalCommission.textContent = formatPrice(commission);
+            el.totalPenalties.textContent = formatPrice(penalties);
+            el.totalRides.textContent = rides;
         }
 
         // ============================================================
@@ -1015,9 +1113,9 @@
                 return;
             }
 
-            document.getElementById('assignOrderId').textContent = `#${orderId.substring(0, 8)} (${statusLabels[order.status] || order.status})`;
+            el.assignOrderId.textContent = `#${orderId.substring(0, 8)} (${STATUS_LABELS[order.status] || order.status})`;
 
-            const select = document.getElementById('assignDriverSelect');
+            const select = el.assignDriverSelect;
             select.innerHTML = '<option value="">— Выберите водителя —</option>';
 
             const available = allDrivers.filter(d => d.status === 'online' || d.status === 'offline');
@@ -1032,23 +1130,23 @@
                 });
             }
 
-            document.getElementById('assignModal').classList.add('active');
+            el.assignModal.classList.add('active');
         };
 
-        document.getElementById('assignCancelBtn').addEventListener('click', function() {
-            document.getElementById('assignModal').classList.remove('active');
+        el.assignCancelBtn.addEventListener('click', function() {
+            el.assignModal.classList.remove('active');
             selectedOrderId = null;
         });
 
-        document.getElementById('assignModal').addEventListener('click', function(e) {
+        el.assignModal.addEventListener('click', function(e) {
             if (e.target === this) {
                 this.classList.remove('active');
                 selectedOrderId = null;
             }
         });
 
-        document.getElementById('assignConfirmBtn').addEventListener('click', function() {
-            const driverId = document.getElementById('assignDriverSelect').value;
+        el.assignConfirmBtn.addEventListener('click', function() {
+            const driverId = el.assignDriverSelect.value;
             if (!driverId) {
                 showToast('❌ Выберите водителя', 'error');
                 return;
@@ -1074,7 +1172,7 @@
                 })
             }).then(() => {
                 showToast(`✅ Водитель ${driver?.displayName} назначен`, 'success');
-                document.getElementById('assignModal').classList.remove('active');
+                el.assignModal.classList.remove('active');
                 selectedOrderId = null;
             }).catch(err => {
                 showToast('❌ Ошибка: ' + err.message, 'error');
@@ -1097,7 +1195,6 @@
                 return;
             }
 
-            // Показываем рекомендации в заказе
             const orderRef = db.collection('orders').doc(orderId);
             orderRef.update({
                 recommendedDrivers: recommended
@@ -1125,7 +1222,6 @@
             const driver = allDrivers.find(d => d.uid === driverId);
             if (!confirm(`🗑️ Удалить водителя ${driver?.displayName || '?'}?`)) return;
 
-            // Удаляем документ из коллекции users
             db.collection('users').doc(driverId).delete()
                 .then(() => {
                     showToast('✅ Водитель удалён', 'success');
@@ -1139,15 +1235,15 @@
         // ДОБАВЛЕНИЕ ВОДИТЕЛЯ
         // ============================================================
         document.getElementById('addDriverBtn').addEventListener('click', function() {
-            document.getElementById('addDriverModal').classList.add('active');
+            el.addDriverModal.classList.add('active');
         });
 
-        document.getElementById('addDriverCancelBtn').addEventListener('click', function() {
-            document.getElementById('addDriverModal').classList.remove('active');
+        el.addDriverCancelBtn.addEventListener('click', function() {
+            el.addDriverModal.classList.remove('active');
             clearAddDriverForm();
         });
 
-        document.getElementById('addDriverModal').addEventListener('click', function(e) {
+        el.addDriverModal.addEventListener('click', function(e) {
             if (e.target === this) {
                 this.classList.remove('active');
                 clearAddDriverForm();
@@ -1155,21 +1251,21 @@
         });
 
         function clearAddDriverForm() {
-            document.getElementById('addDriverName').value = '';
-            document.getElementById('addDriverEmail').value = '';
-            document.getElementById('addDriverPassword').value = '';
-            document.getElementById('addDriverCar').value = '';
-            document.getElementById('addDriverPlate').value = '';
-            document.getElementById('addDriverPhone').value = '';
+            el.addDriverName.value = '';
+            el.addDriverEmail.value = '';
+            el.addDriverPassword.value = '';
+            el.addDriverCar.value = '';
+            el.addDriverPlate.value = '';
+            el.addDriverPhone.value = '';
         }
 
-        document.getElementById('addDriverConfirmBtn').addEventListener('click', function() {
-            const name = document.getElementById('addDriverName').value.trim();
-            const email = document.getElementById('addDriverEmail').value.trim();
-            const password = document.getElementById('addDriverPassword').value.trim();
-            const car = document.getElementById('addDriverCar').value.trim();
-            const plate = document.getElementById('addDriverPlate').value.trim();
-            const phone = document.getElementById('addDriverPhone').value.trim();
+        el.addDriverConfirmBtn.addEventListener('click', function() {
+            const name = el.addDriverName.value.trim();
+            const email = el.addDriverEmail.value.trim();
+            const password = el.addDriverPassword.value.trim();
+            const car = el.addDriverCar.value.trim();
+            const plate = el.addDriverPlate.value.trim();
+            const phone = el.addDriverPhone.value.trim();
 
             if (!name || !email || !password) {
                 showToast('❌ Заполните имя, email и пароль', 'error');
@@ -1180,15 +1276,12 @@
                 return;
             }
 
-            document.getElementById('addDriverConfirmBtn').disabled = true;
-            document.getElementById('addDriverConfirmBtn').textContent = '⏳ ...';
+            el.addDriverConfirmBtn.disabled = true;
+            el.addDriverConfirmBtn.textContent = '⏳ ...';
 
-            // 1. Создаём пользователя в Auth
             auth.createUserWithEmailAndPassword(email, password)
                 .then(userCredential => {
                     const user = userCredential.user;
-
-                    // 2. Создаём документ в коллекции users
                     return db.collection('users').doc(user.uid).set({
                         uid: user.uid,
                         email: user.email,
@@ -1213,7 +1306,7 @@
                 })
                 .then(() => {
                     showToast(`✅ Водитель ${name} добавлен`, 'success');
-                    document.getElementById('addDriverModal').classList.remove('active');
+                    el.addDriverModal.classList.remove('active');
                     clearAddDriverForm();
                 })
                 .catch(err => {
@@ -1224,15 +1317,15 @@
                     }
                 })
                 .finally(() => {
-                    document.getElementById('addDriverConfirmBtn').disabled = false;
-                    document.getElementById('addDriverConfirmBtn').textContent = '✅ Добавить';
+                    el.addDriverConfirmBtn.disabled = false;
+                    el.addDriverConfirmBtn.textContent = '✅ Добавить';
                 });
         });
 
         // ============================================================
         // ОБНОВЛЕНИЕ
         // ============================================================
-        document.getElementById('refreshBtn').addEventListener('click', function() {
+        el.refreshBtn.addEventListener('click', function() {
             showToast('🔄 Данные обновлены', 'info');
         });
 
@@ -1242,19 +1335,37 @@
         function subscribeToOrders() {
             if (unsubOrders) { unsubOrders();
                 unsubOrders = null; }
-            unsubOrders = db.collection('orders').orderBy('createdAt', 'desc')
+
+            unsubOrders = db.collection('orders')
+                .orderBy('createdAt', 'desc')
                 .onSnapshot(snapshot => {
+                    // Автоматическое удаление завершённых и отменённых заказов
+                    snapshot.docChanges().forEach(change => {
+                        const doc = change.doc;
+                        const data = doc.data();
+
+                        if ((data.status === 'completed' || data.status === 'cancelled') &&
+                            change.type === 'modified') {
+                            db.collection('orders').doc(doc.id).delete()
+                                .then(() => console.log('🗑️ Удалён заказ:', doc.id))
+                                .catch(err => console.error('Ошибка удаления:', err));
+                        }
+                    });
+
+                    // Обновляем список
                     allOrders = [];
                     snapshot.forEach(doc => {
                         allOrders.push({ id: doc.id, ...doc.data() });
                     });
                     renderOrders();
+                    updateStats();
                 }, err => console.error('Orders error:', err));
         }
 
         function subscribeToDrivers() {
             if (unsubDrivers) { unsubDrivers();
                 unsubDrivers = null; }
+
             unsubDrivers = db.collection('users').where('role', '==', 'driver')
                 .onSnapshot(snapshot => {
                     allDrivers = [];
@@ -1264,7 +1375,8 @@
                             uid: doc.id,
                             displayName: data.displayName || 'Водитель',
                             balance: data.balance || 0,
-                            status: data.driverData?.isAvailable ? 'online' : 'offline',
+                            status: data.driverData?.isAvailable ? 'online' :
+                                data.driverData?.isAvailable === false ? 'offline' : 'offline',
                             carModel: data.driverData?.carModel || '—',
                             licensePlate: data.driverData?.licensePlate || '—',
                             phone: data.driverData?.phone || '',
@@ -1280,13 +1392,25 @@
         // ============================================================
         // ВЫХОД
         // ============================================================
-        document.getElementById('logoutBtn').addEventListener('click', function() {
+        el.logoutBtn.addEventListener('click', function() {
             if (unsubOrders) { unsubOrders();
                 unsubOrders = null; }
             if (unsubDrivers) { unsubDrivers();
                 unsubDrivers = null; }
             auth.signOut().then(() => {
                 window.location.href = 'index.html';
+            });
+        });
+
+        // ============================================================
+        // ТАБЫ ФИЛЬТРАЦИИ
+        // ============================================================
+        document.querySelectorAll('#orderTabs .tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('#orderTabs .tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.getAttribute('data-filter');
+                renderOrders();
             });
         });
 
@@ -1319,12 +1443,13 @@
 
         console.log('✅ Панель диспетчера готова');
         console.log('📌 Функции:');
-        console.log('  📋 Просмотр заказов');
+        console.log('  📋 Только активные заказы (без завершённых и отменённых)');
+        console.log('  🗑️ Авто-удаление завершённых и отменённых заказов');
         console.log('  🚖 Ручное назначение водителя');
-        console.log('  🤖 Авто-рекомендация (50 км)');
-        console.log('  🗑️ Удаление заказов и водителей');
+        console.log('  🤖 Рекомендация водителей в радиусе 50 км');
         console.log('  ➕ Добавление водителей');
-        console.log('  💰 Финансы');
+        console.log('  🗑️ Удаление водителей');
+        console.log('  💰 Финансы (комиссия 10%)');
     </script>
 
 </body>
