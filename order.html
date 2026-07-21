@@ -27,17 +27,18 @@
         }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0c10;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 16px;
+            padding: 12px;
             background-image:
                 radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.06) 0%, transparent 45%),
                 radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.05) 0%, transparent 45%);
             background-attachment: fixed;
+            color: #ffffff;
         }
 
         .container {
@@ -45,13 +46,13 @@
             max-width: 480px;
             background: rgba(18, 22, 28, 0.85);
             backdrop-filter: blur(30px);
-            border-radius: 32px;
-            padding: 20px 20px 24px;
+            border-radius: 28px;
+            padding: 16px 16px 20px;
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             position: relative;
             overflow: hidden;
-            min-height: 600px;
+            min-height: 560px;
         }
 
         .container::before {
@@ -76,7 +77,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             position: relative;
             z-index: 10;
         }
@@ -84,78 +85,84 @@
         .header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .back-btn {
             background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 30px;
-            padding: 6px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #8899aa;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 16px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
             font-family: inherit;
         }
-
         .back-btn:hover {
             background: rgba(255, 255, 255, 0.12);
             color: #ffffff;
         }
+        .back-btn:active {
+            transform: scale(0.92);
+        }
 
         .header-title {
-            font-size: 18px;
-            font-weight: 700;
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
             color: #ffffff;
         }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .balance-display {
             background: rgba(255, 180, 0, 0.08);
-            border: 1px solid rgba(255, 180, 0, 0.15);
-            border-radius: 30px;
+            border: 1px solid rgba(255, 180, 0, 0.12);
+            border-radius: 100px;
             padding: 4px 14px;
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 13px;
+            font-weight: 600;
             color: #ffb000;
         }
 
         /* ===== КАРТА ===== */
         #map {
             height: 260px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            margin-bottom: 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 10px;
             position: relative;
             z-index: 1;
             overflow: hidden;
         }
 
         .leaflet-control-attribution {
-            font-size: 9px !important;
+            font-size: 8px !important;
             color: #667788 !important;
         }
 
         /* ===== ПОДСКАЗКА НА КАРТЕ ===== */
         .map-hint {
             position: absolute;
-            bottom: 70px;
+            bottom: 60px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.65);
             backdrop-filter: blur(10px);
             color: #8899aa;
-            font-size: 11px;
-            padding: 4px 14px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 10px;
+            padding: 3px 12px;
+            border-radius: 100px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             z-index: 1000;
             pointer-events: none;
             white-space: nowrap;
@@ -173,12 +180,12 @@
 
         .autocomplete-wrapper input {
             width: 100%;
-            padding: 10px 14px;
+            padding: 9px 14px;
             border-radius: 12px;
-            border: 1.5px solid rgba(255, 255, 255, 0.06);
+            border: 1.5px solid rgba(255, 255, 255, 0.05);
             background: rgba(255, 255, 255, 0.04);
             color: #ffffff;
-            font-size: 14px;
+            font-size: 13px;
             font-family: inherit;
             outline: none;
             transition: all 0.3s ease;
@@ -187,7 +194,7 @@
         .autocomplete-wrapper input:focus {
             border-color: #ffb000;
             background: rgba(255, 255, 255, 0.06);
-            box-shadow: 0 0 0 4px rgba(255, 180, 0, 0.06);
+            box-shadow: 0 0 0 4px rgba(255, 180, 0, 0.05);
         }
 
         .autocomplete-wrapper input::placeholder {
@@ -202,7 +209,7 @@
             background: #1a1e26;
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.06);
-            max-height: 180px;
+            max-height: 160px;
             overflow-y: auto;
             z-index: 100;
             display: none;
@@ -211,11 +218,11 @@
         }
 
         .autocomplete-list .item {
-            padding: 8px 14px;
+            padding: 7px 14px;
             cursor: pointer;
             color: #e0e8f0;
-            font-size: 13px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
             transition: all 0.2s ease;
         }
 
@@ -252,24 +259,25 @@
         .form-row {
             display: flex;
             gap: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             align-items: center;
         }
 
         .form-row .icon {
-            font-size: 18px;
+            font-size: 16px;
             flex-shrink: 0;
-            width: 28px;
+            width: 24px;
             text-align: center;
+            opacity: 0.7;
         }
 
         .geo-btn {
             background: rgba(255, 180, 0, 0.08);
-            border: 1px solid rgba(255, 180, 0, 0.12);
+            border: 1px solid rgba(255, 180, 0, 0.1);
             border-radius: 12px;
-            padding: 8px 12px;
+            padding: 7px 12px;
             color: #ffb000;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -280,7 +288,7 @@
 
         .geo-btn:hover {
             background: rgba(255, 180, 0, 0.15);
-            border-color: rgba(255, 180, 0, 0.25);
+            border-color: rgba(255, 180, 0, 0.2);
         }
 
         .geo-btn:active {
@@ -297,11 +305,11 @@
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 6px;
-            margin: 10px 0 12px;
+            margin: 8px 0 10px;
             background: rgba(255, 255, 255, 0.02);
-            border-radius: 14px;
-            padding: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
         }
 
         .info-item {
@@ -309,17 +317,17 @@
         }
 
         .info-item .label {
-            font-size: 9px;
+            font-size: 8px;
             color: #667788;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
 
         .info-item .value {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             color: #ffffff;
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
         .info-item .value.gold {
@@ -341,22 +349,22 @@
 
         .btn-order {
             flex: 1;
-            padding: 14px;
+            padding: 12px;
             border: none;
             border-radius: 14px;
             background: linear-gradient(135deg, #ffb000, #ff6a00);
             color: #0a0c10;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
             font-family: inherit;
-            box-shadow: 0 8px 24px rgba(255, 140, 0, 0.2);
+            box-shadow: 0 6px 20px rgba(255, 140, 0, 0.2);
         }
 
         .btn-order:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(255, 140, 0, 0.35);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 28px rgba(255, 140, 0, 0.3);
         }
 
         .btn-order:active {
@@ -364,18 +372,18 @@
         }
 
         .btn-order:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
             transform: none !important;
         }
 
         .btn-cancel {
-            padding: 14px 18px;
-            border: 1px solid rgba(255, 70, 70, 0.2);
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 70, 70, 0.15);
             border-radius: 14px;
-            background: rgba(255, 70, 70, 0.06);
+            background: rgba(255, 70, 70, 0.05);
             color: #ff6b6b;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -383,8 +391,8 @@
         }
 
         .btn-cancel:hover {
-            background: rgba(255, 70, 70, 0.12);
-            border-color: rgba(255, 70, 70, 0.3);
+            background: rgba(255, 70, 70, 0.1);
+            border-color: rgba(255, 70, 70, 0.25);
         }
 
         .btn-cancel:active {
@@ -398,76 +406,69 @@
 
         /* ===== СООБЩЕНИЯ ===== */
         .message {
-            margin-top: 10px;
-            padding: 10px 14px;
+            margin-top: 8px;
+            padding: 8px 14px;
             border-radius: 10px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
             display: none;
             text-align: center;
         }
 
         .message.error {
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(239, 68, 68, 0.08);
             color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.12);
             display: block;
         }
 
         .message.success {
-            background: rgba(74, 222, 128, 0.1);
+            background: rgba(74, 222, 128, 0.08);
             color: #4ade80;
-            border: 1px solid rgba(74, 222, 128, 0.15);
+            border: 1px solid rgba(74, 222, 128, 0.12);
             display: block;
         }
 
         .message.info {
-            background: rgba(255, 180, 0, 0.1);
+            background: rgba(255, 180, 0, 0.08);
             color: #ffb000;
-            border: 1px solid rgba(255, 180, 0, 0.15);
-            display: block;
-        }
-
-        .message.warning {
-            background: rgba(255, 180, 0, 0.1);
-            color: #ffb000;
-            border: 1px solid rgba(255, 180, 0, 0.15);
+            border: 1px solid rgba(255, 180, 0, 0.12);
             display: block;
         }
 
         .error-box {
-            background: rgba(255, 70, 70, 0.08);
-            border: 1px solid rgba(255, 70, 70, 0.12);
+            background: rgba(255, 70, 70, 0.06);
+            border: 1px solid rgba(255, 70, 70, 0.1);
             border-radius: 10px;
-            padding: 8px 12px;
-            margin-bottom: 10px;
+            padding: 6px 12px;
+            margin-bottom: 8px;
             color: #ff6b6b;
-            font-size: 13px;
+            font-size: 12px;
             text-align: center;
             display: none;
         }
 
         /* ===== СТАТУС ЗАКАЗА ===== */
         .order-status {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.02);
             border-radius: 12px;
-            padding: 10px 14px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
             display: none;
             text-align: center;
         }
 
         .order-status .status-text {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #e0e8f0;
         }
 
         .order-status .status-detail {
-            font-size: 12px;
+            font-size: 11px;
             color: #8899aa;
-            margin-top: 4px;
+            margin-top: 2px;
         }
 
         .order-status.active {
@@ -476,10 +477,10 @@
 
         /* ===== ПРИМЕЧАНИЕ ===== */
         .note {
-            font-size: 11px;
+            font-size: 10px;
             color: #667788;
             text-align: center;
-            margin-top: 10px;
+            margin-top: 8px;
         }
 
         .note span {
@@ -488,10 +489,10 @@
 
         /* ===== ИНДИКАТОР ===== */
         .home-indicator {
-            margin-top: 16px;
-            width: 120px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.08);
+            margin-top: 12px;
+            width: 100px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.06);
             border-radius: 20px;
             margin-left: auto;
             margin-right: auto;
@@ -500,58 +501,55 @@
         }
 
         /* ===== АДАПТИВНОСТЬ ===== */
-        @media (max-width: 480px) {
+        @media (max-width: 420px) {
             .container {
                 border-radius: 0;
-                padding: 16px;
+                padding: 12px;
                 min-height: 100vh;
                 background: rgba(10, 12, 16, 0.96);
                 backdrop-filter: blur(20px);
                 border: none;
                 box-shadow: none;
                 max-width: 100%;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
             }
             #map {
-                height: 200px;
+                height: 180px;
             }
             .header-title {
-                font-size: 16px;
+                font-size: 15px;
             }
             .balance-display {
-                font-size: 12px;
-                padding: 4px 10px;
+                font-size: 11px;
+                padding: 3px 10px;
             }
             .autocomplete-wrapper input {
-                font-size: 13px;
-                padding: 8px 12px;
+                font-size: 12px;
+                padding: 7px 10px;
             }
             .geo-btn {
-                font-size: 11px;
-                padding: 6px 10px;
+                font-size: 10px;
+                padding: 5px 10px;
             }
             .info-panel {
                 grid-template-columns: 1fr 1fr 1fr;
-                padding: 6px;
-                gap: 4px;
+                padding: 5px;
+                gap: 3px;
             }
             .info-item .value {
-                font-size: 13px;
+                font-size: 12px;
             }
             .btn-order {
-                font-size: 14px;
-                padding: 12px;
+                font-size: 13px;
+                padding: 10px;
             }
             .btn-cancel {
-                font-size: 13px;
-                padding: 10px 14px;
+                font-size: 12px;
+                padding: 10px 12px;
             }
             .map-hint {
-                font-size: 10px;
-                padding: 3px 10px;
-                bottom: 60px;
+                font-size: 9px;
+                padding: 2px 10px;
+                bottom: 50px;
             }
         }
     </style>
@@ -563,7 +561,7 @@
         <!-- ===== ШАПКА ===== -->
         <div class="header">
             <div class="header-left">
-                <button class="back-btn" id="backBtn">← Назад</button>
+                <button class="back-btn" id="backBtn">←</button>
                 <span class="header-title">📍 Заказ</span>
             </div>
             <div class="header-right">
@@ -668,9 +666,6 @@
             measurementId: "G-Z9NJFSSXH6"
         };
 
-        // ============================================================
-        // ИНИЦИАЛИЗАЦИЯ
-        // ============================================================
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -683,6 +678,7 @@
         let map;
         let pickupMarker = null;
         let destinationMarker = null;
+        let routeLine = null;
         let pickupLocation = null;
         let destinationLocation = null;
         let currentOrderId = null;
@@ -691,7 +687,6 @@
         let currentUser = null;
         let unsubOrder = null;
 
-        // Тарифы
         const TARIFF = {
             BASE_FEE: 12.00,
             PRICE_PER_KM: 3.70,
@@ -699,7 +694,7 @@
             NIGHT_START_HOUR: 23,
             NIGHT_END_HOUR: 5,
             PENALTY_CANCEL: 7.00,
-            COMMISSION: 0.10 // 10%
+            COMMISSION: 0.10
         };
 
         // ============================================================
@@ -738,7 +733,7 @@
             el.message.style.display = 'block';
             setTimeout(() => {
                 el.message.style.display = 'none';
-            }, 5000);
+            }, 4000);
         }
 
         function showError(text) {
@@ -746,11 +741,7 @@
             el.errorText.textContent = text;
             setTimeout(() => {
                 el.errorBox.style.display = 'none';
-            }, 8000);
-        }
-
-        function hideError() {
-            el.errorBox.style.display = 'none';
+            }, 6000);
         }
 
         function formatPrice(price) {
@@ -786,8 +777,20 @@
             return { price, commission, driverEarn };
         }
 
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            if (!lat1 || !lng1 || !lat2 || !lng2) return 0;
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
         // ============================================================
-        // ГЕОКОДИНГ (адрес → координаты)
+        // ГЕОКОДИНГ
         // ============================================================
         async function geocodeAddress(address) {
             if (!address || address.trim() === '') return null;
@@ -810,8 +813,23 @@
             }
         }
 
+        function reverseGeocode(lat, lng, callback) {
+            const url =
+                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.display_name) {
+                        callback(data.display_name);
+                    } else {
+                        callback(null);
+                    }
+                })
+                .catch(() => callback(null));
+        }
+
         // ============================================================
-        // АВТОДОПОЛНЕНИЕ (поиск адресов)
+        // АВТОДОПОЛНЕНИЕ
         // ============================================================
         let searchTimeout = null;
 
@@ -880,21 +898,6 @@
         }
 
         // ============================================================
-        // РАСЧЁТ РАССТОЯНИЯ (Haversine)
-        // ============================================================
-        function haversineDistance(lat1, lng1, lat2, lng2) {
-            if (!lat1 || !lng1 || !lat2 || !lng2) return 0;
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLng = (lng2 - lng1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLng / 2) * Math.sin(dLng / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
-        }
-
-        // ============================================================
         // КАРТА
         // ============================================================
         function initMap() {
@@ -936,6 +939,7 @@
                         }
                     });
                     calculateAndUpdate();
+                    drawRoute();
                     showMessage('📍 Точка назначения установлена', 'success');
                     return;
                 }
@@ -951,6 +955,7 @@
                         }
                     });
                     calculateAndUpdate();
+                    drawRoute();
                     showMessage('📍 Точка назначения обновлена', 'success');
                 }
             });
@@ -959,7 +964,7 @@
         }
 
         // ============================================================
-        // МАРКЕРЫ
+        // МАРКЕРЫ И МАРШРУТ
         // ============================================================
         function updatePickupMarker() {
             if (!pickupLocation) return;
@@ -996,26 +1001,32 @@
                 .bindPopup('🏁 Назначение');
         }
 
-        // ============================================================
-        // ОБРАТНЫЙ ГЕОКОДИНГ
-        // ============================================================
-        function reverseGeocode(lat, lng, callback) {
-            const url =
-                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if (data && data.display_name) {
-                        callback(data.display_name);
-                    } else {
-                        callback(null);
-                    }
-                })
-                .catch(() => callback(null));
+        function drawRoute() {
+            if (!pickupLocation || !destinationLocation) return;
+            if (routeLine) {
+                map.removeLayer(routeLine);
+                routeLine = null;
+            }
+
+            const latlngs = [
+                [pickupLocation.lat, pickupLocation.lng],
+                [destinationLocation.lat, destinationLocation.lng]
+            ];
+
+            routeLine = L.polyline(latlngs, {
+                color: '#4ade80',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: '10, 6'
+            }).addTo(map);
+
+            // Подгоняем карту под маршрут
+            const bounds = L.latLngBounds(latlngs);
+            map.fitBounds(bounds, { padding: [40, 40] });
         }
 
         // ============================================================
-        // ОПРЕДЕЛЕНИЕ ГЕОЛОКАЦИИ
+        // ГЕОЛОКАЦИЯ
         // ============================================================
         function getCurrentLocation() {
             el.geoBtn.textContent = '⏳ ...';
@@ -1023,7 +1034,7 @@
             el.geoBtn.disabled = true;
 
             if (!navigator.geolocation) {
-                showError('Геолокация не поддерживается в вашем браузере');
+                showError('Геолокация не поддерживается');
                 el.geoBtn.textContent = '📍 Определить';
                 el.geoBtn.classList.remove('loading');
                 el.geoBtn.disabled = false;
@@ -1052,7 +1063,7 @@
                 },
                 function(error) {
                     console.error('Ошибка геолокации:', error);
-                    showError('Не удалось определить местоположение: ' + error.message);
+                    showError('Не удалось определить местоположение');
                     el.geoBtn.textContent = '📍 Определить';
                     el.geoBtn.classList.remove('loading');
                     el.geoBtn.disabled = false;
@@ -1065,7 +1076,7 @@
         }
 
         // ============================================================
-        // РАСЧЁТ И ОБНОВЛЕНИЕ
+        // РАСЧЁТ
         // ============================================================
         function calculateAndUpdate() {
             if (!pickupLocation || !destinationLocation) {
@@ -1096,12 +1107,13 @@
         }
 
         // ============================================================
-        // ОБРАБОТКА ВЫБОРА АДРЕСА ИЗ АВТОДОПОЛНЕНИЯ
+        // ОБРАБОТКА ВЫБОРА АДРЕСА
         // ============================================================
         function handlePickupSelect(result) {
             pickupLocation = { lat: result.lat, lng: result.lng };
             updatePickupMarker();
             calculateAndUpdate();
+            drawRoute();
             showMessage(`📍 Отправление: ${result.displayName}`, 'success');
         }
 
@@ -1109,6 +1121,7 @@
             destinationLocation = { lat: result.lat, lng: result.lng };
             updateDestinationMarker();
             calculateAndUpdate();
+            drawRoute();
             showMessage(`🏁 Назначение: ${result.displayName}`, 'success');
         }
 
@@ -1119,37 +1132,30 @@
             const pickupAddress = el.pickupInput.value.trim();
             const destinationAddress = el.destinationInput.value.trim();
 
-            if (!pickupAddress) {
-                showMessage('Введите адрес отправления или определите геолокацию', 'error');
+            if (!pickupAddress || !destinationAddress) {
+                showMessage('Заполните адреса отправления и назначения', 'error');
                 return;
             }
 
-            if (!destinationAddress) {
-                showMessage('Введите адрес назначения', 'error');
-                return;
-            }
-
-            // Если нет геолокации отправления — пытаемся геокодировать
             if (!pickupLocation) {
                 const geoResult = await geocodeAddress(pickupAddress);
                 if (geoResult) {
                     pickupLocation = { lat: geoResult.lat, lng: geoResult.lng };
                     updatePickupMarker();
                 } else {
-                    pickupLocation = null;
-                    showMessage('📍 Адрес отправления сохранён как текстовый', 'info');
+                    showMessage('Не удалось определить геолокацию отправления', 'error');
+                    return;
                 }
             }
 
-            // Если нет геолокации назначения — пытаемся геокодировать
             if (!destinationLocation) {
                 const geoResult = await geocodeAddress(destinationAddress);
                 if (geoResult) {
                     destinationLocation = { lat: geoResult.lat, lng: geoResult.lng };
                     updateDestinationMarker();
                 } else {
+                    // Сохраняем только текстовый адрес
                     destinationLocation = null;
-                    showMessage('📍 Адрес назначения сохранён как текстовый', 'info');
                 }
             }
 
@@ -1159,20 +1165,18 @@
 
             const result = distance > 0 ? calculatePriceAndCommission(distance) : { price: 0, commission: 0, driverEarn: 0 };
 
-            // Проверяем баланс
             if (balance < result.price) {
-                showMessage(`❌ Недостаточно средств. Нужно: ${formatPrice(result.price)}, у вас: ${formatPrice(balance)}`,
-                    'error');
+                showMessage(`Недостаточно средств. Нужно: ${formatPrice(result.price)}`, 'error');
                 return;
             }
 
             el.orderBtn.disabled = true;
-            el.orderBtn.textContent = '⏳ Заказ создаётся...';
+            el.orderBtn.textContent = '⏳ Заказ...';
 
             try {
                 const user = auth.currentUser;
                 if (!user) {
-                    showMessage('❌ Пожалуйста, войдите в аккаунт', 'error');
+                    showMessage('Войдите в аккаунт', 'error');
                     el.orderBtn.disabled = false;
                     el.orderBtn.textContent = '📍 Заказать такси';
                     return;
@@ -1184,13 +1188,13 @@
                     status: 'new',
                     pickup: {
                         address: pickupAddress,
-                        lat: pickupLocation ? pickupLocation.lat : null,
-                        lng: pickupLocation ? pickupLocation.lng : null
+                        lat: pickupLocation?.lat || null,
+                        lng: pickupLocation?.lng || null
                     },
                     destination: {
                         address: destinationAddress,
-                        lat: destinationLocation ? destinationLocation.lat : null,
-                        lng: destinationLocation ? destinationLocation.lng : null
+                        lat: destinationLocation?.lat || null,
+                        lng: destinationLocation?.lng || null
                     },
                     price: result.price,
                     commission: result.commission,
@@ -1214,20 +1218,20 @@
                 el.orderBtn.textContent = '✅ Заказ создан';
                 el.orderBtn.disabled = true;
                 el.cancelBtn.disabled = false;
-                el.cancelBtn.textContent = '❌ Отменить заказ';
+                el.cancelBtn.textContent = '❌ Отменить';
 
                 subscribeToOrder(currentOrderId);
 
             } catch (error) {
-                console.error('❌ Ошибка создания заказа:', error);
-                showMessage('❌ Ошибка создания заказа: ' + error.message, 'error');
+                console.error('Ошибка:', error);
+                showMessage('Ошибка: ' + error.message, 'error');
                 el.orderBtn.disabled = false;
                 el.orderBtn.textContent = '📍 Заказать такси';
             }
         }
 
         // ============================================================
-        // ПОДПИСКА НА ЗАКАЗ (REAL-TIME)
+        // ПОДПИСКА НА ЗАКАЗ
         // ============================================================
         function subscribeToOrder(orderId) {
             if (unsubOrder) {
@@ -1243,10 +1247,10 @@
 
                 if (data.status === 'assigned') {
                     el.statusText.textContent = '✅ Водитель назначен!';
-                    el.statusDetail.textContent = `🚗 Водитель едет к вам`;
+                    el.statusDetail.textContent = '🚗 Водитель едет к вам';
                     el.orderStatus.classList.add('active');
                     el.cancelBtn.disabled = false;
-                    showMessage('✅ Водитель назначен! Ожидайте.', 'success');
+                    showMessage('✅ Водитель назначен!', 'success');
                 } else if (data.status === 'in_progress') {
                     el.statusText.textContent = '🚗 Поездка началась!';
                     el.statusDetail.textContent = 'Водитель уже в пути';
@@ -1276,16 +1280,16 @@
                         unsubOrder = null; }
                 }
             }, function(error) {
-                console.error('❌ Ошибка подписки на заказ:', error);
+                console.error('Ошибка подписки на заказ:', error);
             });
         }
 
         // ============================================================
-        // ОТМЕНА ЗАКАЗА КЛИЕНТОМ
+        // ОТМЕНА ЗАКАЗА
         // ============================================================
         function cancelOrder() {
             if (!currentOrderId) {
-                showMessage('❌ Нет активного заказа для отмены', 'error');
+                showMessage('Нет активного заказа', 'error');
                 return;
             }
 
@@ -1298,18 +1302,16 @@
 
             orderRef.get().then(function(doc) {
                 if (!doc.exists) {
-                    showMessage('❌ Заказ не найден', 'error');
+                    showMessage('Заказ не найден', 'error');
                     el.cancelBtn.disabled = false;
-                    el.cancelBtn.textContent = '❌ Отменить заказ';
+                    el.cancelBtn.textContent = '❌ Отменить';
                     return;
                 }
 
                 const data = doc.data();
                 let penalty = 0;
 
-                // Штраф клиенту, если водитель уже назначен
                 if (data.status === 'assigned' || data.status === 'in_progress') {
-                    // Если водитель уже подтвердил — штраф
                     if (data.assignedAt) {
                         const assignedTime = data.assignedAt.toDate ? data.assignedAt.toDate() : new Date(data
                         .assignedAt);
@@ -1331,18 +1333,14 @@
                     cancelledBy: 'client'
                 }).then(function() {
                     if (penalty > 0) {
-                        // Списываем штраф с клиента
                         const user = auth.currentUser;
                         if (user) {
                             const userRef = db.collection('users').doc(user.uid);
                             userRef.update({
                                 balance: firebase.firestore.FieldValue.increment(-penalty),
                                 penalty: firebase.firestore.FieldValue.increment(penalty)
-                            }).then(function() {
-                                console.log('💰 Штраф списан с клиента:', penalty);
-                                showMessage(`💰 Списан штраф ${formatPrice(penalty)}`, 'warning');
                             }).catch(function(err) {
-                                console.error('❌ Ошибка списания штрафа:', err);
+                                console.error('Ошибка списания штрафа:', err);
                             });
                         }
                     }
@@ -1351,15 +1349,15 @@
                     showMessage('✅ Заказ отменён', 'info');
                 });
             }).catch(function(error) {
-                console.error('❌ Ошибка отмены:', error);
-                showMessage('❌ Ошибка отмены: ' + error.message, 'error');
+                console.error('Ошибка отмены:', error);
+                showMessage('Ошибка: ' + error.message, 'error');
                 el.cancelBtn.disabled = false;
-                el.cancelBtn.textContent = '❌ Отменить заказ';
+                el.cancelBtn.textContent = '❌ Отменить';
             });
         }
 
         // ============================================================
-        // ОБНОВЛЕНИЕ БАЛАНСА
+        // БАЛАНС
         // ============================================================
         function updateBalance() {
             const user = auth.currentUser;
@@ -1374,7 +1372,7 @@
                     }
                 })
                 .catch(function(err) {
-                    console.error('❌ Ошибка загрузки баланса:', err);
+                    console.error('Ошибка загрузки баланса:', err);
                 });
         }
 
@@ -1402,10 +1400,8 @@
         });
 
         // ============================================================
-        // ОБРАБОТЧИКИ СОБЫТИЙ
+        // ОБРАБОТЧИКИ
         // ============================================================
-
-        // === Кнопка "Назад" ===
         el.backBtn.addEventListener('click', function() {
             if (currentOrderId) {
                 if (!confirm('У вас есть активный заказ. Вернуться в кабинет?')) return;
@@ -1415,10 +1411,8 @@
             window.location.href = 'cabinet.html';
         });
 
-        // === Кнопка "Определить геолокацию" ===
         el.geoBtn.addEventListener('click', getCurrentLocation);
 
-        // === Ввод адреса "Откуда" (ручной ввод) ===
         el.pickupInput.addEventListener('blur', function() {
             const address = this.value.trim();
             if (address && !pickupLocation) {
@@ -1427,12 +1421,12 @@
                         pickupLocation = { lat: result.lat, lng: result.lng };
                         updatePickupMarker();
                         calculateAndUpdate();
+                        drawRoute();
                     }
                 });
             }
         });
 
-        // === Ввод адреса "Куда" (ручной ввод) ===
         el.destinationInput.addEventListener('blur', function() {
             const address = this.value.trim();
             if (address && !destinationLocation) {
@@ -1441,6 +1435,7 @@
                         destinationLocation = { lat: result.lat, lng: result.lng };
                         updateDestinationMarker();
                         calculateAndUpdate();
+                        drawRoute();
                     } else {
                         destinationLocation = null;
                         calculateAndUpdate();
@@ -1450,10 +1445,7 @@
             }
         });
 
-        // === Кнопка "Заказать такси" ===
         el.orderBtn.addEventListener('click', createOrder);
-
-        // === Кнопка "Отменить заказ" ===
         el.cancelBtn.addEventListener('click', cancelOrder);
 
         console.log('✅ Страница заказа готова');
@@ -1463,9 +1455,7 @@
         console.log('  3. Нажмите "Заказать такси"');
         console.log('  4. Для отмены нажмите "Отменить"');
         console.log('  5. Штраф 7 ₪ при отмене после подтверждения водителя');
-        console.log('  6. Левый клик по карте — точка отправления (🟢)');
-        console.log('  7. Левый клик повторно — точка назначения (🔴)');
-        console.log('  8. Комиссия платформы 10%');
+        console.log('  6. На карте отображается маршрут (🟢 → 🔴)');
     </script>
 
 </body>
