@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Работа водителя — WHEEL</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js">
+    </script>
+
+    <!-- Leaflet для карты -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0a0c10;
+            min-height: 100vh;
+            padding: 16px;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.06) 0%, transparent 45%),
+                radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.05) 0%, transparent 45%);
+            background-attachment: fixed;
+            color: #ffffff;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* ===== ШАПКА ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(18, 22, 28, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 12px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .header-title span {
+            color: #ffb000;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 30px;
+            padding: 6px 14px;
+            color: #8899aa;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+        }
+
+        .status-badge {
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-badge.online {
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.2);
+        }
+        .status-badge.offline {
+            background: rgba(102, 119, 136, 0.15);
+            color: #667788;
+            border: 1px solid rgba(102, 119, 136, 0.2);
+        }
+        .status-badge.busy {
+            background: rgba(255, 180, 0, 0.15);
+            color: #ffb000;
+            border: 1px solid rgba(255, 180, 0, 0.2);
+        }
+
+        /* ===== КАРТА ===== */
+        #map {
+            height: 320px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .leaflet-control-attribution {
+            font-size: 9px !important;
+            color: #667788 !important;
+        }
+
+        /* ===== ИНФОРМАЦИОННАЯ ПАНЕЛЬ ===== */
+        .info-panel {
+            background: rgba(18, 22, 28, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-row .label {
+            color: #8899aa;
+        }
+        .info-row .value {
+            font-weight: 600;
+            color: #e0e8f0;
+            text-align: right;
+        }
+        .info-row .value.gold {
+            color: #ffb000;
+        }
+        .info-row .value.green {
+            color: #4ade80;
+        }
+
+        /* ===== КНОПКИ ===== */
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            min-width: 100px;
+            text-align: center;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #0a0c10;
+        }
+        .btn-success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(74, 222, 128, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ef4444);
+            color: #ffffff;
+        }
+        .btn-danger:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(255, 70, 70, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffb000, #ff6a00);
+            color: #0a0c10;
+        }
+        .btn-warning:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(255, 180, 0, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(96, 165, 250, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #8899aa;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .btn-full {
+            flex: 1 1 100%;
+        }
+
+        /* ===== СПИСОК ЗАКАЗОВ ===== */
+        .order-card {
+            background: rgba(18, 22, 28, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .order-card:hover {
+            border-color: rgba(255, 180, 0, 0.1);
+        }
+
+        .order-card .header-order {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .order-card .order-id {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e0e8f0;
+        }
+        .order-card .order-id small {
+            color: #667788;
+            font-weight: 400;
+        }
+
+        .order-card .price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffb000;
+        }
+
+        .order-card .route {
+            font-size: 14px;
+            color: #b0c0d0;
+            margin-bottom: 4px;
+        }
+
+        .order-card .route .arrow {
+            color: #667788;
+            margin: 0 6px;
+        }
+
+        .order-card .meta {
+            font-size: 12px;
+            color: #667788;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .order-card .distance {
+            font-size: 13px;
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        .order-card .btn-group {
+            margin-top: 10px;
+        }
+
+        .order-card .btn {
+            padding: 10px 12px;
+            font-size: 13px;
+            min-width: 80px;
+        }
+
+        /* ===== ТОСТ ===== */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1e26;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 14px 24px;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: none;
+            max-width: 90%;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .toast.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        .toast.success {
+            border-color: rgba(74, 222, 128, 0.2);
+        }
+        .toast.error {
+            border-color: rgba(255, 70, 70, 0.2);
+        }
+        .toast.warning {
+            border-color: rgba(255, 180, 0, 0.2);
+        }
+
+        /* ===== ПУСТО ===== */
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: #667788;
+            font-size: 14px;
+        }
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+
+        /* ===== АДАПТИВ ===== */
+        @media (max-width: 420px) {
+            body {
+                padding: 8px;
+            }
+            .header {
+                padding: 10px 12px;
+            }
+            .header-title {
+                font-size: 16px;
+            }
+            #map {
+                height: 240px;
+            }
+            .info-panel {
+                padding: 12px;
+            }
+            .info-row {
+                font-size: 13px;
+            }
+            .btn {
+                font-size: 13px;
+                padding: 12px;
+                min-width: 70px;
+            }
+            .order-card .price {
+                font-size: 16px;
+            }
+            .order-card .route {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- ===== ШАПКА ===== -->
+        <div class="header">
+            <div>
+                <button class="back-btn" id="backBtn">← Назад</button>
+            </div>
+            <div class="header-title">🚖 <span>Работа</span></div>
+            <div>
+                <span class="status-badge online" id="statusBadge">🟢 Онлайн</span>
+            </div>
+        </div>
+
+        <!-- ===== КАРТА ===== -->
+        <div id="map"></div>
+
+        <!-- ===== ИНФОРМАЦИОННАЯ ПАНЕЛЬ ===== -->
+        <div class="info-panel" id="infoPanel">
+            <div class="info-row">
+                <span class="label">👤 Вы</span>
+                <span class="value" id="driverName">Загрузка...</span>
+            </div>
+            <div class="info-row">
+                <span class="label">📊 Статус</span>
+                <span class="value" id="driverStatusText">Ожидание заказов</span>
+            </div>
+            <div class="info-row">
+                <span class="label">📍 Моё местоположение</span>
+                <span class="value" id="driverLocation">—</span>
+            </div>
+            <div class="info-row">
+                <span class="label">📦 Заказов в очереди</span>
+                <span class="value gold" id="ordersQueueCount">0</span>
+            </div>
+        </div>
+
+        <!-- ===== СПИСОК ЗАКАЗОВ ===== -->
+        <div id="ordersContainer">
+            <div class="empty-state" id="emptyState">
+                <div class="icon">📦</div>
+                <div>Нет доступных заказов</div>
+                <div style="font-size:12px; margin-top:4px;">Ожидайте поступления новых заказов</div>
+            </div>
+            <div id="ordersList"></div>
+        </div>
+
+        <!-- ===== КНОПКА СТАТУСА ===== -->
+        <div class="btn-group" style="margin-top:8px;">
+            <button class="btn btn-success" id="onlineBtn">🟢 Онлайн</button>
+            <button class="btn btn-secondary" id="offlineBtn">⚪ Офлайн</button>
+            <button class="btn btn-primary" id="refreshLocationBtn">📍 Обновить геолокацию</button>
+        </div>
+
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast">
+        <span id="toastMessage">Сообщение</span>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- JAVASCRIPT -->
+    <!-- ============================================================ -->
+    <script>
+        // ============================================================
+        // FIREBASE КОНФИГ
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+            authDomain: "taxi-ai-app-69628.firebaseapp.com",
+            projectId: "taxi-ai-app-69628",
+            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+            messagingSenderId: "952357992434",
+            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+            measurementId: "G-Z9NJFSSXH6"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        console.log('🔥 Firebase готов');
+
+        // ============================================================
+        // ПЕРЕМЕННЫЕ
+        // ============================================================
+        let currentUser = null;
+        let userData = null;
+        let driverLocation = null;
+        let availableOrders = [];
+        let currentOrder = null;
+        let map = null;
+        let driverMarker = null;
+        let orderMarkers = [];
+        let watchId = null;
+        let isOnline = true;
+        let unsubOrders = null;
+        let unsubUser = null;
+
+        // ============================================================
+        // ЭЛЕМЕНТЫ
+        // ============================================================
+        const el = {
+            backBtn: document.getElementById('backBtn'),
+            statusBadge: document.getElementById('statusBadge'),
+            driverName: document.getElementById('driverName'),
+            driverStatusText: document.getElementById('driverStatusText'),
+            driverLocation: document.getElementById('driverLocation'),
+            ordersQueueCount: document.getElementById('ordersQueueCount'),
+            ordersList: document.getElementById('ordersList'),
+            emptyState: document.getElementById('emptyState'),
+            onlineBtn: document.getElementById('onlineBtn'),
+            offlineBtn: document.getElementById('offlineBtn'),
+            refreshLocationBtn: document.getElementById('refreshLocationBtn'),
+            toast: document.getElementById('toast'),
+            toastMessage: document.getElementById('toastMessage'),
+            map: document.getElementById('map')
+        };
+
+        // ============================================================
+        // ТОАСТ
+        // ============================================================
+        let toastTimeout = null;
+
+        function showToast(text, type = 'info') {
+            el.toast.className = 'toast show ' + type;
+            el.toastMessage.textContent = text;
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                el.toast.className = 'toast';
+            }, 4000);
+        }
+
+        // ============================================================
+        // ФУНКЦИИ
+        // ============================================================
+        function formatPrice(p) {
+            return (p || 0).toFixed(2) + ' ₪';
+        }
+
+        function formatDate(ts) {
+            if (!ts) return '—';
+            try {
+                const d = ts.toDate ? ts.toDate() : new Date(ts);
+                return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            } catch {
+                return '—';
+            }
+        }
+
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            if (!lat1 || !lng1 || !lat2 || !lng2) return Infinity;
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function getStatusText(order) {
+            const statusMap = {
+                'new': 'Новый заказ',
+                'searching': 'Поиск водителя',
+                'assigned': 'Назначен вам',
+                'in_progress': 'В пути',
+                'completed': 'Завершён',
+                'cancelled': 'Отменён'
+            };
+            return statusMap[order.status] || order.status;
+        }
+
+        // ============================================================
+        // КАРТА
+        // ============================================================
+        function initMap() {
+            map = L.map('map').setView([32.0853, 34.7818], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19,
+                minZoom: 10
+            }).addTo(map);
+
+            // При клике на карту обновляем местоположение водителя
+            map.on('click', function(e) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                updateDriverLocation(lat, lng);
+            });
+
+            console.log('🗺️ Карта инициализирована');
+        }
+
+        // ============================================================
+        // ОБНОВЛЕНИЕ ГЕОЛОКАЦИИ ВОДИТЕЛЯ
+        // ============================================================
+        function updateDriverLocation(lat, lng) {
+            driverLocation = { lat, lng };
+            el.driverLocation.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+            // Обновляем маркер на карте
+            if (driverMarker) {
+                map.removeLayer(driverMarker);
+            }
+            const icon = L.divIcon({
+                html: '🚗🟢',
+                className: '',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32]
+            });
+            driverMarker = L.marker([lat, lng], { icon: icon })
+                .addTo(map)
+                .bindPopup('🚗 Вы здесь');
+            map.setView([lat, lng], 15);
+
+            // Обновляем в Firebase
+            if (currentUser) {
+                db.collection('users').doc(currentUser.uid).update({
+                    'driverData.location': { lat, lng },
+                    'driverData.lastUpdated': firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(err => console.error('Ошибка обновления локации:', err));
+            }
+
+            // Перезагружаем заказы с новой позицией
+            loadAvailableOrders();
+        }
+
+        // ============================================================
+        // ОПРЕДЕЛЕНИЕ ГЕОЛОКАЦИИ (GPS)
+        // ============================================================
+        function startGeolocation() {
+            if (!navigator.geolocation) {
+                showToast('❌ GPS не поддерживается', 'error');
+                return;
+            }
+
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+
+            watchId = navigator.geolocation.watchPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    updateDriverLocation(lat, lng);
+                },
+                function(error) {
+                    console.error('GPS ошибка:', error);
+                    showToast('⚠️ Ошибка GPS: ' + error.message, 'warning');
+                }, {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 10000
+                }
+            );
+        }
+
+        // ============================================================
+        // ЗАГРУЗКА ДОСТУПНЫХ ЗАКАЗОВ
+        // ============================================================
+        function loadAvailableOrders() {
+            if (unsubOrders) {
+                unsubOrders();
+                unsubOrders = null;
+            }
+
+            // Подписываемся на заказы со статусами new и searching
+            const q = db.collection('orders')
+                .where('status', 'in', ['new', 'searching'])
+                .orderBy('createdAt', 'desc');
+
+            unsubOrders = q.onSnapshot(function(snapshot) {
+                availableOrders = [];
+                snapshot.forEach(function(doc) {
+                    const data = doc.data();
+                    // Вычисляем расстояние до водителя
+                    let distance = null;
+                    if (driverLocation && data.pickup && data.pickup.lat && data.pickup.lng) {
+                        distance = haversineDistance(
+                            driverLocation.lat, driverLocation.lng,
+                            data.pickup.lat, data.pickup.lng
+                        );
+                    }
+                    availableOrders.push({
+                        id: doc.id,
+                        ...data,
+                        distance: distance
+                    });
+                });
+
+                // Сортируем по расстоянию (ближайшие сверху)
+                availableOrders.sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+
+                renderOrders();
+                updateQueueCount();
+
+            }, function(error) {
+                console.error('Ошибка загрузки заказов:', error);
+            });
+        }
+
+        // ============================================================
+        // ОТОБРАЖЕНИЕ ЗАКАЗОВ
+        // ============================================================
+        function renderOrders() {
+            const list = el.ordersList;
+            const empty = el.emptyState;
+
+            if (!availableOrders || availableOrders.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
+
+            empty.style.display = 'none';
+
+            let html = '';
+            // Показываем только первые 5 заказов
+            const showOrders = availableOrders.slice(0, 5);
+
+            showOrders.forEach(function(order) {
+                const dist = order.distance !== null ? order.distance.toFixed(1) + ' км' : '—';
+                const statusText = getStatusText(order);
+
+                html += `
+                        <div class="order-card">
+                            <div class="header-order">
+                                <span class="order-id">#${order.id.substring(0, 8)} <small>${formatDate(order.createdAt)}</small></span>
+                                <span class="price">${formatPrice(order.price)}</span>
+                            </div>
+                            <div class="route">
+                                📍 ${order.pickup?.address || '—'}
+                                <span class="arrow">→</span>
+                                🏁 ${order.destination?.address || '—'}
+                            </div>
+                            <div class="meta">
+                                <span>👤 ${order.clientName || 'Клиент'}</span>
+                                <span>📏 ${dist}</span>
+                                <span>📌 ${statusText}</span>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-success" onclick="acceptOrder('${order.id}')">✅ Принять</button>
+                                <button class="btn btn-danger" onclick="rejectOrder('${order.id}')">❌ Отклонить</button>
+                            </div>
+                        </div>
+                    `;
+            });
+
+            list.innerHTML = html;
+        }
+
+        function updateQueueCount() {
+            el.ordersQueueCount.textContent = availableOrders.length;
+        }
+
+        // ============================================================
+        // ПРИНЯТЬ ЗАКАЗ
+        // ============================================================
+        window.acceptOrder = function(orderId) {
+            const order = availableOrders.find(o => o.id === orderId);
+            if (!order) {
+                showToast('❌ Заказ не найден', 'error');
+                return;
+            }
+
+            if (!driverLocation) {
+                showToast('⚠️ Определите местоположение', 'warning');
+                return;
+            }
+
+            // Проверяем расстояние до клиента
+            if (order.distance && order.distance > 10) {
+                if (!confirm(`⚠️ Расстояние до клиента ${order.distance.toFixed(1)} км. Вы уверены, что хотите принять заказ?`)) {
+                    return;
+                }
+            }
+
+            const orderRef = db.collection('orders').doc(orderId);
+            orderRef.update({
+                driverId: currentUser.uid,
+                driverName: userData?.displayName || 'Водитель',
+                status: 'assigned',
+                assignedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                assignedManually: false,
+                dispatchHistory: firebase.firestore.FieldValue.arrayUnion({
+                    driverId: currentUser.uid,
+                    timestamp: new Date().toISOString(),
+                    method: 'auto',
+                    distance: order.distance || null
+                })
+            }).then(() => {
+                showToast(`✅ Вы приняли заказ #${orderId.substring(0, 8)}`, 'success');
+                currentOrder = orderId;
+                // Переключаемся в режим работы с заказом
+                switchToOrderMode(order);
+            }).catch(err => {
+                showToast('❌ Ошибка: ' + err.message, 'error');
+            });
+        };
+
+        // ============================================================
+        // ОТКЛОНИТЬ ЗАКАЗ
+        // ============================================================
+        window.rejectOrder = function(orderId) {
+            if (!confirm('Отклонить заказ?')) return;
+
+            const orderRef = db.collection('orders').doc(orderId);
+            orderRef.update({
+                status: 'searching',
+                dispatchHistory: firebase.firestore.FieldValue.arrayUnion({
+                    driverId: currentUser.uid,
+                    timestamp: new Date().toISOString(),
+                    method: 'rejected'
+                })
+            }).then(() => {
+                showToast('❌ Заказ отклонён', 'warning');
+            }).catch(err => {
+                showToast('❌ Ошибка: ' + err.message, 'error');
+            });
+        };
+
+        // ============================================================
+        // РЕЖИМ РАБОТЫ С ЗАКАЗОМ
+        // ============================================================
+        function switchToOrderMode(order) {
+            // Скрываем список заказов, показываем активный заказ
+            const list = el.ordersList;
+            const empty = el.emptyState;
+
+            empty.style.display = 'none';
+
+            const dist = order.distance !== null ? order.distance.toFixed(1) + ' км' : '—';
+
+            list.innerHTML = `
+                    <div class="order-card" style="border-color: rgba(74,222,128,0.3);">
+                        <div class="header-order">
+                            <span class="order-id">🚖 Активный заказ #${order.id.substring(0, 8)}</span>
+                            <span class="price">${formatPrice(order.price)}</span>
+                        </div>
+                        <div class="route">
+                            📍 ${order.pickup?.address || '—'}
+                            <span class="arrow">→</span>
+                            🏁 ${order.destination?.address || '—'}
+                        </div>
+                        <div class="meta">
+                            <span>👤 ${order.clientName || 'Клиент'}</span>
+                            <span>📏 ${dist}</span>
+                            <span>📌 ${getStatusText(order)}</span>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-warning" id="arriveBtn">📍 Прибыл к клиенту</button>
+                            <button class="btn btn-primary" id="navigateBtn">🧭 Навигация</button>
+                            <button class="btn btn-danger" id="cancelOrderBtn">❌ Отменить поездку</button>
+                        </div>
+                        <div id="orderStatusDetail" style="margin-top:8px; font-size:13px; color:#8899aa; text-align:center;">
+                            🟢 Ожидайте прибытия к клиенту
+                        </div>
+                    </div>
+                `;
+
+            // Обработчики для кнопок активного заказа
+            document.getElementById('arriveBtn').addEventListener('click', function() {
+                arriveToClient(order);
+            });
+
+            document.getElementById('navigateBtn').addEventListener('click', function() {
+                navigateToClient(order);
+            });
+
+            document.getElementById('cancelOrderBtn').addEventListener('click', function() {
+                cancelDriverOrder(order);
+            });
+
+            // Подписываемся на изменения статуса заказа
+            subscribeToOrderStatus(order.id);
+        }
+
+        // ============================================================
+        // ПРИБЫЛ К КЛИЕНТУ (проверка геолокации)
+        // ============================================================
+        function arriveToClient(order) {
+            if (!driverLocation || !order.pickup || !order.pickup.lat || !order.pickup.lng) {
+                showToast('⚠️ Нет данных о местоположении', 'warning');
+                return;
+            }
+
+            const distance = haversineDistance(
+                driverLocation.lat, driverLocation.lng,
+                order.pickup.lat, order.pickup.lng
+            );
+
+            // Проверяем, что водитель действительно рядом (менее 200 метров)
+            if (distance > 0.2) {
+                showToast(`⚠️ Вы слишком далеко от клиента (${(distance * 1000).toFixed(0)} м). Подъезжайте ближе.`, 'warning');
+                return;
+            }
+
+            // Обновляем статус заказа
+            const orderRef = db.collection('orders').doc(order.id);
+            orderRef.update({
+                status: 'in_progress',
+                startedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                showToast('✅ Вы прибыли к клиенту! Поездка началась.', 'success');
+                document.getElementById('orderStatusDetail').innerHTML = '🚗 Поездка началась! Следуйте к месту назначения.';
+
+                // Меняем кнопки
+                document.getElementById('arriveBtn').textContent = '🏁 Прибыл к месту назначения';
+                document.getElementById('arriveBtn').onclick = function() {
+                    arriveToDestination(order);
+                };
+                document.getElementById('navigateBtn').textContent = '🧭 К месту назначения';
+                document.getElementById('navigateBtn').onclick = function() {
+                    navigateToDestination(order);
+                };
+            }).catch(err => {
+                showToast('❌ Ошибка: ' + err.message, 'error');
+            });
+        }
+
+        // ============================================================
+        // ПРИБЫЛ К МЕСТУ НАЗНАЧЕНИЯ
+        // ============================================================
+        function arriveToDestination(order) {
+            if (!driverLocation || !order.destination || !order.destination.lat || !order.destination.lng) {
+                showToast('⚠️ Нет данных о местоположении', 'warning');
+                return;
+            }
+
+            const distance = haversineDistance(
+                driverLocation.lat, driverLocation.lng,
+                order.destination.lat, order.destination.lng
+            );
+
+            if (distance > 0.2) {
+                showToast(`⚠️ Вы слишком далеко от места назначения (${(distance * 1000).toFixed(0)} м).`, 'warning');
+                return;
+            }
+
+            // Завершаем поездку
+            const orderRef = db.collection('orders').doc(order.id);
+            orderRef.update({
+                status: 'completed',
+                completedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                showToast('✅ Поездка завершена! Спасибо!', 'success');
+                document.getElementById('orderStatusDetail').innerHTML = '✅ Поездка завершена!';
+
+                // Создаём транзакции
+                createOrderTransactions(order);
+
+                // Возвращаемся в режим ожидания
+                setTimeout(() => {
+                    currentOrder = null;
+                    loadAvailableOrders();
+                    renderOrders();
+                    document.getElementById('orderStatusDetail').innerHTML = '';
+                }, 3000);
+            }).catch(err => {
+                showToast('❌ Ошибка: ' + err.message, 'error');
+            });
+        }
+
+        // ============================================================
+        // СОЗДАНИЕ ТРАНЗАКЦИЙ
+        // ============================================================
+        function createOrderTransactions(order) {
+            const price = order.price || 0;
+            const driverEarn = price * 0.8;
+
+            // Транзакция для водителя (заработок)
+            db.collection('transactions').add({
+                userId: currentUser.uid,
+                orderId: order.id,
+                type: 'earning',
+                amount: driverEarn,
+                description: `Заработок за поездку #${order.id.substring(0, 8)} (80% от ${price}₪)`,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                balanceAfter: (userData?.balance || 0) + driverEarn
+            }).catch(err => console.error('Ошибка создания транзакции водителя:', err));
+
+            // Транзакция для клиента (списание)
+            db.collection('transactions').add({
+                userId: order.clientId,
+                orderId: order.id,
+                type: 'payment',
+                amount: -price,
+                description: `Оплата поездки #${order.id.substring(0, 8)}`,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                balanceAfter: 0
+            }).catch(err => console.error('Ошибка создания транзакции клиента:', err));
+
+            // Обновляем баланс водителя
+            db.collection('users').doc(currentUser.uid).update({
+                balance: firebase.firestore.FieldValue.increment(driverEarn),
+                totalEarned: firebase.firestore.FieldValue.increment(driverEarn)
+            }).catch(err => console.error('Ошибка обновления баланса:', err));
+        }
+
+        // ============================================================
+        // НАВИГАЦИЯ (открывает карты)
+        // ============================================================
+        function navigateToClient(order) {
+            if (!order.pickup || !order.pickup.lat || !order.pickup.lng) {
+                showToast('⚠️ Нет координат клиента', 'warning');
+                return;
+            }
+
+            const url =
+                `https://www.openstreetmap.org/directions?from=&to=${order.pickup.lat}%2C${order.pickup.lng}&route=`;
+            window.open(url, '_blank');
+            showToast('🧭 Открыта навигация к клиенту', 'info');
+        }
+
+        function navigateToDestination(order) {
+            if (!order.destination || !order.destination.lat || !order.destination.lng) {
+                showToast('⚠️ Нет координат назначения', 'warning');
+                return;
+            }
+
+            const url =
+                `https://www.openstreetmap.org/directions?from=&to=${order.destination.lat}%2C${order.destination.lng}&route=`;
+            window.open(url, '_blank');
+            showToast('🧭 Открыта навигация к месту назначения', 'info');
+        }
+
+        // ============================================================
+        // ОТМЕНА ПОЕЗДКИ ВОДИТЕЛЕМ (с взысканием)
+        // ============================================================
+        function cancelDriverOrder(order) {
+            if (!confirm('⚠️ Вы уверены, что хотите отменить поездку? Это может повлечь штраф.')) return;
+
+            const reason = prompt('Причина отмены:');
+            if (reason === null) return;
+
+            const orderRef = db.collection('orders').doc(order.id);
+            let penalty = 0;
+
+            // Если водитель уже начал поездку (status: in_progress) — штраф 7 ₪
+            if (order.status === 'in_progress') {
+                penalty = 7;
+                showToast(`⚠️ Штраф ${formatPrice(penalty)} за отмену в пути`, 'warning');
+            } else if (order.status === 'assigned') {
+                // Проверяем время с момента назначения
+                if (order.assignedAt) {
+                    const assignedTime = order.assignedAt.toDate ? order.assignedAt.toDate() : new Date(order.assignedAt);
+                    const elapsed = (Date.now() - assignedTime.getTime()) / 60000;
+                    if (elapsed > 2) {
+                        penalty = 7;
+                        showToast(`⚠️ Штраф ${formatPrice(penalty)} за отмену после подтверждения`, 'warning');
+                    }
+                }
+            }
+
+            orderRef.update({
+                status: 'cancelled',
+                cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+                cancellationReason: reason || 'Отменено водителем',
+                penaltyApplied: penalty,
+                cancelledBy: 'driver'
+            }).then(() => {
+                if (penalty > 0) {
+                    // Списываем штраф с баланса водителя
+                    db.collection('users').doc(currentUser.uid).update({
+                        balance: firebase.firestore.FieldValue.increment(-penalty),
+                        penalty: firebase.firestore.FieldValue.increment(penalty)
+                    }).then(() => {
+                        showToast(`💰 Списан штраф ${formatPrice(penalty)}`, 'warning');
+                    }).catch(err => console.error('Ошибка списания штрафа:', err));
+                }
+
+                showToast('❌ Поездка отменена', 'error');
+                currentOrder = null;
+                setTimeout(() => {
+                    loadAvailableOrders();
+                    renderOrders();
+                }, 1000);
+            }).catch(err => {
+                showToast('❌ Ошибка: ' + err.message, 'error');
+            });
+        }
+
+        // ============================================================
+        // ПОДПИСКА НА СТАТУС ЗАКАЗА
+        // ============================================================
+        let unsubOrderStatus = null;
+
+        function subscribeToOrderStatus(orderId) {
+            if (unsubOrderStatus) {
+                unsubOrderStatus();
+                unsubOrderStatus = null;
+            }
+
+            const orderRef = db.collection('orders').doc(orderId);
+            unsubOrderStatus = orderRef.onSnapshot(function(doc) {
+                if (!doc.exists) return;
+                const data = doc.data();
+                console.log('🔄 Обновление статуса заказа:', data.status);
+
+                const statusDetail = document.getElementById('orderStatusDetail');
+                if (!statusDetail) return;
+
+                switch (data.status) {
+                    case 'assigned':
+                        statusDetail.innerHTML = '🟡 Ожидайте прибытия к клиенту';
+                        break;
+                    case 'in_progress':
+                        statusDetail.innerHTML = '🚗 Поездка началась! Следуйте к месту назначения.';
+                        break;
+                    case 'completed':
+                        statusDetail.innerHTML = '✅ Поездка завершена!';
+                        break;
+                    case 'cancelled':
+                        statusDetail.innerHTML = `❌ Поездка отменена${data.penaltyApplied ? ` (штраф ${formatPrice(data.penaltyApplied)})` : ''}`;
+                        break;
+                    default:
+                        statusDetail.innerHTML = `📌 Статус: ${data.status}`;
+                }
+            }, function(error) {
+                console.error('Ошибка подписки на статус:', error);
+            });
+        }
+
+        // ============================================================
+        // СТАТУС ВОДИТЕЛЯ (Онлайн/Офлайн)
+        // ============================================================
+        function setDriverStatus(status) {
+            if (!currentUser) return;
+            isOnline = (status === 'online');
+
+            const statusMap = {
+                'online': { badge: '🟢 Онлайн', text: 'Ожидание заказов' },
+                'offline': { badge: '⚪ Офлайн', text: 'Не в сети' },
+                'busy': { badge: '🟡 Занят', text: 'Выполняет заказ' }
+            };
+
+            const info = statusMap[status] || statusMap['offline'];
+
+            el.statusBadge.className = 'status-badge ' + status;
+            el.statusBadge.textContent = info.badge;
+            el.driverStatusText.textContent = info.text;
+
+            // Обновляем в Firebase
+            db.collection('users').doc(currentUser.uid).update({
+                'driverData.isAvailable': (status === 'online')
+            }).then(() => {
+                if (status === 'online') {
+                    startGeolocation();
+                    loadAvailableOrders();
+                    showToast('🟢 Вы онлайн', 'success');
+                } else {
+                    if (watchId) {
+                        navigator.geolocation.clearWatch(watchId);
+                        watchId = null;
+                    }
+                    if (unsubOrders) {
+                        unsubOrders();
+                        unsubOrders = null;
+                    }
+                    el.ordersList.innerHTML = '';
+                    el.emptyState.style.display = 'block';
+                    el.ordersQueueCount.textContent = '0';
+                    showToast('⚪ Вы офлайн', 'info');
+                }
+            }).catch(err => {
+                showToast('❌ Ошибка: ' + err.message, 'error');
+            });
+        }
+
+        // ============================================================
+        // ОБРАБОТЧИКИ КНОПОК
+        // ============================================================
+        el.onlineBtn.addEventListener('click', function() {
+            setDriverStatus('online');
+        });
+
+        el.offlineBtn.addEventListener('click', function() {
+            setDriverStatus('offline');
+        });
+
+        el.refreshLocationBtn.addEventListener('click', function() {
+            if (!isOnline) {
+                showToast('⚠️ Включите онлайн-режим', 'warning');
+                return;
+            }
+            startGeolocation();
+            showToast('📍 Обновление геолокации...', 'info');
+        });
+
+        el.backBtn.addEventListener('click', function() {
+            if (currentOrder) {
+                if (!confirm('У вас есть активный заказ. Вернуться в кабинет?')) return;
+            }
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            if (unsubOrders) {
+                unsubOrders();
+                unsubOrders = null;
+            }
+            if (unsubOrderStatus) {
+                unsubOrderStatus();
+                unsubOrderStatus = null;
+            }
+            window.location.href = 'driver.html';
+        });
+
+        // ============================================================
+        // ЗАГРУЗКА ДАННЫХ ВОДИТЕЛЯ
+        // ============================================================
+        function subscribeToDriverData(uid) {
+            if (unsubUser) {
+                unsubUser();
+                unsubUser = null;
+            }
+
+            const userRef = db.collection('users').doc(uid);
+            unsubUser = userRef.onSnapshot(function(doc) {
+                if (doc.exists) {
+                    userData = doc.data();
+                    el.driverName.textContent = userData.displayName || 'Водитель';
+
+                    // Восстанавливаем статус
+                    const isAvail = userData.driverData?.isAvailable;
+                    if (isAvail === true) {
+                        setDriverStatus('online');
+                    } else if (isAvail === false) {
+                        setDriverStatus('offline');
+                    } else {
+                        setDriverStatus('online'); // по умолчанию
+                    }
+
+                    // Если есть сохранённая локация — показываем её
+                    if (userData.driverData?.location) {
+                        const loc = userData.driverData.location;
+                        driverLocation = { lat: loc.lat, lng: loc.lng };
+                        el.driverLocation.textContent = `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`;
+                        if (map) {
+                            if (driverMarker) {
+                                map.removeLayer(driverMarker);
+                            }
+                            const icon = L.divIcon({
+                                html: '🚗🟢',
+                                className: '',
+                                iconSize: [32, 32],
+                                iconAnchor: [16, 32]
+                            });
+                            driverMarker = L.marker([loc.lat, loc.lng], { icon: icon })
+                                .addTo(map)
+                                .bindPopup('🚗 Вы здесь');
+                            map.setView([loc.lat, loc.lng], 15);
+                        }
+                    }
+                }
+            }, function(error) {
+                console.error('Ошибка подписки на данные:', error);
+            });
+        }
+
+        // ============================================================
+        // АВТОРИЗАЦИЯ
+        // ============================================================
+        auth.onAuthStateChanged(function(user) {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            currentUser = user;
+
+            db.collection('users').doc(user.uid).get()
+                .then(function(doc) {
+                    if (!doc.exists) {
+                        showToast('❌ Профиль не найден', 'error');
+                        setTimeout(() => window.location.href = 'index.html', 1500);
+                        return;
+                    }
+                    const data = doc.data();
+                    if (data.role !== 'driver') {
+                        showToast('⛔ Только для водителей', 'error');
+                        setTimeout(() => window.location.href = 'index.html', 1500);
+                        return;
+                    }
+
+                    // Инициализируем карту
+                    initMap();
+
+                    // Подписываемся на данные водителя
+                    subscribeToDriverData(user.uid);
+
+                })
+                .catch(function(err) {
+                    console.error('Auth error:', err);
+                    window.location.href = 'index.html';
+                });
+        });
+
+        console.log('✅ Страница работы водителя готова');
+        console.log('📌 Функции:');
+        console.log('  🟢 Онлайн/Офлайн');
+        console.log('  📍 Обновление геолокации');
+        console.log('  📋 Принятие/отклонение заказов');
+        console.log('  🧭 Навигация к клиенту');
+        console.log('  🏁 Прибытие к клиенту/назначению');
+        console.log('  ⚠️ Отмена поездки со штрафом');
+    </script>
+
+</body>
+</html>
