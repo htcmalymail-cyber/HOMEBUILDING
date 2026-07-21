@@ -19,6 +19,7 @@
     </script>
 
     <style>
+        /* ===== ОСНОВНЫЕ СТИЛИ ===== */
         * {
             margin: 0;
             padding: 0;
@@ -26,13 +27,13 @@
         }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0c10;
             min-height: 100vh;
-            padding: 16px;
+            padding: 12px;
             background-image:
-                radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.06) 0%, transparent 45%),
-                radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.05) 0%, transparent 45%);
+                radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.05) 0%, transparent 45%),
+                radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.04) 0%, transparent 45%);
             background-attachment: fixed;
             color: #ffffff;
         }
@@ -42,21 +43,24 @@
             margin: 0 auto;
         }
 
+        /* ===== ШАПКА ===== */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            background: rgba(18, 22, 28, 0.85);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            margin-bottom: 12px;
+            padding: 10px 14px;
+            background: rgba(18, 22, 28, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 10px;
         }
 
         .header-title {
             font-size: 18px;
-            font-weight: 700;
+            font-weight: 600;
+            letter-spacing: 0.3px;
         }
         .header-title span {
             color: #ffb000;
@@ -64,74 +68,85 @@
 
         .back-btn {
             background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 30px;
-            padding: 6px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #8899aa;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 16px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
             font-family: inherit;
         }
         .back-btn:hover {
             background: rgba(255, 255, 255, 0.12);
             color: #ffffff;
         }
+        .back-btn:active {
+            transform: scale(0.92);
+        }
 
         .status-badge {
             padding: 4px 14px;
-            border-radius: 20px;
-            font-size: 12px;
+            border-radius: 100px;
+            font-size: 11px;
             font-weight: 600;
+            letter-spacing: 0.3px;
         }
         .status-badge.online {
-            background: rgba(74, 222, 128, 0.15);
+            background: rgba(74, 222, 128, 0.12);
             color: #4ade80;
-            border: 1px solid rgba(74, 222, 128, 0.2);
+            border: 1px solid rgba(74, 222, 128, 0.15);
         }
         .status-badge.offline {
-            background: rgba(102, 119, 136, 0.15);
+            background: rgba(102, 119, 136, 0.1);
             color: #667788;
-            border: 1px solid rgba(102, 119, 136, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
         .status-badge.busy {
-            background: rgba(255, 180, 0, 0.15);
+            background: rgba(255, 180, 0, 0.12);
             color: #ffb000;
-            border: 1px solid rgba(255, 180, 0, 0.2);
+            border: 1px solid rgba(255, 180, 0, 0.15);
         }
 
         /* ===== КАРТА ===== */
         #map {
-            height: 300px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            margin-bottom: 12px;
+            height: 280px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 10px;
             overflow: hidden;
         }
 
         .leaflet-control-attribution {
-            font-size: 9px !important;
+            font-size: 8px !important;
             color: #667788 !important;
         }
 
         /* ===== ИНФОРМАЦИОННАЯ ПАНЕЛЬ ===== */
         .info-panel {
-            background: rgba(18, 22, 28, 0.85);
-            backdrop-filter: blur(20px);
+            background: rgba(18, 22, 28, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border-radius: 16px;
-            padding: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            margin-bottom: 12px;
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 12px;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 4px 0;
-            font-size: 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 2px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
         }
         .info-row:last-child {
             border-bottom: none;
@@ -139,9 +154,10 @@
 
         .info-row .label {
             color: #8899aa;
+            font-weight: 400;
         }
         .info-row .value {
-            font-weight: 600;
+            font-weight: 500;
             color: #e0e8f0;
             text-align: right;
         }
@@ -157,34 +173,34 @@
 
         /* ===== КАРТОЧКА ЗАКАЗА ===== */
         .order-card {
-            background: rgba(18, 22, 28, 0.85);
-            backdrop-filter: blur(20px);
+            background: rgba(18, 22, 28, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border-radius: 16px;
             padding: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            margin-bottom: 12px;
-            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            margin-bottom: 10px;
+            transition: all 0.25s ease;
         }
 
         .order-card:hover {
-            border-color: rgba(255, 180, 0, 0.1);
+            border-color: rgba(255, 255, 255, 0.07);
         }
 
         .order-card .header-order {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .order-card .order-id {
-            font-size: 13px;
-            font-weight: 600;
-            color: #e0e8f0;
+            font-size: 12px;
+            font-weight: 500;
+            color: #8899aa;
         }
         .order-card .order-id small {
             color: #667788;
-            font-weight: 400;
         }
 
         .order-card .price {
@@ -197,33 +213,35 @@
             font-size: 14px;
             color: #b0c0d0;
             margin-bottom: 4px;
+            line-height: 1.4;
         }
 
         .order-card .route .arrow {
             color: #667788;
-            margin: 0 6px;
+            margin: 0 4px;
         }
 
         .order-card .meta {
-            font-size: 12px;
+            font-size: 11px;
             color: #667788;
             display: flex;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
+            margin-top: 2px;
         }
 
         .order-card .distance {
-            font-size: 13px;
+            font-size: 12px;
             color: #60a5fa;
-            font-weight: 600;
+            font-weight: 500;
         }
 
         .order-card.active {
-            border-color: rgba(74, 222, 128, 0.3);
-            background: rgba(74, 222, 128, 0.03);
+            border-color: rgba(74, 222, 128, 0.2);
+            background: rgba(74, 222, 128, 0.02);
         }
 
-        /* ===== КНОПКИ ===== */
+        /* ===== БЛОК КНОПОК ===== */
         .btn-group {
             display: flex;
             gap: 8px;
@@ -232,24 +250,28 @@
         }
 
         .btn {
-            flex: 1;
-            padding: 12px 14px;
+            padding: 10px 18px;
             border: none;
             border-radius: 14px;
             font-size: 14px;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             font-family: inherit;
-            min-width: 80px;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 60px;
         }
         .btn:active {
-            transform: scale(0.97);
+            transform: scale(0.96);
         }
         .btn:disabled {
-            opacity: 0.4;
+            opacity: 0.35;
             cursor: not-allowed;
+            transform: none !important;
         }
 
         .btn-success {
@@ -257,8 +279,8 @@
             color: #0a0c10;
         }
         .btn-success:hover {
+            box-shadow: 0 4px 20px rgba(74, 222, 128, 0.25);
             transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(74, 222, 128, 0.3);
         }
 
         .btn-danger {
@@ -266,8 +288,8 @@
             color: #ffffff;
         }
         .btn-danger:hover {
+            box-shadow: 0 4px 20px rgba(255, 70, 70, 0.25);
             transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(255, 70, 70, 0.3);
         }
 
         .btn-warning {
@@ -275,8 +297,8 @@
             color: #0a0c10;
         }
         .btn-warning:hover {
+            box-shadow: 0 4px 20px rgba(255, 180, 0, 0.25);
             transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(255, 180, 0, 0.3);
         }
 
         .btn-primary {
@@ -284,77 +306,92 @@
             color: #ffffff;
         }
         .btn-primary:hover {
+            box-shadow: 0 4px 20px rgba(96, 165, 250, 0.25);
             transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(96, 165, 250, 0.3);
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.05);
             color: #8899aa;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
             color: #ffffff;
         }
 
-        .btn-full {
-            flex: 1 1 100%;
+        .btn-ghost {
+            background: transparent;
+            color: #667788;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            flex: 0.5;
+        }
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: #e0e8f0;
         }
 
         /* ===== СТАТУС ПОЕЗДКИ ===== */
         .trip-status {
             background: rgba(255, 255, 255, 0.02);
             border-radius: 12px;
-            padding: 12px 16px;
+            padding: 10px 14px;
             margin-top: 8px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.03);
         }
 
-        .trip-status .step {
+        .trip-steps {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 13px;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .trip-step {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
             color: #667788;
+            flex: 1;
+            justify-content: center;
         }
 
-        .trip-status .step.active {
+        .trip-step .icon {
+            font-size: 16px;
+        }
+
+        .trip-step.active {
             color: #4ade80;
-            font-weight: 600;
+            font-weight: 500;
         }
 
-        .trip-status .step .icon {
-            font-size: 18px;
-        }
-
-        .trip-status .step-line {
-            width: 30px;
+        .trip-step-line {
+            flex: 0.5;
             height: 2px;
             background: #667788;
+            border-radius: 2px;
         }
 
-        .trip-status .step-line.active {
+        .trip-step-line.active {
             background: #4ade80;
         }
 
         /* ===== ТАЙМЕР ОЖИДАНИЯ ===== */
         .waiting-timer {
-            background: rgba(255, 180, 0, 0.08);
-            border: 1px solid rgba(255, 180, 0, 0.15);
+            background: rgba(255, 180, 0, 0.06);
+            border: 1px solid rgba(255, 180, 0, 0.1);
             border-radius: 12px;
-            padding: 10px 14px;
+            padding: 8px 14px;
             margin-top: 8px;
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
             color: #ffb000;
         }
 
         .waiting-timer .time {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 22px;
+            font-weight: 600;
         }
 
         .waiting-timer .time.warning {
@@ -369,15 +406,18 @@
             font-size: 14px;
         }
         .empty-state .icon {
-            font-size: 48px;
-            margin-bottom: 8px;
+            font-size: 44px;
+            margin-bottom: 6px;
+            opacity: 0.5;
         }
 
         .section-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
-            color: #e0e8f0;
-            margin: 12px 0 10px;
+            color: #8899aa;
+            margin: 8px 0 6px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
         /* ===== ТОСТ ===== */
@@ -386,19 +426,20 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: #1a1e26;
+            background: rgba(18, 22, 28, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 16px;
-            padding: 14px 24px;
+            border-radius: 14px;
+            padding: 12px 24px;
             color: #ffffff;
             font-size: 14px;
             font-weight: 500;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
             z-index: 2000;
             display: none;
-            max-width: 90%;
+            max-width: 88%;
             text-align: center;
-            backdrop-filter: blur(10px);
         }
         .toast.show {
             display: block;
@@ -415,21 +456,22 @@
             }
         }
         .toast.success {
-            border-color: rgba(74, 222, 128, 0.2);
+            border-color: rgba(74, 222, 128, 0.15);
         }
         .toast.error {
-            border-color: rgba(255, 70, 70, 0.2);
+            border-color: rgba(255, 70, 70, 0.15);
         }
         .toast.warning {
-            border-color: rgba(255, 180, 0, 0.2);
+            border-color: rgba(255, 180, 0, 0.15);
         }
 
+        /* ===== АДАПТИВ ===== */
         @media (max-width: 420px) {
             body {
                 padding: 8px;
             }
             .header {
-                padding: 10px 12px;
+                padding: 8px 12px;
             }
             .header-title {
                 font-size: 16px;
@@ -438,15 +480,19 @@
                 height: 200px;
             }
             .info-panel {
-                padding: 12px;
+                padding: 10px 12px;
+                gap: 4px 8px;
             }
             .info-row {
-                font-size: 13px;
+                font-size: 12px;
             }
             .btn {
-                font-size: 13px;
-                padding: 10px 12px;
-                min-width: 60px;
+                font-size: 12px;
+                padding: 8px 14px;
+                min-width: 50px;
+            }
+            .order-card {
+                padding: 12px;
             }
             .order-card .price {
                 font-size: 16px;
@@ -455,7 +501,13 @@
                 font-size: 13px;
             }
             .waiting-timer .time {
-                font-size: 20px;
+                font-size: 18px;
+            }
+            .trip-step {
+                font-size: 10px;
+            }
+            .trip-step .icon {
+                font-size: 14px;
             }
         }
     </style>
@@ -466,27 +518,23 @@
 
         <!-- ===== ШАПКА ===== -->
         <div class="header">
-            <div>
-                <button class="back-btn" id="backBtn">← Назад</button>
-            </div>
+            <button class="back-btn" id="backBtn" title="Назад">←</button>
             <div class="header-title">🚖 <span>Работа</span></div>
-            <div>
-                <span class="status-badge online" id="statusBadge">🟢 Онлайн</span>
-            </div>
+            <span class="status-badge online" id="statusBadge">🟢 Онлайн</span>
         </div>
 
         <!-- ===== КАРТА ===== -->
         <div id="map"></div>
 
         <!-- ===== ИНФОРМАЦИОННАЯ ПАНЕЛЬ ===== -->
-        <div class="info-panel" id="infoPanel">
+        <div class="info-panel">
             <div class="info-row">
-                <span class="label">👤 Вы</span>
+                <span class="label">👤 Водитель</span>
                 <span class="value" id="driverName">Загрузка...</span>
             </div>
             <div class="info-row">
                 <span class="label">📊 Статус</span>
-                <span class="value" id="driverStatusText">Ожидание заказов</span>
+                <span class="value green" id="driverStatusText">Ожидание</span>
             </div>
             <div class="info-row">
                 <span class="label">📍 Моё местоположение</span>
@@ -495,10 +543,6 @@
             <div class="info-row">
                 <span class="label">📦 Доступно заказов</span>
                 <span class="value gold" id="ordersAvailableCount">0</span>
-            </div>
-            <div class="info-row">
-                <span class="label">🚗 Активный заказ</span>
-                <span class="value green" id="activeOrderStatus">Нет</span>
             </div>
         </div>
 
@@ -510,12 +554,12 @@
         <div class="section-title" id="activeOrderTitle" style="display:none;">🚗 Активный заказ</div>
         <div id="activeOrderCard"></div>
 
-        <!-- ===== КНОПКИ СТАТУСА ===== -->
-        <div class="btn-group" style="margin-top:8px;">
+        <!-- ===== КНОПКИ УПРАВЛЕНИЯ ===== -->
+        <div class="btn-group" style="margin-top:4px;">
             <button class="btn btn-success" id="onlineBtn">🟢 Онлайн</button>
             <button class="btn btn-secondary" id="offlineBtn">⚪ Офлайн</button>
-            <button class="btn btn-primary" id="refreshLocationBtn">📍 Обновить геолокацию</button>
-            <button class="btn btn-secondary" id="refreshBtn">🔄 Обновить</button>
+            <button class="btn btn-primary" id="refreshLocationBtn">📍 Обновить</button>
+            <button class="btn btn-ghost" id="refreshBtn">🔄</button>
         </div>
 
     </div>
@@ -579,7 +623,6 @@
             driverStatusText: document.getElementById('driverStatusText'),
             driverLocation: document.getElementById('driverLocation'),
             ordersAvailableCount: document.getElementById('ordersAvailableCount'),
-            activeOrderStatus: document.getElementById('activeOrderStatus'),
             availableOrdersList: document.getElementById('availableOrdersList'),
             activeOrderCard: document.getElementById('activeOrderCard'),
             activeOrderTitle: document.getElementById('activeOrderTitle'),
@@ -603,7 +646,7 @@
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => {
                 el.toast.className = 'toast';
-            }, 4000);
+            }, 3500);
         }
 
         // ============================================================
@@ -637,9 +680,9 @@
 
         function getStatusText(order) {
             const statusMap = {
-                'new': 'Новый заказ',
-                'searching': 'Поиск водителя',
-                'assigned': 'Назначен вам',
+                'new': 'Новый',
+                'searching': 'Поиск',
+                'assigned': 'Назначен',
                 'in_progress': 'В пути',
                 'completed': 'Завершён',
                 'cancelled': 'Отменён'
@@ -763,7 +806,6 @@
                     });
                 });
 
-                // Фильтр: только заказы в радиусе 10 км
                 const MAX_DISTANCE = 10;
                 availableOrders = availableOrders.filter(order =>
                     order.distance === null || order.distance <= MAX_DISTANCE
@@ -787,42 +829,48 @@
                 unsubActiveOrder = null;
             }
 
-            if (!currentUser) return;
+            if (!currentUser) {
+                console.log('⚠️ Нет текущего пользователя');
+                return;
+            }
+
+            console.log('🔍 Поиск активного заказа для водителя:', currentUser.uid);
 
             const q = db.collection('orders')
                 .where('driverId', '==', currentUser.uid)
                 .where('status', 'in', ['assigned', 'in_progress']);
 
             unsubActiveOrder = q.onSnapshot(function(snapshot) {
+                console.log('📦 Получено документов в активных:', snapshot.size);
+
                 let found = null;
                 snapshot.forEach(function(doc) {
-                    found = { id: doc.id, ...doc.data() };
+                    const data = doc.data();
+                    console.log('📄 Активный заказ:', doc.id, data.status);
+                    found = { id: doc.id, ...data };
                 });
 
                 if (found) {
                     activeOrder = found;
                     renderActiveOrder(found);
-                    el.activeOrderStatus.textContent = getStatusText(found);
-                    el.activeOrderStatus.style.color = '#ffb000';
                     el.activeOrderTitle.style.display = 'block';
                     updateActiveOrderMarkers();
 
-                    // Если статус 'assigned' и ещё не начали ожидание — запускаем таймер
                     if (found.status === 'assigned' && !isWaitingForClient) {
                         startWaitingTimer(found);
                     }
                 } else {
+                    console.log('❌ Активных заказов нет');
                     activeOrder = null;
                     el.activeOrderCard.innerHTML = '';
                     el.activeOrderTitle.style.display = 'none';
-                    el.activeOrderStatus.textContent = 'Нет';
-                    el.activeOrderStatus.style.color = '#4ade80';
                     clearOrderMarkers();
                     stopWaitingTimer();
                 }
 
             }, function(error) {
-                console.error('Ошибка загрузки активного заказа:', error);
+                console.error('❌ Ошибка подписки на активный заказ:', error);
+                showToast('⚠️ Ошибка загрузки активного заказа', 'error');
             });
         }
 
@@ -843,7 +891,7 @@
                 });
                 clientMarker = L.marker([activeOrder.pickup.lat, activeOrder.pickup.lng], { icon: icon })
                     .addTo(map)
-                    .bindPopup(`📍 Отправление: ${activeOrder.pickup.address || 'Клиент'}`);
+                    .bindPopup(`📍 Отправление`);
             }
 
             if (activeOrder.destination && activeOrder.destination.lat && activeOrder.destination.lng) {
@@ -855,7 +903,7 @@
                 });
                 destinationMarker = L.marker([activeOrder.destination.lat, activeOrder.destination.lng], { icon: icon })
                     .addTo(map)
-                    .bindPopup(`🏁 Назначение: ${activeOrder.destination.address || 'Конечная точка'}`);
+                    .bindPopup(`🏁 Назначение`);
             }
 
             if (clientMarker && destinationMarker) {
@@ -889,7 +937,7 @@
                         <div class="empty-state">
                             <div class="icon">📦</div>
                             <div>Нет доступных заказов</div>
-                            <div style="font-size:12px; margin-top:4px;">Ожидайте поступления новых заказов</div>
+                            <div style="font-size:12px; margin-top:4px;">Ожидайте поступления</div>
                         </div>
                     `;
                 return;
@@ -940,24 +988,24 @@
 
             isWaitingForClient = true;
             waitingStartTime = Date.now();
-            const WAIT_TIME = 3 * 60; // 3 минуты в секундах
+            const WAIT_TIME = 3 * 60;
 
-            // Обновляем UI таймера
             const statusDetail = document.getElementById('orderStatusDetail');
             if (statusDetail) {
                 statusDetail.innerHTML = `
                         <div class="waiting-timer">
                             ⏳ Ожидание клиента: <span class="time" id="waitingTimerDisplay">3:00</span>
-                            <br><span style="font-size:12px; color:#8899aa;">Если клиент не появится, заказ будет отменён</span>
+                            <br><span style="font-size:11px; color:#667788;">Клиент не явился → штраф 7 ₪</span>
                         </div>
                     `;
             }
 
-            // Показываем кнопку "Клиент не явился" (неактивна до окончания таймера)
             const noShowBtn = document.getElementById('noShowBtn');
             if (noShowBtn) {
                 noShowBtn.disabled = true;
-                noShowBtn.textContent = `⏳ Клиент не явился (${Math.ceil(WAIT_TIME / 60)} мин)`;
+                noShowBtn.textContent = '👤 Клиент не явился (3:00)';
+                noShowBtn.classList.remove('btn-danger');
+                noShowBtn.classList.add('btn-secondary');
             }
 
             waitingTimerInterval = setInterval(() => {
@@ -976,7 +1024,6 @@
                     }
                 }
 
-                // Когда время вышло — активируем кнопку "Клиент не явился"
                 if (remaining <= 0) {
                     clearInterval(waitingTimerInterval);
                     waitingTimerInterval = null;
@@ -985,9 +1032,9 @@
                     const noShowBtn = document.getElementById('noShowBtn');
                     if (noShowBtn) {
                         noShowBtn.disabled = false;
-                        noShowBtn.textContent = '👤 Клиент не явился (штраф 7 ₪)';
-                        noShowBtn.classList.add('btn-danger');
+                        noShowBtn.textContent = '👤 Клиент не явился (7 ₪)';
                         noShowBtn.classList.remove('btn-secondary');
+                        noShowBtn.classList.add('btn-danger');
                     }
 
                     const display = document.getElementById('waitingTimerDisplay');
@@ -1000,12 +1047,12 @@
                         statusDetail.innerHTML = `
                                 <div class="waiting-timer" style="border-color: #ff6b6b;">
                                     ⏰ Время ожидания истекло!
-                                    <br><span style="font-size:12px; color:#ff6b6b;">Клиент не явился. Вы можете отменить заказ.</span>
+                                    <br><span style="font-size:12px; color:#ff6b6b;">Нажмите «Клиент не явился»</span>
                                 </div>
                             `;
                     }
 
-                    showToast('⏰ Время ожидания истекло! Клиент не явился.', 'warning');
+                    showToast('⏰ Время ожидания истекло!', 'warning');
                 }
             }, 1000);
         }
@@ -1030,79 +1077,50 @@
             let tripSteps = '';
 
             if (order.status === 'assigned') {
-                // Кнопки для этапа "К клиенту"
                 buttons = `
-                        <button class="btn btn-success" id="arriveBtn">📍 Прибыл на место</button>
+                        <button class="btn btn-warning" id="arriveBtn">📍 Прибыл на место</button>
                         <button class="btn btn-primary" id="navigateBtn">🧭 К клиенту</button>
-                        <button class="btn btn-danger" id="cancelOrderBtn">❌ Отменить поездку</button>
-                        <button class="btn btn-secondary" id="noShowBtn" disabled>⏳ Клиент не явился (3 мин)</button>
+                        <button class="btn btn-danger" id="cancelOrderBtn">❌ Отменить</button>
+                        <button class="btn btn-secondary" id="noShowBtn" disabled>⏳ Клиент не явился</button>
                     `;
                 statusDetail = '🟡 Ожидайте прибытия к клиенту';
 
                 tripSteps = `
-                        <div class="trip-status">
-                            <div class="step active">
-                                <span class="icon">📍</span>
-                                <span>К клиенту</span>
-                            </div>
-                            <span class="step-line"></span>
-                            <div class="step">
-                                <span class="icon">🚗</span>
-                                <span>В пути</span>
-                            </div>
-                            <span class="step-line"></span>
-                            <div class="step">
-                                <span class="icon">🏁</span>
-                                <span>К назначению</span>
-                            </div>
+                        <div class="trip-steps">
+                            <div class="trip-step active"><span class="icon">📍</span> К клиенту</div>
+                            <div class="trip-step-line"></div>
+                            <div class="trip-step"><span class="icon">🚗</span> В пути</div>
+                            <div class="trip-step-line"></div>
+                            <div class="trip-step"><span class="icon">🏁</span> К назначению</div>
                         </div>
                     `;
 
             } else if (order.status === 'in_progress') {
-                // Кнопки для этапа "В пути"
                 buttons = `
-                        <button class="btn btn-success" id="arriveDestinationBtn">🏁 Прибыл к месту назначения</button>
+                        <button class="btn btn-warning" id="arriveDestinationBtn">🏁 Прибыл к назначению</button>
                         <button class="btn btn-primary" id="navigateDestinationBtn">🧭 К назначению</button>
-                        <button class="btn btn-danger" id="cancelOrderBtn">❌ Отменить поездку</button>
+                        <button class="btn btn-danger" id="cancelOrderBtn">❌ Отменить</button>
                     `;
-                statusDetail = '🚗 Поездка началась! Следуйте к месту назначения.';
+                statusDetail = '🚗 Поездка началась!';
 
                 tripSteps = `
-                        <div class="trip-status">
-                            <div class="step">
-                                <span class="icon">📍</span>
-                                <span>К клиенту</span>
-                            </div>
-                            <span class="step-line active"></span>
-                            <div class="step active">
-                                <span class="icon">🚗</span>
-                                <span>В пути</span>
-                            </div>
-                            <span class="step-line"></span>
-                            <div class="step">
-                                <span class="icon">🏁</span>
-                                <span>К назначению</span>
-                            </div>
+                        <div class="trip-steps">
+                            <div class="trip-step"><span class="icon">📍</span> К клиенту</div>
+                            <div class="trip-step-line active"></div>
+                            <div class="trip-step active"><span class="icon">🚗</span> В пути</div>
+                            <div class="trip-step-line"></div>
+                            <div class="trip-step"><span class="icon">🏁</span> К назначению</div>
                         </div>
                     `;
 
             } else if (order.status === 'completed') {
                 tripSteps = `
-                        <div class="trip-status">
-                            <div class="step">
-                                <span class="icon">📍</span>
-                                <span>К клиенту</span>
-                            </div>
-                            <span class="step-line active"></span>
-                            <div class="step">
-                                <span class="icon">🚗</span>
-                                <span>В пути</span>
-                            </div>
-                            <span class="step-line active"></span>
-                            <div class="step active">
-                                <span class="icon">✅</span>
-                                <span>Завершено</span>
-                            </div>
+                        <div class="trip-steps">
+                            <div class="trip-step"><span class="icon">📍</span> К клиенту</div>
+                            <div class="trip-step-line active"></div>
+                            <div class="trip-step"><span class="icon">🚗</span> В пути</div>
+                            <div class="trip-step-line active"></div>
+                            <div class="trip-step active"><span class="icon">✅</span> Завершено</div>
                         </div>
                     `;
                 statusDetail = '✅ Поездка завершена!';
@@ -1129,51 +1147,42 @@
                         <div class="btn-group">
                             ${buttons}
                         </div>
-                        <div id="orderStatusDetail" style="margin-top:8px; font-size:13px; color:#8899aa; text-align:center;">
+                        <div id="orderStatusDetail" style="margin-top:6px; font-size:13px; color:#8899aa; text-align:center;">
                             ${statusDetail}
                         </div>
                     </div>
                 `;
 
-            // === ОБРАБОТЧИКИ КНОПОК ===
-
-            // Прибыл на место (к клиенту)
+            // === ОБРАБОТЧИКИ ===
             document.getElementById('arriveBtn')?.addEventListener('click', function() {
                 arriveToClient(order);
             });
 
-            // Навигация к клиенту
             document.getElementById('navigateBtn')?.addEventListener('click', function() {
                 navigateToClient(order);
             });
 
-            // Прибыл к месту назначения
             document.getElementById('arriveDestinationBtn')?.addEventListener('click', function() {
                 arriveToDestination(order);
             });
 
-            // Навигация к месту назначения
             document.getElementById('navigateDestinationBtn')?.addEventListener('click', function() {
                 navigateToDestination(order);
             });
 
-            // Отменить поездку
             document.getElementById('cancelOrderBtn')?.addEventListener('click', function() {
                 cancelDriverOrder(order);
             });
 
-            // Клиент не явился
             document.getElementById('noShowBtn')?.addEventListener('click', function() {
                 clientNoShow(order);
             });
 
-            // Если кнопка уже создана, но неактивна — обновляем состояние
+            // Обновляем состояние кнопки "Клиент не явился"
             const noShowBtn = document.getElementById('noShowBtn');
             if (noShowBtn && isWaitingForClient) {
                 noShowBtn.disabled = true;
-                noShowBtn.textContent = '⏳ Клиент не явился (3 мин)';
             } else if (noShowBtn && !isWaitingForClient && activeOrder && activeOrder.status === 'assigned') {
-                // Если таймер не запущен, но заказ назначен — запускаем
                 if (!waitingTimerInterval) {
                     startWaitingTimer(order);
                 }
@@ -1196,7 +1205,7 @@
             }
 
             if (order.distance && order.distance > 10) {
-                if (!confirm(`⚠️ Расстояние до клиента ${order.distance.toFixed(1)} км. Вы уверены, что хотите принять заказ?`)) {
+                if (!confirm(`⚠️ Расстояние до клиента ${order.distance.toFixed(1)} км. Вы уверены?`)) {
                     return;
                 }
             }
@@ -1215,7 +1224,7 @@
                     distance: order.distance || null
                 })
             }).then(() => {
-                showToast(`✅ Вы приняли заказ #${orderId.substring(0, 8)}`, 'success');
+                showToast(`✅ Вы приняли заказ`, 'success');
                 loadActiveOrder();
             }).catch(err => {
                 showToast('❌ Ошибка: ' + err.message, 'error');
@@ -1244,7 +1253,7 @@
         };
 
         // ============================================================
-        // ПРИБЫЛ К КЛИЕНТУ (проверка геолокации)
+        // ПРИБЫЛ К КЛИЕНТУ
         // ============================================================
         function arriveToClient(order) {
             if (!driverLocation || !order.pickup || !order.pickup.lat || !order.pickup.lng) {
@@ -1257,13 +1266,11 @@
                 order.pickup.lat, order.pickup.lng
             );
 
-            // Проверка: водитель должен быть в радиусе 200 метров от клиента
             if (distance > 0.2) {
-                showToast(`⚠️ Вы слишком далеко от клиента (${(distance * 1000).toFixed(0)} м). Подъезжайте ближе.`, 'warning');
+                showToast(`⚠️ Вы слишком далеко от клиента (${(distance * 1000).toFixed(0)} м)`, 'warning');
                 return;
             }
 
-            // Останавливаем таймер ожидания
             stopWaitingTimer();
 
             const orderRef = db.collection('orders').doc(order.id);
@@ -1279,12 +1286,11 @@
         }
 
         // ============================================================
-        // КЛИЕНТ НЕ ЯВИЛСЯ (штраф клиенту 7 ₪)
+        // КЛИЕНТ НЕ ЯВИЛСЯ
         // ============================================================
         function clientNoShow(order) {
-            if (!confirm('⚠️ Клиент не явился. Применить штраф 7 ₪ и отменить заказ?')) return;
+            if (!confirm('⚠️ Клиент не явился. Применить штраф 7 ₪?')) return;
 
-            // Проверяем геолокацию водителя
             if (!driverLocation || !order.pickup || !order.pickup.lat || !order.pickup.lng) {
                 showToast('⚠️ Нет данных о местоположении', 'warning');
                 return;
@@ -1296,7 +1302,7 @@
             );
 
             if (distance > 0.2) {
-                showToast(`⚠️ Вы слишком далеко от места отправления (${(distance * 1000).toFixed(0)} м).`, 'warning');
+                showToast(`⚠️ Вы слишком далеко от места отправления`, 'warning');
                 return;
             }
 
@@ -1310,39 +1316,16 @@
                 penaltyApplied: PENALTY,
                 cancelledBy: 'driver_no_show'
             }).then(() => {
-                // Списываем штраф с клиента
                 db.collection('users').doc(order.clientId).update({
                     balance: firebase.firestore.FieldValue.increment(-PENALTY),
                     penalty: firebase.firestore.FieldValue.increment(PENALTY)
                 }).catch(err => console.error('Ошибка списания штрафа с клиента:', err));
 
-                // Начисляем штраф водителю (компенсация)
                 db.collection('users').doc(currentUser.uid).update({
                     balance: firebase.firestore.FieldValue.increment(PENALTY)
-                }).catch(err => console.error('Ошибка начисления компенсации водителю:', err));
+                }).catch(err => console.error('Ошибка начисления компенсации:', err));
 
-                // Создаём транзакции
-                db.collection('transactions').add({
-                    userId: order.clientId,
-                    orderId: order.id,
-                    type: 'penalty',
-                    amount: -PENALTY,
-                    description: `Штраф за неявку к заказу #${order.id.substring(0, 8)}`,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    balanceAfter: 0
-                }).catch(err => console.error('Ошибка создания транзакции клиента:', err));
-
-                db.collection('transactions').add({
-                    userId: currentUser.uid,
-                    orderId: order.id,
-                    type: 'earning',
-                    amount: PENALTY,
-                    description: `Компенсация за неявку клиента #${order.id.substring(0, 8)}`,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    balanceAfter: 0
-                }).catch(err => console.error('Ошибка создания транзакции водителя:', err));
-
-                showToast(`✅ Заказ отменён. Штраф клиенту ${formatPrice(PENALTY)}`, 'warning');
+                showToast(`✅ Заказ отменён. Штраф ${formatPrice(PENALTY)}`, 'warning');
                 stopWaitingTimer();
                 setTimeout(() => {
                     loadAvailableOrders();
@@ -1368,7 +1351,7 @@
             );
 
             if (distance > 0.2) {
-                showToast(`⚠️ Вы слишком далеко от места назначения (${(distance * 1000).toFixed(0)} м).`, 'warning');
+                showToast(`⚠️ Вы слишком далеко от места назначения (${(distance * 1000).toFixed(0)} м)`, 'warning');
                 return;
             }
 
@@ -1402,83 +1385,65 @@
         }
 
         function navigateToClient(order) {
-            if (!order.pickup) {
-                showToast('⚠️ Нет данных о клиенте', 'warning');
-                return;
-            }
-
-            const lat = order.pickup.lat;
-            const lng = order.pickup.lng;
-            const address = order.pickup.address;
-
-            const wazeLink = getWazeLink(lat, lng, address);
-
-            if (wazeLink) {
-                window.open(wazeLink, '_blank');
-                showToast('🧭 Открыта навигация Waze к клиенту', 'info');
+            const lat = order.pickup?.lat;
+            const lng = order.pickup?.lng;
+            const address = order.pickup?.address;
+            const link = getWazeLink(lat, lng, address);
+            if (link) {
+                window.open(link, '_blank');
+                showToast('🧭 Waze к клиенту', 'info');
             } else {
-                showToast('⚠️ Нет данных для навигации к клиенту', 'error');
+                showToast('⚠️ Нет данных для навигации', 'error');
             }
         }
 
         function navigateToDestination(order) {
-            if (!order.destination) {
-                showToast('⚠️ Нет данных о назначении', 'warning');
-                return;
-            }
-
-            const lat = order.destination.lat;
-            const lng = order.destination.lng;
-            const address = order.destination.address;
-
-            const wazeLink = getWazeLink(lat, lng, address);
-
-            if (wazeLink) {
-                window.open(wazeLink, '_blank');
-                showToast('🧭 Открыта навигация Waze к месту назначения', 'info');
+            const lat = order.destination?.lat;
+            const lng = order.destination?.lng;
+            const address = order.destination?.address;
+            const link = getWazeLink(lat, lng, address);
+            if (link) {
+                window.open(link, '_blank');
+                showToast('🧭 Waze к назначению', 'info');
             } else {
-                showToast('⚠️ Нет данных для навигации к назначению', 'error');
+                showToast('⚠️ Нет данных для навигации', 'error');
             }
         }
 
         // ============================================================
-        // СОЗДАНИЕ ТРАНЗАКЦИЙ (КОМИССИЯ 10%)
+        // ТРАНЗАКЦИИ (КОМИССИЯ 10%)
         // ============================================================
         function createOrderTransactions(order) {
             const price = order.price || 0;
-            const COMMISSION = 0.10; // 10%
+            const COMMISSION = 0.10;
             const commission = price * COMMISSION;
-            const driverEarn = price - commission; // 90%
+            const driverEarn = price - commission;
 
-            // Транзакция для водителя (заработок 90%)
             db.collection('transactions').add({
                 userId: currentUser.uid,
                 orderId: order.id,
                 type: 'earning',
                 amount: driverEarn,
-                description: `Заработок за поездку #${order.id.substring(0, 8)} (90% от ${price}₪)`,
+                description: `Заработок #${order.id.substring(0, 8)} (90%)`,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 balanceAfter: (userData?.balance || 0) + driverEarn
-            }).catch(err => console.error('Ошибка создания транзакции водителя:', err));
+            }).catch(err => console.error('Ошибка транзакции водителя:', err));
 
-            // Транзакция для клиента (списание полной стоимости)
             db.collection('transactions').add({
                 userId: order.clientId,
                 orderId: order.id,
                 type: 'payment',
                 amount: -price,
-                description: `Оплата поездки #${order.id.substring(0, 8)}`,
+                description: `Оплата #${order.id.substring(0, 8)}`,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 balanceAfter: 0
-            }).catch(err => console.error('Ошибка создания транзакции клиента:', err));
+            }).catch(err => console.error('Ошибка транзакции клиента:', err));
 
-            // Обновляем баланс водителя
             db.collection('users').doc(currentUser.uid).update({
                 balance: firebase.firestore.FieldValue.increment(driverEarn),
                 totalEarned: firebase.firestore.FieldValue.increment(driverEarn)
             }).catch(err => console.error('Ошибка обновления баланса водителя:', err));
 
-            // Обновляем баланс клиента (списание)
             db.collection('users').doc(order.clientId).update({
                 balance: firebase.firestore.FieldValue.increment(-price),
                 totalSpent: firebase.firestore.FieldValue.increment(price)
@@ -1486,10 +1451,10 @@
         }
 
         // ============================================================
-        // ОТМЕНА ПОЕЗДКИ ВОДИТЕЛЕМ (со штрафом)
+        // ОТМЕНА ПОЕЗДКИ ВОДИТЕЛЕМ
         // ============================================================
         function cancelDriverOrder(order) {
-            if (!confirm('⚠️ Вы уверены, что хотите отменить поездку? Это может повлечь штраф.')) return;
+            if (!confirm('⚠️ Отменить поездку? Возможен штраф 7 ₪.')) return;
 
             const reason = prompt('Причина отмены:');
             if (reason === null) return;
@@ -1499,14 +1464,12 @@
 
             if (order.status === 'in_progress') {
                 penalty = 7;
-                showToast(`⚠️ Штраф ${formatPrice(penalty)} за отмену в пути`, 'warning');
             } else if (order.status === 'assigned') {
                 if (order.assignedAt) {
                     const assignedTime = order.assignedAt.toDate ? order.assignedAt.toDate() : new Date(order.assignedAt);
                     const elapsed = (Date.now() - assignedTime.getTime()) / 60000;
                     if (elapsed > 2) {
                         penalty = 7;
-                        showToast(`⚠️ Штраф ${formatPrice(penalty)} за отмену после подтверждения`, 'warning');
                     }
                 }
             }
@@ -1550,7 +1513,7 @@
             isOnline = (status === 'online');
 
             const statusMap = {
-                'online': { badge: '🟢 Онлайн', text: 'Ожидание заказов' },
+                'online': { badge: '🟢 Онлайн', text: 'Ожидание' },
                 'offline': { badge: '⚪ Офлайн', text: 'Не в сети' },
                 'busy': { badge: '🟡 Занят', text: 'Выполняет заказ' }
             };
@@ -1586,7 +1549,6 @@
                     el.activeOrderCard.innerHTML = '';
                     el.activeOrderTitle.style.display = 'none';
                     el.ordersAvailableCount.textContent = '0';
-                    el.activeOrderStatus.textContent = 'Нет';
                     showToast('⚪ Вы офлайн', 'info');
                 }
             }).catch(err => {
@@ -1595,15 +1557,10 @@
         }
 
         // ============================================================
-        // ОБРАБОТЧИКИ КНОПОК
+        // ОБРАБОТЧИКИ
         // ============================================================
-        el.onlineBtn.addEventListener('click', function() {
-            setDriverStatus('online');
-        });
-
-        el.offlineBtn.addEventListener('click', function() {
-            setDriverStatus('offline');
-        });
+        el.onlineBtn.addEventListener('click', function() { setDriverStatus('online'); });
+        el.offlineBtn.addEventListener('click', function() { setDriverStatus('offline'); });
 
         el.refreshLocationBtn.addEventListener('click', function() {
             if (!isOnline) {
@@ -1615,7 +1572,7 @@
         });
 
         el.refreshBtn.addEventListener('click', function() {
-            showToast('🔄 Данные обновлены', 'info');
+            showToast('🔄 Обновлено', 'info');
             loadAvailableOrders();
             loadActiveOrder();
         });
@@ -1726,20 +1683,6 @@
         });
 
         console.log('✅ Страница работы водителя готова');
-        console.log('📌 Функции:');
-        console.log('  🟢 Онлайн/Офлайн');
-        console.log('  📍 Обновление геолокации');
-        console.log('  📋 Доступные заказы (new, searching)');
-        console.log('  🚗 Активный заказ (assigned, in_progress)');
-        console.log('  ✅ Принятие/отклонение заказов');
-        console.log('  🧭 Навигация Waze к клиенту и к месту назначения');
-        console.log('  🏁 Прибытие к клиенту (проверка геолокации)');
-        console.log('  🏁 Прибытие к месту назначения (проверка геолокации)');
-        console.log('  ⏳ Ожидание клиента 3 минуты');
-        console.log('  👤 Клиент не явился — штраф 7 ₪');
-        console.log('  ⚠️ Отмена поездки со штрафом 7 ₪');
-        console.log('  💰 Комиссия платформы 10%, водитель 90%');
-        console.log('  🗺️ Маркеры на карте: 🟢 клиент, 🔴 назначение, 🚗 водитель');
     </script>
 
 </body>
