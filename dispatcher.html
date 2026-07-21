@@ -14,6 +14,7 @@
     </script>
 
     <style>
+        /* ===== ОСНОВНЫЕ СТИЛИ ===== */
         * {
             margin: 0;
             padding: 0;
@@ -33,11 +34,11 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
-        /* ШАПКА */
+        /* ===== ШАПКА ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -56,7 +57,6 @@
             font-size: 24px;
             font-weight: 700;
         }
-
         .header-title span {
             color: #ffb000;
         }
@@ -83,15 +83,14 @@
             transition: all 0.3s ease;
             font-family: inherit;
         }
-
         .logout-btn:hover {
             background: rgba(255, 70, 70, 0.18);
         }
 
-        /* СТАТИСТИКА */
+        /* ===== СТАТИСТИКА ===== */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 12px;
             margin-bottom: 20px;
         }
@@ -109,7 +108,6 @@
             font-size: 28px;
             font-weight: 700;
         }
-
         .stat-card .number.gold {
             color: #ffb000;
         }
@@ -122,6 +120,9 @@
         .stat-card .number.red {
             color: #ff6b6b;
         }
+        .stat-card .number.purple {
+            color: #a78bfa;
+        }
 
         .stat-card .label {
             font-size: 12px;
@@ -131,23 +132,29 @@
             margin-top: 4px;
         }
 
-        /* СЕТКА */
+        /* ===== ОСНОВНАЯ СЕТКА ===== */
         .main-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1100px) {
             .main-grid {
                 grid-template-columns: 1fr;
             }
             .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(3, 1fr);
             }
         }
 
-        /* КАРТОЧКИ */
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* ===== КАРТОЧКИ ===== */
         .card {
             background: rgba(18, 22, 28, 0.85);
             backdrop-filter: blur(20px);
@@ -169,13 +176,13 @@
             font-size: 18px;
             font-weight: 600;
         }
-
         .card-title .count {
             font-size: 14px;
             color: #8899aa;
             font-weight: 400;
         }
 
+        /* ===== КНОПКИ ===== */
         .btn {
             padding: 6px 16px;
             border: none;
@@ -186,7 +193,6 @@
             transition: all 0.3s ease;
             font-family: inherit;
         }
-
         .btn:active {
             transform: scale(0.95);
         }
@@ -195,7 +201,6 @@
             background: linear-gradient(135deg, #ffb000, #ff6a00);
             color: #0a0c10;
         }
-
         .btn-primary:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 16px rgba(255, 140, 0, 0.3);
@@ -206,7 +211,6 @@
             color: #ff6b6b;
             border: 1px solid rgba(255, 70, 70, 0.15);
         }
-
         .btn-danger:hover {
             background: rgba(255, 70, 70, 0.2);
         }
@@ -216,7 +220,6 @@
             color: #4ade80;
             border: 1px solid rgba(74, 222, 128, 0.15);
         }
-
         .btn-success:hover {
             background: rgba(74, 222, 128, 0.2);
         }
@@ -226,24 +229,25 @@
             color: #ffb000;
             border: 1px solid rgba(255, 180, 0, 0.15);
         }
+        .btn-warning:hover {
+            background: rgba(255, 180, 0, 0.2);
+        }
 
         .btn-sm {
             padding: 4px 12px;
             font-size: 12px;
         }
-
         .btn-xs {
             padding: 2px 10px;
             font-size: 11px;
         }
 
-        /* СПИСКИ */
+        /* ===== СПИСОК ЗАКАЗОВ ===== */
         .order-list,
         .driver-list {
             max-height: 500px;
             overflow-y: auto;
         }
-
         .order-list::-webkit-scrollbar,
         .driver-list::-webkit-scrollbar {
             width: 4px;
@@ -265,7 +269,6 @@
             margin-bottom: 8px;
             border: 1px solid rgba(255, 255, 255, 0.04);
         }
-
         .order-item:hover {
             background: rgba(255, 255, 255, 0.04);
         }
@@ -283,7 +286,6 @@
             font-weight: 600;
             color: #e0e8f0;
         }
-
         .order-id small {
             color: #667788;
             font-weight: 400;
@@ -295,7 +297,6 @@
             border-radius: 20px;
             font-weight: 600;
         }
-
         .order-status.new {
             background: rgba(96, 165, 250, 0.15);
             color: #60a5fa;
@@ -326,7 +327,6 @@
             color: #8899aa;
             margin-top: 4px;
         }
-
         .order-actions {
             margin-top: 8px;
             display: flex;
@@ -334,7 +334,7 @@
             flex-wrap: wrap;
         }
 
-        /* ВОДИТЕЛИ */
+        /* ===== ВОДИТЕЛИ ===== */
         .driver-item {
             background: rgba(255, 255, 255, 0.02);
             border-radius: 14px;
@@ -347,22 +347,19 @@
             flex-wrap: wrap;
             gap: 8px;
         }
-
         .driver-item:hover {
             background: rgba(255, 255, 255, 0.04);
         }
 
-        .driver-name {
+        .driver-info .name {
             font-size: 14px;
             font-weight: 600;
             color: #e0e8f0;
         }
-
-        .driver-car {
+        .driver-info .car {
             font-size: 12px;
             color: #8899aa;
         }
-
         .driver-status-dot {
             display: inline-block;
             width: 8px;
@@ -370,7 +367,6 @@
             border-radius: 50%;
             margin-right: 6px;
         }
-
         .driver-status-dot.online {
             background: #4ade80;
         }
@@ -387,14 +383,18 @@
             color: #ffb000;
         }
 
-        /* ФИНАНСЫ */
+        .driver-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* ===== ФИНАНСЫ ===== */
         .finance-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
             margin-top: 4px;
         }
-
         .finance-item {
             background: rgba(255, 255, 255, 0.02);
             border-radius: 12px;
@@ -403,17 +403,14 @@
             justify-content: space-between;
             border: 1px solid rgba(255, 255, 255, 0.04);
         }
-
         .finance-item .label {
             font-size: 13px;
             color: #8899aa;
         }
-
         .finance-item .value {
             font-size: 15px;
             font-weight: 700;
         }
-
         .finance-item .value.gold {
             color: #ffb000;
         }
@@ -424,17 +421,131 @@
             color: #ff6b6b;
         }
 
-        /* ПУСТО */
+        /* ===== МОДАЛКА НАЗНАЧЕНИЯ ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #1a1e26;
+            border-radius: 24px;
+            padding: 28px 32px;
+            max-width: 480px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+        }
+        .modal h3 {
+            color: #ffffff;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+        .modal .form-group {
+            margin-bottom: 14px;
+        }
+        .modal .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #b0c0d0;
+            margin-bottom: 4px;
+        }
+        .modal .form-group input,
+        .modal .form-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            color: #ffffff;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .modal .form-group input:focus,
+        .modal .form-group select:focus {
+            border-color: #ffb000;
+        }
+        .modal .form-group select option {
+            background: #1a1e26;
+            color: #ffffff;
+        }
+        .modal .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .modal .modal-actions .btn {
+            flex: 1;
+            text-align: center;
+        }
+
+        /* ===== ПУСТО ===== */
         .empty-state {
             text-align: center;
             padding: 30px 20px;
             color: #667788;
             font-size: 14px;
         }
-
         .empty-state .icon {
             font-size: 40px;
             margin-bottom: 8px;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #1a1e26;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 16px 24px;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: none;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+        .toast.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .toast.success {
+            border-color: rgba(74, 222, 128, 0.2);
+        }
+        .toast.error {
+            border-color: rgba(255, 70, 70, 0.2);
+        }
+        .toast.warning {
+            border-color: rgba(255, 180, 0, 0.2);
         }
 
         @media (max-width: 600px) {
@@ -444,21 +555,24 @@
             .header-title {
                 font-size: 18px;
             }
-            .stats-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-            }
-            .stat-card {
-                padding: 12px;
-            }
-            .stat-card .number {
-                font-size: 22px;
-            }
             .card {
                 padding: 14px;
             }
             .finance-grid {
                 grid-template-columns: 1fr;
+            }
+            .modal {
+                padding: 20px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 6px;
+            }
+            .stat-card {
+                padding: 10px;
+            }
+            .stat-card .number {
+                font-size: 20px;
             }
         }
     </style>
@@ -467,7 +581,7 @@
 
     <div class="container">
 
-        <!-- ШАПКА -->
+        <!-- ===== ШАПКА ===== -->
         <div class="header">
             <div class="header-title">🚖 <span>Диспетчер</span></div>
             <div>
@@ -477,7 +591,7 @@
             </div>
         </div>
 
-        <!-- СТАТИСТИКА -->
+        <!-- ===== СТАТИСТИКА ===== -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="number blue" id="statNew">0</div>
@@ -495,12 +609,16 @@
                 <div class="number red" id="statCompleted">0</div>
                 <div class="label">Завершены</div>
             </div>
+            <div class="stat-card">
+                <div class="number purple" id="statDrivers">0</div>
+                <div class="label">Водителей</div>
+            </div>
         </div>
 
-        <!-- ОСНОВНАЯ СЕТКА -->
+        <!-- ===== ОСНОВНАЯ СЕТКА ===== -->
         <div class="main-grid">
 
-            <!-- ЗАКАЗЫ -->
+            <!-- ===== ЛЕВАЯ КОЛОНКА: ЗАКАЗЫ ===== -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">📋 Заказы <span class="count" id="ordersCount">(0)</span></div>
@@ -514,14 +632,14 @@
                 </div>
             </div>
 
-            <!-- ПРАВАЯ КОЛОНКА -->
+            <!-- ===== ПРАВАЯ КОЛОНКА: ВОДИТЕЛИ + ФИНАНСЫ ===== -->
             <div>
 
                 <!-- ВОДИТЕЛИ -->
                 <div class="card" style="margin-bottom:16px;">
                     <div class="card-header">
                         <div class="card-title">🚗 Водители <span class="count" id="driversCount">(0)</span></div>
-                        <button class="btn btn-primary btn-sm" id="simulateBtn">🎮 Симуляция</button>
+                        <button class="btn btn-success btn-sm" id="addDriverBtn">➕ Добавить</button>
                     </div>
                     <div class="driver-list" id="driverList">
                         <div class="empty-state">
@@ -560,6 +678,66 @@
         </div>
     </div>
 
+    <!-- ===== МОДАЛКА: НАЗНАЧЕНИЕ ВОДИТЕЛЯ ===== -->
+    <div class="modal-overlay" id="assignModal">
+        <div class="modal">
+            <h3>🚖 Назначить водителя</h3>
+            <div class="form-group">
+                <label>Заказ: <span id="assignOrderId">—</span></label>
+            </div>
+            <div class="form-group">
+                <label for="assignDriverSelect">Выберите водителя</label>
+                <select id="assignDriverSelect">
+                    <option value="">— Загрузка водителей —</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-success" id="assignConfirmBtn">✅ Назначить</button>
+                <button class="btn btn-danger" id="assignCancelBtn">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== МОДАЛКА: ДОБАВЛЕНИЕ ВОДИТЕЛЯ ===== -->
+    <div class="modal-overlay" id="addDriverModal">
+        <div class="modal">
+            <h3>➕ Добавить водителя</h3>
+            <div class="form-group">
+                <label>Имя водителя</label>
+                <input type="text" id="addDriverName" placeholder="Алексей Петров">
+            </div>
+            <div class="form-group">
+                <label>Email (для входа)</label>
+                <input type="email" id="addDriverEmail" placeholder="driver@mail.com">
+            </div>
+            <div class="form-group">
+                <label>Пароль (мин. 6 символов)</label>
+                <input type="password" id="addDriverPassword" placeholder="••••••••" minlength="6">
+            </div>
+            <div class="form-group">
+                <label>Марка машины</label>
+                <input type="text" id="addDriverCar" placeholder="Toyota Camry">
+            </div>
+            <div class="form-group">
+                <label>Номер машины</label>
+                <input type="text" id="addDriverPlate" placeholder="А777МР77">
+            </div>
+            <div class="form-group">
+                <label>Телефон</label>
+                <input type="text" id="addDriverPhone" placeholder="+972 50-1234567">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-success" id="addDriverConfirmBtn">✅ Добавить</button>
+                <button class="btn btn-danger" id="addDriverCancelBtn">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast">
+        <div id="toastMessage">Сообщение</div>
+    </div>
+
     <!-- ============================================================ -->
     <!-- JAVASCRIPT -->
     <!-- ============================================================ -->
@@ -588,6 +766,24 @@
         // ============================================================
         let allOrders = [];
         let allDrivers = [];
+        let selectedOrderId = null;
+        let unsubOrders = null;
+        let unsubDrivers = null;
+
+        // ============================================================
+        // ТОАСТ
+        // ============================================================
+        let toastTimeout = null;
+
+        function showToast(text, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.className = 'toast show ' + type;
+            document.getElementById('toastMessage').textContent = text;
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.className = 'toast';
+            }, 4000);
+        }
 
         // ============================================================
         // ФУНКЦИИ
@@ -604,6 +800,18 @@
             } catch {
                 return '—';
             }
+        }
+
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            if (!lat1 || !lng1 || !lat2 || !lng2) return Infinity;
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
         }
 
         const statusLabels = {
@@ -625,7 +833,7 @@
         };
 
         // ============================================================
-        // РЕНДЕРИНГ
+        // РЕНДЕРИНГ ЗАКАЗОВ
         // ============================================================
         function renderOrders() {
             const list = document.getElementById('orderList');
@@ -639,6 +847,7 @@
                     `;
                 document.getElementById('ordersCount').textContent = '(0)';
                 document.getElementById('ordersBadge').textContent = '📦 Заказов: 0';
+                updateStats();
                 return;
             }
 
@@ -665,12 +874,18 @@
                             </div>
                             <div class="order-actions">
                                 ${(order.status === 'new' || order.status === 'searching') ? `
-                                    <button class="btn btn-success btn-xs" onclick="assignDriver('${order.id}')">🚖 Назначить</button>
+                                    <button class="btn btn-success btn-xs" onclick="openAssignModal('${order.id}')">🚖 Назначить</button>
+                                    <button class="btn btn-warning btn-xs" onclick="autoAssignSingle('${order.id}')">🤖 Рекомендовать</button>
                                 ` : ''}
                                 ${(order.status !== 'completed' && order.status !== 'cancelled') ? `
                                     <button class="btn btn-danger btn-xs" onclick="deleteOrder('${order.id}')">🗑️ Удалить</button>
                                 ` : ''}
                             </div>
+                            ${order.recommendedDrivers && order.recommendedDrivers.length > 0 ? `
+                                <div style="margin-top:6px; font-size:11px; color:#4ade80;">
+                                    🤖 Рекомендуемые: ${order.recommendedDrivers.map(d => `${d.name} (${d.dist} км)`).join(', ')}
+                                </div>
+                            ` : ''}
                         </div>
                     `;
             });
@@ -678,36 +893,12 @@
             list.innerHTML = html;
             document.getElementById('ordersCount').textContent = `(${allOrders.length})`;
             document.getElementById('ordersBadge').textContent = `📦 Заказов: ${allOrders.length}`;
-
-            // Статистика
-            const stats = { new: 0, searching: 0, assigned: 0, in_progress: 0, completed: 0, cancelled: 0 };
-            allOrders.forEach(o => {
-                if (stats[o.status] !== undefined) stats[o.status]++;
-            });
-            document.getElementById('statNew').textContent = stats.new;
-            document.getElementById('statSearching').textContent = stats.searching;
-            document.getElementById('statActive').textContent = stats.assigned + stats.in_progress;
-            document.getElementById('statCompleted').textContent = stats.completed;
-
-            // Финансы
-            let revenue = 0,
-                commission = 0,
-                penalties = 0,
-                rides = 0;
-            allOrders.forEach(o => {
-                if (o.status === 'completed' && o.price) {
-                    revenue += o.price;
-                    commission += o.price * 0.2;
-                    rides++;
-                }
-                if (o.penaltyApplied) penalties += o.penaltyApplied;
-            });
-            document.getElementById('totalRevenue').textContent = formatPrice(revenue);
-            document.getElementById('totalCommission').textContent = formatPrice(commission);
-            document.getElementById('totalPenalties').textContent = formatPrice(penalties);
-            document.getElementById('totalRides').textContent = rides;
+            updateStats();
         }
 
+        // ============================================================
+        // РЕНДЕРИНГ ВОДИТЕЛЕЙ
+        // ============================================================
         function renderDrivers() {
             const list = document.getElementById('driverList');
 
@@ -730,15 +921,19 @@
                 html += `
                         <div class="driver-item">
                             <div>
-                                <div class="driver-name">
+                                <div class="name">
                                     <span class="driver-status-dot ${dot}"></span>
                                     ${d.displayName || 'Водитель'}
                                 </div>
-                                <div class="driver-car">
+                                <div class="car">
                                     🚗 ${d.carModel || '—'} • ${d.licensePlate || '—'} • ${label}
+                                    ${d.phone ? `• 📱 ${d.phone}` : ''}
                                 </div>
                             </div>
-                            <div class="driver-balance">${formatPrice(d.balance)}</div>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="driver-balance">${formatPrice(d.balance)}</span>
+                                <button class="btn btn-danger btn-xs" onclick="deleteDriver('${d.uid}')">🗑️</button>
+                            </div>
                         </div>
                     `;
             });
@@ -749,44 +944,167 @@
         }
 
         // ============================================================
-        // НАЗНАЧЕНИЕ ВОДИТЕЛЯ
+        // СТАТИСТИКА
         // ============================================================
-        window.assignDriver = function(orderId) {
-            const availableDrivers = allDrivers.filter(d => d.status === 'online' || d.status === 'offline');
-            if (availableDrivers.length === 0) {
-                alert('⚠️ Нет доступных водителей');
+        function updateStats() {
+            const stats = { new: 0, searching: 0, assigned: 0, in_progress: 0, completed: 0, cancelled: 0 };
+            allOrders.forEach(o => {
+                if (stats[o.status] !== undefined) stats[o.status]++;
+            });
+            document.getElementById('statNew').textContent = stats.new;
+            document.getElementById('statSearching').textContent = stats.searching;
+            document.getElementById('statActive').textContent = stats.assigned + stats.in_progress;
+            document.getElementById('statCompleted').textContent = stats.completed;
+            document.getElementById('statDrivers').textContent = allDrivers.length;
+
+            // Финансы
+            let revenue = 0,
+                commission = 0,
+                penalties = 0,
+                rides = 0;
+            allOrders.forEach(o => {
+                if (o.status === 'completed' && o.price) {
+                    revenue += o.price;
+                    commission += o.price * 0.2;
+                    rides++;
+                }
+                if (o.penaltyApplied) penalties += o.penaltyApplied;
+            });
+            document.getElementById('totalRevenue').textContent = formatPrice(revenue);
+            document.getElementById('totalCommission').textContent = formatPrice(commission);
+            document.getElementById('totalPenalties').textContent = formatPrice(penalties);
+            document.getElementById('totalRides').textContent = rides;
+        }
+
+        // ============================================================
+        // АВТО-РЕКОМЕНДАЦИЯ (в радиусе 50 км)
+        // ============================================================
+        function getRecommendedDrivers(order) {
+            if (!order.pickup || !order.pickup.lat || !order.pickup.lng) return [];
+
+            const recommendations = [];
+            allDrivers.forEach(d => {
+                if (!d.location || !d.location.lat || !d.location.lng) return;
+                const dist = haversineDistance(
+                    order.pickup.lat, order.pickup.lng,
+                    d.location.lat, d.location.lng
+                );
+                if (dist <= 50) {
+                    recommendations.push({
+                        uid: d.uid,
+                        name: d.displayName || 'Водитель',
+                        dist: dist.toFixed(1),
+                        car: d.carModel || '—',
+                        plate: d.licensePlate || '—'
+                    });
+                }
+            });
+
+            recommendations.sort((a, b) => parseFloat(a.dist) - parseFloat(b.dist));
+            return recommendations.slice(0, 5);
+        }
+
+        // ============================================================
+        // ОТКРЫТИЕ МОДАЛКИ НАЗНАЧЕНИЯ
+        // ============================================================
+        window.openAssignModal = function(orderId) {
+            selectedOrderId = orderId;
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) {
+                showToast('❌ Заказ не найден', 'error');
                 return;
             }
 
-            // Простое окно выбора
-            const driverList = availableDrivers.map((d, i) =>
-                `${i+1}. ${d.displayName} (${d.carModel || '—'} ${d.licensePlate || '—'})`
-            ).join('\n');
+            document.getElementById('assignOrderId').textContent = `#${orderId.substring(0, 8)} (${statusLabels[order.status] || order.status})`;
 
-            const choice = prompt(
-                `Выберите водителя (введите номер):\n${driverList}`,
-                '1'
-            );
+            const select = document.getElementById('assignDriverSelect');
+            select.innerHTML = '<option value="">— Выберите водителя —</option>';
 
-            if (!choice) return;
-            const idx = parseInt(choice) - 1;
-            if (isNaN(idx) || idx < 0 || idx >= availableDrivers.length) {
-                alert('❌ Неверный выбор');
+            const available = allDrivers.filter(d => d.status === 'online' || d.status === 'offline');
+            if (available.length === 0) {
+                select.innerHTML = '<option value="">— Нет доступных водителей —</option>';
+            } else {
+                available.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.uid;
+                    opt.textContent = `${d.displayName} (${d.carModel || '—'} ${d.licensePlate || '—'})`;
+                    select.appendChild(opt);
+                });
+            }
+
+            document.getElementById('assignModal').classList.add('active');
+        };
+
+        document.getElementById('assignCancelBtn').addEventListener('click', function() {
+            document.getElementById('assignModal').classList.remove('active');
+            selectedOrderId = null;
+        });
+
+        document.getElementById('assignModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('active');
+                selectedOrderId = null;
+            }
+        });
+
+        document.getElementById('assignConfirmBtn').addEventListener('click', function() {
+            const driverId = document.getElementById('assignDriverSelect').value;
+            if (!driverId) {
+                showToast('❌ Выберите водителя', 'error');
+                return;
+            }
+            if (!selectedOrderId) {
+                showToast('❌ Заказ не выбран', 'error');
                 return;
             }
 
-            const driver = availableDrivers[idx];
-            const orderRef = db.collection('orders').doc(orderId);
+            const driver = allDrivers.find(d => d.uid === driverId);
+            const orderRef = db.collection('orders').doc(selectedOrderId);
+
             orderRef.update({
-                driverId: driver.uid,
-                driverName: driver.displayName || 'Водитель',
+                driverId: driverId,
+                driverName: driver?.displayName || 'Водитель',
                 status: 'assigned',
                 assignedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                assignedManually: true
+                assignedManually: true,
+                dispatchHistory: firebase.firestore.FieldValue.arrayUnion({
+                    driverId: driverId,
+                    timestamp: new Date().toISOString(),
+                    method: 'manual'
+                })
             }).then(() => {
-                alert(`✅ Водитель ${driver.displayName} назначен`);
+                showToast(`✅ Водитель ${driver?.displayName} назначен`, 'success');
+                document.getElementById('assignModal').classList.remove('active');
+                selectedOrderId = null;
             }).catch(err => {
-                alert('❌ Ошибка: ' + err.message);
+                showToast('❌ Ошибка: ' + err.message, 'error');
+            });
+        });
+
+        // ============================================================
+        // АВТО-РЕКОМЕНДАЦИЯ ДЛЯ ОДНОГО ЗАКАЗА
+        // ============================================================
+        window.autoAssignSingle = function(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) {
+                showToast('❌ Заказ не найден', 'error');
+                return;
+            }
+
+            const recommended = getRecommendedDrivers(order);
+            if (recommended.length === 0) {
+                showToast('⚠️ Нет водителей в радиусе 50 км', 'warning');
+                return;
+            }
+
+            // Показываем рекомендации в заказе
+            const orderRef = db.collection('orders').doc(orderId);
+            orderRef.update({
+                recommendedDrivers: recommended
+            }).then(() => {
+                showToast(`🤖 Найдено ${recommended.length} водителей в радиусе 50 км`, 'success');
+            }).catch(err => {
+                showToast('❌ Ошибка: ' + err.message, 'error');
             });
         };
 
@@ -796,67 +1114,135 @@
         window.deleteOrder = function(orderId) {
             if (!confirm('🗑️ Удалить заказ #' + orderId.substring(0, 8) + '?')) return;
             db.collection('orders').doc(orderId).delete()
-                .then(() => alert('✅ Заказ удалён'))
-                .catch(err => alert('❌ Ошибка: ' + err.message));
+                .then(() => showToast('✅ Заказ удалён', 'success'))
+                .catch(err => showToast('❌ Ошибка: ' + err.message, 'error'));
         };
 
         // ============================================================
-        // СИМУЛЯЦИЯ ВОДИТЕЛЯ
+        // УДАЛЕНИЕ ВОДИТЕЛЯ
         // ============================================================
-        document.getElementById('simulateBtn').addEventListener('click', function() {
-            const names = ['Алексей Петров', 'Мария Иванова', 'Сергей Сидоров', 'Дмитрий Козлов', 'Елена Смирнова'];
-            const cars = ['Toyota Camry', 'Hyundai Solaris', 'Skoda Octavia', 'Kia Rio', 'Renault Logan'];
-            const plates = ['А777МР77', 'К999КК99', 'Е123ЕЕ77', 'О777ОО77', 'Р555РР55'];
+        window.deleteDriver = function(driverId) {
+            const driver = allDrivers.find(d => d.uid === driverId);
+            if (!confirm(`🗑️ Удалить водителя ${driver?.displayName || '?'}?`)) return;
 
-            const rand = Math.floor(Math.random() * names.length);
-            const name = names[rand];
-            const car = cars[rand];
-            const plate = plates[rand];
+            // Удаляем документ из коллекции users
+            db.collection('users').doc(driverId).delete()
+                .then(() => {
+                    showToast('✅ Водитель удалён', 'success');
+                })
+                .catch(err => {
+                    showToast('❌ Ошибка: ' + err.message, 'error');
+                });
+        };
 
-            const newDriver = {
-                role: 'driver',
-                displayName: name,
-                email: `driver_${Date.now()}@test.com`,
-                balance: Math.floor(Math.random() * 500) + 50,
-                rating: 4.5,
-                bonus: 10,
-                penalty: 0,
-                premium: 0,
-                totalEarned: 500,
-                totalSpent: 0,
-                driverData: {
-                    location: {
-                        lat: 32.0853 + (Math.random() - 0.5) * 0.05,
-                        lng: 34.7818 + (Math.random() - 0.5) * 0.05
-                    },
-                    isAvailable: true,
-                    carModel: car,
-                    licensePlate: plate,
-                    phone: `+972 50-${String(Math.floor(1000000 + Math.random() * 9000000)).slice(0, 7)}`
-                },
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
+        // ============================================================
+        // ДОБАВЛЕНИЕ ВОДИТЕЛЯ
+        // ============================================================
+        document.getElementById('addDriverBtn').addEventListener('click', function() {
+            document.getElementById('addDriverModal').classList.add('active');
+        });
 
-            db.collection('users').add(newDriver)
-                .then(() => alert(`✅ Добавлен водитель: ${name}`))
-                .catch(err => alert('❌ Ошибка: ' + err.message));
+        document.getElementById('addDriverCancelBtn').addEventListener('click', function() {
+            document.getElementById('addDriverModal').classList.remove('active');
+            clearAddDriverForm();
+        });
+
+        document.getElementById('addDriverModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('active');
+                clearAddDriverForm();
+            }
+        });
+
+        function clearAddDriverForm() {
+            document.getElementById('addDriverName').value = '';
+            document.getElementById('addDriverEmail').value = '';
+            document.getElementById('addDriverPassword').value = '';
+            document.getElementById('addDriverCar').value = '';
+            document.getElementById('addDriverPlate').value = '';
+            document.getElementById('addDriverPhone').value = '';
+        }
+
+        document.getElementById('addDriverConfirmBtn').addEventListener('click', function() {
+            const name = document.getElementById('addDriverName').value.trim();
+            const email = document.getElementById('addDriverEmail').value.trim();
+            const password = document.getElementById('addDriverPassword').value.trim();
+            const car = document.getElementById('addDriverCar').value.trim();
+            const plate = document.getElementById('addDriverPlate').value.trim();
+            const phone = document.getElementById('addDriverPhone').value.trim();
+
+            if (!name || !email || !password) {
+                showToast('❌ Заполните имя, email и пароль', 'error');
+                return;
+            }
+            if (password.length < 6) {
+                showToast('❌ Пароль минимум 6 символов', 'error');
+                return;
+            }
+
+            document.getElementById('addDriverConfirmBtn').disabled = true;
+            document.getElementById('addDriverConfirmBtn').textContent = '⏳ ...';
+
+            // 1. Создаём пользователя в Auth
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    const user = userCredential.user;
+
+                    // 2. Создаём документ в коллекции users
+                    return db.collection('users').doc(user.uid).set({
+                        uid: user.uid,
+                        email: user.email,
+                        role: 'driver',
+                        displayName: name,
+                        balance: 0,
+                        rating: 0,
+                        bonus: 0,
+                        penalty: 0,
+                        premium: 0,
+                        totalEarned: 0,
+                        totalSpent: 0,
+                        driverData: {
+                            location: null,
+                            isAvailable: true,
+                            carModel: car || '—',
+                            licensePlate: plate || '—',
+                            phone: phone || ''
+                        },
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                })
+                .then(() => {
+                    showToast(`✅ Водитель ${name} добавлен`, 'success');
+                    document.getElementById('addDriverModal').classList.remove('active');
+                    clearAddDriverForm();
+                })
+                .catch(err => {
+                    if (err.code === 'auth/email-already-in-use') {
+                        showToast('❌ Этот email уже используется', 'error');
+                    } else {
+                        showToast('❌ Ошибка: ' + err.message, 'error');
+                    }
+                })
+                .finally(() => {
+                    document.getElementById('addDriverConfirmBtn').disabled = false;
+                    document.getElementById('addDriverConfirmBtn').textContent = '✅ Добавить';
+                });
         });
 
         // ============================================================
         // ОБНОВЛЕНИЕ
         // ============================================================
         document.getElementById('refreshBtn').addEventListener('click', function() {
-            // Просто перезагружаем подписки
-            subscribeToOrders();
-            subscribeToDrivers();
-            alert('🔄 Данные обновлены');
+            showToast('🔄 Данные обновлены', 'info');
         });
 
         // ============================================================
         // ПОДПИСКИ (REAL-TIME)
         // ============================================================
         function subscribeToOrders() {
-            db.collection('orders').orderBy('createdAt', 'desc')
+            if (unsubOrders) { unsubOrders();
+                unsubOrders = null; }
+            unsubOrders = db.collection('orders').orderBy('createdAt', 'desc')
                 .onSnapshot(snapshot => {
                     allOrders = [];
                     snapshot.forEach(doc => {
@@ -867,7 +1253,9 @@
         }
 
         function subscribeToDrivers() {
-            db.collection('users').where('role', '==', 'driver')
+            if (unsubDrivers) { unsubDrivers();
+                unsubDrivers = null; }
+            unsubDrivers = db.collection('users').where('role', '==', 'driver')
                 .onSnapshot(snapshot => {
                     allDrivers = [];
                     snapshot.forEach(doc => {
@@ -879,10 +1267,13 @@
                             status: data.driverData?.isAvailable ? 'online' : 'offline',
                             carModel: data.driverData?.carModel || '—',
                             licensePlate: data.driverData?.licensePlate || '—',
+                            phone: data.driverData?.phone || '',
+                            location: data.driverData?.location || null,
                             ...data
                         });
                     });
                     renderDrivers();
+                    updateStats();
                 }, err => console.error('Drivers error:', err));
         }
 
@@ -890,6 +1281,10 @@
         // ВЫХОД
         // ============================================================
         document.getElementById('logoutBtn').addEventListener('click', function() {
+            if (unsubOrders) { unsubOrders();
+                unsubOrders = null; }
+            if (unsubDrivers) { unsubDrivers();
+                unsubDrivers = null; }
             auth.signOut().then(() => {
                 window.location.href = 'index.html';
             });
@@ -911,8 +1306,10 @@
                         subscribeToDrivers();
                         console.log('✅ Диспетчер авторизован');
                     } else {
-                        alert('⛔ Доступ только для администраторов');
-                        window.location.href = 'index.html';
+                        showToast('⛔ Доступ только для администраторов', 'error');
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1500);
                     }
                 })
                 .catch(() => {
@@ -921,6 +1318,13 @@
         });
 
         console.log('✅ Панель диспетчера готова');
+        console.log('📌 Функции:');
+        console.log('  📋 Просмотр заказов');
+        console.log('  🚖 Ручное назначение водителя');
+        console.log('  🤖 Авто-рекомендация (50 км)');
+        console.log('  🗑️ Удаление заказов и водителей');
+        console.log('  ➕ Добавление водителей');
+        console.log('  💰 Финансы');
     </script>
 
 </body>
