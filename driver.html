@@ -415,7 +415,6 @@
             z-index: 1;
         }
 
-        /* ===== АДАПТИВНОСТЬ ===== */
         @media (max-width: 420px) {
             .container {
                 border-radius: 0;
@@ -693,10 +692,15 @@
             el.transactionsList.innerHTML = html;
             el.transactionsCount.textContent = `(${driverTransactions.length})`;
 
-            // Обновляем статистику
+            // Обновляем статистику (из транзакций)
             el.totalEarned.textContent = formatPrice(totalEarned);
             el.totalPenalty.textContent = formatPrice(totalPenalty);
             el.totalBonus.textContent = totalBonus.toFixed(0);
+
+            // Бонусы также берём из документа пользователя (если есть)
+            if (userData && userData.bonus !== undefined) {
+                el.totalBonus.textContent = userData.bonus.toFixed(0);
+            }
         }
 
         // ============================================================
@@ -713,6 +717,11 @@
                     el.driverName.textContent = userData.displayName || 'Водитель';
                     el.driverEmail.textContent = userData.email || '';
                     el.balance.textContent = formatPrice(userData.balance || 0);
+
+                    // Бонусы из документа пользователя
+                    if (userData.bonus !== undefined) {
+                        el.totalBonus.textContent = userData.bonus.toFixed(0);
+                    }
 
                     // Статус
                     const status = userData.driverData?.isAvailable ? 'online' : 'offline';
@@ -762,7 +771,6 @@
                 console.log('✅ Статус обновлён:', status);
             }).catch(err => {
                 console.error('❌ Ошибка обновления статуса:', err);
-                // Возвращаем UI обратно
                 const current = userData?.driverData?.isAvailable ? 'online' : 'offline';
                 updateStatusUI(current);
             });
@@ -808,7 +816,6 @@
             currentUser = user;
             el.driverUid.textContent = 'UID: ' + user.uid.substring(0, 16) + '...';
 
-            // Проверяем, что это водитель
             db.collection('users').doc(user.uid).get()
                 .then(doc => {
                     if (!doc.exists) {
@@ -822,7 +829,6 @@
                         window.location.href = 'index.html';
                         return;
                     }
-                    // Подписываемся на данные
                     subscribeToDriverData(user.uid);
                 })
                 .catch(err => {
