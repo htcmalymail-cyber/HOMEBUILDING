@@ -826,7 +826,7 @@
 
             setTimeout(() => {
                 let redirect = 'cabinet.html';
-                if (role === 'admin') redirect = 'admin.html';
+                if (role === 'admin') redirect = 'dispatcher.html';
                 else if (role === 'driver') redirect = 'driver.html';
                 window.location.href = redirect;
             }, 1000);
@@ -975,7 +975,7 @@
                 const path = window.location.pathname;
                 if (path === '/' || path === '/index.html' || path.endsWith('/index.html')) {
                     let redirect = 'cabinet.html';
-                    if (role === 'admin') redirect = 'admin.html';
+                    if (role === 'admin') redirect = 'dispatcher.html';
                     else if (role === 'driver') redirect = 'driver.html';
                     window.location.href = redirect;
                 }
