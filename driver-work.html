@@ -19,7 +19,6 @@
     </script>
 
     <style>
-        /* ===== ВСЕ СТИЛИ ===== */
         * {
             margin: 0;
             padding: 0;
@@ -341,6 +340,27 @@
             background: #4ade80;
         }
 
+        /* ===== ТАЙМЕР ОЖИДАНИЯ ===== */
+        .waiting-timer {
+            background: rgba(255, 180, 0, 0.08);
+            border: 1px solid rgba(255, 180, 0, 0.15);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-top: 8px;
+            text-align: center;
+            font-size: 14px;
+            color: #ffb000;
+        }
+
+        .waiting-timer .time {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .waiting-timer .time.warning {
+            color: #ff6b6b;
+        }
+
         /* ===== ПУСТО ===== */
         .empty-state {
             text-align: center;
@@ -434,6 +454,9 @@
             .order-card .route {
                 font-size: 13px;
             }
+            .waiting-timer .time {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
@@ -492,6 +515,7 @@
             <button class="btn btn-success" id="onlineBtn">🟢 Онлайн</button>
             <button class="btn btn-secondary" id="offlineBtn">⚪ Офлайн</button>
             <button class="btn btn-primary" id="refreshLocationBtn">📍 Обновить геолокацию</button>
+            <button class="btn btn-secondary" id="refreshBtn">🔄 Обновить</button>
         </div>
 
     </div>
@@ -536,12 +560,14 @@
         let driverMarker = null;
         let clientMarker = null;
         let destinationMarker = null;
-        let orderMarkers = [];
         let watchId = null;
         let isOnline = true;
         let unsubAvailableOrders = null;
         let unsubActiveOrder = null;
         let unsubUser = null;
+        let waitingTimerInterval = null;
+        let waitingStartTime = null;
+        let isWaitingForClient = false;
 
         // ============================================================
         // ЭЛЕМЕНТЫ
@@ -560,6 +586,7 @@
             onlineBtn: document.getElementById('onlineBtn'),
             offlineBtn: document.getElementById('offlineBtn'),
             refreshLocationBtn: document.getElementById('refreshLocationBtn'),
+            refreshBtn: document.getElementById('refreshBtn'),
             toast: document.getElementById('toast'),
             toastMessage: document.getElementById('toastMessage'),
             map: document.getElementById('map')
@@ -779,6 +806,11 @@
                     el.activeOrderStatus.style.color = '#ffb000';
                     el.activeOrderTitle.style.display = 'block';
                     updateActiveOrderMarkers();
+
+                    // Если статус 'assigned' и ещё не начали ожидание — запускаем таймер
+                    if (found.status === 'assigned' && !isWaitingForClient) {
+                        startWaitingTimer(found);
+                    }
                 } else {
                     activeOrder = null;
                     el.activeOrderCard.innerHTML = '';
@@ -786,6 +818,7 @@
                     el.activeOrderStatus.textContent = 'Нет';
                     el.activeOrderStatus.style.color = '#4ade80';
                     clearOrderMarkers();
+                    stopWaitingTimer();
                 }
 
             }, function(error) {
@@ -794,14 +827,13 @@
         }
 
         // ============================================================
-        // МАРКЕРЫ НА КАРТЕ ДЛЯ АКТИВНОГО ЗАКАЗА
+        // МАРКЕРЫ НА КАРТЕ
         // ============================================================
         function updateActiveOrderMarkers() {
             clearOrderMarkers();
 
             if (!activeOrder) return;
 
-            // Маркер клиента (отправление)
             if (activeOrder.pickup && activeOrder.pickup.lat && activeOrder.pickup.lng) {
                 const icon = L.divIcon({
                     html: '🟢',
@@ -814,7 +846,6 @@
                     .bindPopup(`📍 Отправление: ${activeOrder.pickup.address || 'Клиент'}`);
             }
 
-            // Маркер назначения
             if (activeOrder.destination && activeOrder.destination.lat && activeOrder.destination.lng) {
                 const icon = L.divIcon({
                     html: '🔴',
@@ -827,7 +858,6 @@
                     .bindPopup(`🏁 Назначение: ${activeOrder.destination.address || 'Конечная точка'}`);
             }
 
-            // Если есть и клиент, и назначение — показываем оба
             if (clientMarker && destinationMarker) {
                 const bounds = L.latLngBounds(
                     [activeOrder.pickup.lat, activeOrder.pickup.lng],
@@ -900,23 +930,112 @@
         }
 
         // ============================================================
-        // ОТОБРАЖЕНИЕ АКТИВНОГО ЗАКАЗА (с полным циклом поездки)
+        // ТАЙМЕР ОЖИДАНИЯ КЛИЕНТА (3 минуты)
+        // ============================================================
+        function startWaitingTimer(order) {
+            if (waitingTimerInterval) {
+                clearInterval(waitingTimerInterval);
+                waitingTimerInterval = null;
+            }
+
+            isWaitingForClient = true;
+            waitingStartTime = Date.now();
+            const WAIT_TIME = 3 * 60; // 3 минуты в секундах
+
+            // Обновляем UI таймера
+            const statusDetail = document.getElementById('orderStatusDetail');
+            if (statusDetail) {
+                statusDetail.innerHTML = `
+                        <div class="waiting-timer">
+                            ⏳ Ожидание клиента: <span class="time" id="waitingTimerDisplay">3:00</span>
+                            <br><span style="font-size:12px; color:#8899aa;">Если клиент не появится, заказ будет отменён</span>
+                        </div>
+                    `;
+            }
+
+            // Показываем кнопку "Клиент не явился" (неактивна до окончания таймера)
+            const noShowBtn = document.getElementById('noShowBtn');
+            if (noShowBtn) {
+                noShowBtn.disabled = true;
+                noShowBtn.textContent = `⏳ Клиент не явился (${Math.ceil(WAIT_TIME / 60)} мин)`;
+            }
+
+            waitingTimerInterval = setInterval(() => {
+                const elapsed = (Date.now() - waitingStartTime) / 1000;
+                const remaining = Math.max(0, WAIT_TIME - elapsed);
+                const minutes = Math.floor(remaining / 60);
+                const seconds = Math.floor(remaining % 60);
+
+                const display = document.getElementById('waitingTimerDisplay');
+                if (display) {
+                    display.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    if (remaining < 30) {
+                        display.classList.add('warning');
+                    } else {
+                        display.classList.remove('warning');
+                    }
+                }
+
+                // Когда время вышло — активируем кнопку "Клиент не явился"
+                if (remaining <= 0) {
+                    clearInterval(waitingTimerInterval);
+                    waitingTimerInterval = null;
+                    isWaitingForClient = false;
+
+                    const noShowBtn = document.getElementById('noShowBtn');
+                    if (noShowBtn) {
+                        noShowBtn.disabled = false;
+                        noShowBtn.textContent = '👤 Клиент не явился (штраф 7 ₪)';
+                        noShowBtn.classList.add('btn-danger');
+                        noShowBtn.classList.remove('btn-secondary');
+                    }
+
+                    const display = document.getElementById('waitingTimerDisplay');
+                    if (display) {
+                        display.textContent = '⏰ Время вышло!';
+                        display.classList.add('warning');
+                    }
+
+                    if (statusDetail) {
+                        statusDetail.innerHTML = `
+                                <div class="waiting-timer" style="border-color: #ff6b6b;">
+                                    ⏰ Время ожидания истекло!
+                                    <br><span style="font-size:12px; color:#ff6b6b;">Клиент не явился. Вы можете отменить заказ.</span>
+                                </div>
+                            `;
+                    }
+
+                    showToast('⏰ Время ожидания истекло! Клиент не явился.', 'warning');
+                }
+            }, 1000);
+        }
+
+        function stopWaitingTimer() {
+            if (waitingTimerInterval) {
+                clearInterval(waitingTimerInterval);
+                waitingTimerInterval = null;
+            }
+            isWaitingForClient = false;
+        }
+
+        // ============================================================
+        // ОТОБРАЖЕНИЕ АКТИВНОГО ЗАКАЗА
         // ============================================================
         function renderActiveOrder(order) {
             const card = el.activeOrderCard;
             const dist = order.distance !== null ? order.distance.toFixed(1) + ' км' : '—';
 
-            // Определяем этап поездки
             let buttons = '';
             let statusDetail = '';
             let tripSteps = '';
 
             if (order.status === 'assigned') {
-                // Этап 1: Водитель едет к клиенту
+                // Кнопки для этапа "К клиенту"
                 buttons = `
-                        <button class="btn btn-warning" id="arriveBtn">📍 Прибыл к клиенту</button>
+                        <button class="btn btn-success" id="arriveBtn">📍 Прибыл на место</button>
                         <button class="btn btn-primary" id="navigateBtn">🧭 К клиенту</button>
                         <button class="btn btn-danger" id="cancelOrderBtn">❌ Отменить поездку</button>
+                        <button class="btn btn-secondary" id="noShowBtn" disabled>⏳ Клиент не явился (3 мин)</button>
                     `;
                 statusDetail = '🟡 Ожидайте прибытия к клиенту';
 
@@ -940,9 +1059,9 @@
                     `;
 
             } else if (order.status === 'in_progress') {
-                // Этап 2: Водитель везёт клиента к месту назначения
+                // Кнопки для этапа "В пути"
                 buttons = `
-                        <button class="btn btn-warning" id="arriveDestinationBtn">🏁 Прибыл к месту назначения</button>
+                        <button class="btn btn-success" id="arriveDestinationBtn">🏁 Прибыл к месту назначения</button>
                         <button class="btn btn-primary" id="navigateDestinationBtn">🧭 К назначению</button>
                         <button class="btn btn-danger" id="cancelOrderBtn">❌ Отменить поездку</button>
                     `;
@@ -1016,26 +1135,49 @@
                     </div>
                 `;
 
-            // Обработчики кнопок
+            // === ОБРАБОТЧИКИ КНОПОК ===
+
+            // Прибыл на место (к клиенту)
             document.getElementById('arriveBtn')?.addEventListener('click', function() {
                 arriveToClient(order);
             });
 
+            // Навигация к клиенту
             document.getElementById('navigateBtn')?.addEventListener('click', function() {
                 navigateToClient(order);
             });
 
+            // Прибыл к месту назначения
             document.getElementById('arriveDestinationBtn')?.addEventListener('click', function() {
                 arriveToDestination(order);
             });
 
+            // Навигация к месту назначения
             document.getElementById('navigateDestinationBtn')?.addEventListener('click', function() {
                 navigateToDestination(order);
             });
 
+            // Отменить поездку
             document.getElementById('cancelOrderBtn')?.addEventListener('click', function() {
                 cancelDriverOrder(order);
             });
+
+            // Клиент не явился
+            document.getElementById('noShowBtn')?.addEventListener('click', function() {
+                clientNoShow(order);
+            });
+
+            // Если кнопка уже создана, но неактивна — обновляем состояние
+            const noShowBtn = document.getElementById('noShowBtn');
+            if (noShowBtn && isWaitingForClient) {
+                noShowBtn.disabled = true;
+                noShowBtn.textContent = '⏳ Клиент не явился (3 мин)';
+            } else if (noShowBtn && !isWaitingForClient && activeOrder && activeOrder.status === 'assigned') {
+                // Если таймер не запущен, но заказ назначен — запускаем
+                if (!waitingTimerInterval) {
+                    startWaitingTimer(order);
+                }
+            }
         }
 
         // ============================================================
@@ -1121,6 +1263,9 @@
                 return;
             }
 
+            // Останавливаем таймер ожидания
+            stopWaitingTimer();
+
             const orderRef = db.collection('orders').doc(order.id);
             orderRef.update({
                 status: 'in_progress',
@@ -1128,6 +1273,81 @@
             }).then(() => {
                 showToast('✅ Вы прибыли к клиенту! Поездка началась.', 'success');
                 loadActiveOrder();
+            }).catch(err => {
+                showToast('❌ Ошибка: ' + err.message, 'error');
+            });
+        }
+
+        // ============================================================
+        // КЛИЕНТ НЕ ЯВИЛСЯ (штраф клиенту 7 ₪)
+        // ============================================================
+        function clientNoShow(order) {
+            if (!confirm('⚠️ Клиент не явился. Применить штраф 7 ₪ и отменить заказ?')) return;
+
+            // Проверяем геолокацию водителя
+            if (!driverLocation || !order.pickup || !order.pickup.lat || !order.pickup.lng) {
+                showToast('⚠️ Нет данных о местоположении', 'warning');
+                return;
+            }
+
+            const distance = haversineDistance(
+                driverLocation.lat, driverLocation.lng,
+                order.pickup.lat, order.pickup.lng
+            );
+
+            if (distance > 0.2) {
+                showToast(`⚠️ Вы слишком далеко от места отправления (${(distance * 1000).toFixed(0)} м).`, 'warning');
+                return;
+            }
+
+            const orderRef = db.collection('orders').doc(order.id);
+            const PENALTY = 7;
+
+            orderRef.update({
+                status: 'cancelled',
+                cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+                cancellationReason: 'Клиент не явился',
+                penaltyApplied: PENALTY,
+                cancelledBy: 'driver_no_show'
+            }).then(() => {
+                // Списываем штраф с клиента
+                db.collection('users').doc(order.clientId).update({
+                    balance: firebase.firestore.FieldValue.increment(-PENALTY),
+                    penalty: firebase.firestore.FieldValue.increment(PENALTY)
+                }).catch(err => console.error('Ошибка списания штрафа с клиента:', err));
+
+                // Начисляем штраф водителю (компенсация)
+                db.collection('users').doc(currentUser.uid).update({
+                    balance: firebase.firestore.FieldValue.increment(PENALTY)
+                }).catch(err => console.error('Ошибка начисления компенсации водителю:', err));
+
+                // Создаём транзакции
+                db.collection('transactions').add({
+                    userId: order.clientId,
+                    orderId: order.id,
+                    type: 'penalty',
+                    amount: -PENALTY,
+                    description: `Штраф за неявку к заказу #${order.id.substring(0, 8)}`,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    balanceAfter: 0
+                }).catch(err => console.error('Ошибка создания транзакции клиента:', err));
+
+                db.collection('transactions').add({
+                    userId: currentUser.uid,
+                    orderId: order.id,
+                    type: 'earning',
+                    amount: PENALTY,
+                    description: `Компенсация за неявку клиента #${order.id.substring(0, 8)}`,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    balanceAfter: 0
+                }).catch(err => console.error('Ошибка создания транзакции водителя:', err));
+
+                showToast(`✅ Заказ отменён. Штраф клиенту ${formatPrice(PENALTY)}`, 'warning');
+                stopWaitingTimer();
+                setTimeout(() => {
+                    loadAvailableOrders();
+                    loadActiveOrder();
+                }, 1000);
             }).catch(err => {
                 showToast('❌ Ошибка: ' + err.message, 'error');
             });
@@ -1147,7 +1367,6 @@
                 order.destination.lat, order.destination.lng
             );
 
-            // Проверка: водитель должен быть в радиусе 200 метров от места назначения
             if (distance > 0.2) {
                 showToast(`⚠️ Вы слишком далеко от места назначения (${(distance * 1000).toFixed(0)} м).`, 'warning');
                 return;
@@ -1170,47 +1389,79 @@
         }
 
         // ============================================================
-        // НАВИГАЦИЯ
+        // НАВИГАЦИЯ (ТОЛЬКО WAZE)
         // ============================================================
+        function getWazeLink(lat, lng, address) {
+            if (lat && lng) {
+                return `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+            }
+            if (address && address.trim() !== '') {
+                return `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
+            }
+            return null;
+        }
+
         function navigateToClient(order) {
-            if (!order.pickup || !order.pickup.lat || !order.pickup.lng) {
-                showToast('⚠️ Нет координат клиента', 'warning');
+            if (!order.pickup) {
+                showToast('⚠️ Нет данных о клиенте', 'warning');
                 return;
             }
-            const url =
-                `https://www.openstreetmap.org/directions?from=${driverLocation?.lat || ''},${driverLocation?.lng || ''}&to=${order.pickup.lat},${order.pickup.lng}`;
-            window.open(url, '_blank');
-            showToast('🧭 Открыта навигация к клиенту', 'info');
+
+            const lat = order.pickup.lat;
+            const lng = order.pickup.lng;
+            const address = order.pickup.address;
+
+            const wazeLink = getWazeLink(lat, lng, address);
+
+            if (wazeLink) {
+                window.open(wazeLink, '_blank');
+                showToast('🧭 Открыта навигация Waze к клиенту', 'info');
+            } else {
+                showToast('⚠️ Нет данных для навигации к клиенту', 'error');
+            }
         }
 
         function navigateToDestination(order) {
-            if (!order.destination || !order.destination.lat || !order.destination.lng) {
-                showToast('⚠️ Нет координат назначения', 'warning');
+            if (!order.destination) {
+                showToast('⚠️ Нет данных о назначении', 'warning');
                 return;
             }
-            const url =
-                `https://www.openstreetmap.org/directions?from=${driverLocation?.lat || ''},${driverLocation?.lng || ''}&to=${order.destination.lat},${order.destination.lng}`;
-            window.open(url, '_blank');
-            showToast('🧭 Открыта навигация к месту назначения', 'info');
+
+            const lat = order.destination.lat;
+            const lng = order.destination.lng;
+            const address = order.destination.address;
+
+            const wazeLink = getWazeLink(lat, lng, address);
+
+            if (wazeLink) {
+                window.open(wazeLink, '_blank');
+                showToast('🧭 Открыта навигация Waze к месту назначения', 'info');
+            } else {
+                showToast('⚠️ Нет данных для навигации к назначению', 'error');
+            }
         }
 
         // ============================================================
-        // СОЗДАНИЕ ТРАНЗАКЦИЙ
+        // СОЗДАНИЕ ТРАНЗАКЦИЙ (КОМИССИЯ 10%)
         // ============================================================
         function createOrderTransactions(order) {
             const price = order.price || 0;
-            const driverEarn = price * 0.8;
+            const COMMISSION = 0.10; // 10%
+            const commission = price * COMMISSION;
+            const driverEarn = price - commission; // 90%
 
+            // Транзакция для водителя (заработок 90%)
             db.collection('transactions').add({
                 userId: currentUser.uid,
                 orderId: order.id,
                 type: 'earning',
                 amount: driverEarn,
-                description: `Заработок за поездку #${order.id.substring(0, 8)} (80% от ${price}₪)`,
+                description: `Заработок за поездку #${order.id.substring(0, 8)} (90% от ${price}₪)`,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 balanceAfter: (userData?.balance || 0) + driverEarn
             }).catch(err => console.error('Ошибка создания транзакции водителя:', err));
 
+            // Транзакция для клиента (списание полной стоимости)
             db.collection('transactions').add({
                 userId: order.clientId,
                 orderId: order.id,
@@ -1221,10 +1472,17 @@
                 balanceAfter: 0
             }).catch(err => console.error('Ошибка создания транзакции клиента:', err));
 
+            // Обновляем баланс водителя
             db.collection('users').doc(currentUser.uid).update({
                 balance: firebase.firestore.FieldValue.increment(driverEarn),
                 totalEarned: firebase.firestore.FieldValue.increment(driverEarn)
-            }).catch(err => console.error('Ошибка обновления баланса:', err));
+            }).catch(err => console.error('Ошибка обновления баланса водителя:', err));
+
+            // Обновляем баланс клиента (списание)
+            db.collection('users').doc(order.clientId).update({
+                balance: firebase.firestore.FieldValue.increment(-price),
+                totalSpent: firebase.firestore.FieldValue.increment(price)
+            }).catch(err => console.error('Ошибка обновления баланса клиента:', err));
         }
 
         // ============================================================
@@ -1270,6 +1528,7 @@
                 }
 
                 showToast('❌ Поездка отменена', 'error');
+                stopWaitingTimer();
                 setTimeout(() => {
                     loadAvailableOrders();
                     loadActiveOrder();
@@ -1355,6 +1614,12 @@
             showToast('📍 Обновление геолокации...', 'info');
         });
 
+        el.refreshBtn.addEventListener('click', function() {
+            showToast('🔄 Данные обновлены', 'info');
+            loadAvailableOrders();
+            loadActiveOrder();
+        });
+
         el.backBtn.addEventListener('click', function() {
             if (activeOrder) {
                 if (!confirm('У вас есть активный заказ. Вернуться в кабинет?')) return;
@@ -1371,6 +1636,7 @@
                 unsubActiveOrder();
                 unsubActiveOrder = null;
             }
+            stopWaitingTimer();
             window.location.href = 'driver.html';
         });
 
@@ -1466,10 +1732,13 @@
         console.log('  📋 Доступные заказы (new, searching)');
         console.log('  🚗 Активный заказ (assigned, in_progress)');
         console.log('  ✅ Принятие/отклонение заказов');
-        console.log('  🧭 Навигация к клиенту и к месту назначения');
+        console.log('  🧭 Навигация Waze к клиенту и к месту назначения');
         console.log('  🏁 Прибытие к клиенту (проверка геолокации)');
         console.log('  🏁 Прибытие к месту назначения (проверка геолокации)');
-        console.log('  ⚠️ Отмена поездки со штрафом');
+        console.log('  ⏳ Ожидание клиента 3 минуты');
+        console.log('  👤 Клиент не явился — штраф 7 ₪');
+        console.log('  ⚠️ Отмена поездки со штрафом 7 ₪');
+        console.log('  💰 Комиссия платформы 10%, водитель 90%');
         console.log('  🗺️ Маркеры на карте: 🟢 клиент, 🔴 назначение, 🚗 водитель');
     </script>
 
