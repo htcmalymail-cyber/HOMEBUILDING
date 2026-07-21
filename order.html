@@ -19,7 +19,7 @@
     </script>
 
     <style>
-        /* ===== ВСЕ СТИЛИ (те же, что в предыдущей версии) ===== */
+        /* ===== ВСЕ СТИЛИ (как в рабочей версии) ===== */
         * {
             margin: 0;
             padding: 0;
@@ -897,103 +897,6 @@
         }
 
         // ============================================================
-        // ПОСТРОЕНИЕ МАРШРУТА (OSRM)
-        // ============================================================
-        async function buildRoute(startLat, startLng, endLat, endLng) {
-            try {
-                const url =
-                    `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`;
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (data && data.routes && data.routes.length > 0) {
-                    const route = data.routes[0];
-                    const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-                    const distance = route.distance / 1000;
-                    const duration = route.duration / 60;
-
-                    return {
-                        coordinates: coordinates,
-                        distance: distance,
-                        duration: duration
-                    };
-                }
-                return null;
-            } catch (error) {
-                console.error('Ошибка построения маршрута:', error);
-                return null;
-            }
-        }
-
-        // ============================================================
-        // КАРТА
-        // ============================================================
-        function initMap() {
-            map = L.map('map').setView([32.0853, 34.7818], 13);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap',
-                maxZoom: 19,
-                minZoom: 10
-            }).addTo(map);
-
-            // Клик по карте — установка точки отправления (зелёный)
-            map.on('click', function(e) {
-                const lat = e.latlng.lat;
-                const lng = e.latlng.lng;
-
-                console.log('🖱️ Клик по карте:', lat, lng);
-
-                if (!pickupLocation) {
-                    pickupLocation = { lat, lng };
-                    updatePickupMarker();
-                    reverseGeocode(lat, lng, function(address) {
-                        if (address) {
-                            el.pickupInput.value = address;
-                        } else {
-                            el.pickupInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                        }
-                    });
-                    showMessage('📍 Точка отправления установлена', 'success');
-                    return;
-                }
-
-                if (pickupLocation && !destinationLocation) {
-                    destinationLocation = { lat, lng };
-                    console.log('📍 Точка назначения установлена:', destinationLocation);
-                    updateDestinationMarker();
-                    reverseGeocode(lat, lng, function(address) {
-                        if (address) {
-                            el.destinationInput.value = address;
-                        } else {
-                            el.destinationInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                        }
-                    });
-                    drawRoute();
-                    showMessage('📍 Точка назначения установлена', 'success');
-                    return;
-                }
-
-                if (pickupLocation && destinationLocation) {
-                    destinationLocation = { lat, lng };
-                    console.log('📍 Точка назначения обновлена:', destinationLocation);
-                    updateDestinationMarker();
-                    reverseGeocode(lat, lng, function(address) {
-                        if (address) {
-                            el.destinationInput.value = address;
-                        } else {
-                            el.destinationInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                        }
-                    });
-                    drawRoute();
-                    showMessage('📍 Точка назначения обновлена', 'success');
-                }
-            });
-
-            console.log('🗺️ Карта инициализирована');
-        }
-
-        // ============================================================
         // МАРКЕРЫ
         // ============================================================
         function updatePickupMarker() {
@@ -1012,12 +915,12 @@
                 .addTo(map)
                 .bindPopup('📍 Отправление');
             map.setView([pickupLocation.lat, pickupLocation.lng], 15);
-            console.log('🟢 Маркер отправления установлен');
         }
 
+        // ===== ОСНОВНОЕ ИСПРАВЛЕНИЕ: КРАСНАЯ ТОЧКА =====
         function updateDestinationMarker() {
             if (!destinationLocation) {
-                console.warn('⚠️ Нет destinationLocation для маркера');
+                console.warn('⚠️ Нет destinationLocation');
                 return;
             }
             if (destinationMarker) {
@@ -1033,15 +936,78 @@
             destinationMarker = L.marker([destinationLocation.lat, destinationLocation.lng], { icon: redIcon })
                 .addTo(map)
                 .bindPopup('🏁 Назначение');
-            console.log('🔴 Маркер назначения установлен:', destinationLocation.lat, destinationLocation.lng);
+            console.log('🔴 Маркер назначения установлен');
         }
 
         // ============================================================
-        // МАРШРУТ
+        // КАРТА
         // ============================================================
-        async function drawRoute() {
+        function initMap() {
+            map = L.map('map').setView([32.0853, 34.7818], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19,
+                minZoom: 10
+            }).addTo(map);
+
+            map.on('click', function(e) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+
+                if (!pickupLocation) {
+                    pickupLocation = { lat, lng };
+                    updatePickupMarker();
+                    reverseGeocode(lat, lng, function(address) {
+                        if (address) {
+                            el.pickupInput.value = address;
+                        } else {
+                            el.pickupInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                        }
+                    });
+                    showMessage('📍 Точка отправления установлена', 'success');
+                    return;
+                }
+
+                if (pickupLocation && !destinationLocation) {
+                    destinationLocation = { lat, lng };
+                    updateDestinationMarker(); // ← КРАСНАЯ ТОЧКА
+                    reverseGeocode(lat, lng, function(address) {
+                        if (address) {
+                            el.destinationInput.value = address;
+                        } else {
+                            el.destinationInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                        }
+                    });
+                    drawRoute();
+                    showMessage('📍 Точка назначения установлена', 'success');
+                    return;
+                }
+
+                if (pickupLocation && destinationLocation) {
+                    destinationLocation = { lat, lng };
+                    updateDestinationMarker(); // ← КРАСНАЯ ТОЧКА ОБНОВЛЯЕТСЯ
+                    reverseGeocode(lat, lng, function(address) {
+                        if (address) {
+                            el.destinationInput.value = address;
+                        } else {
+                            el.destinationInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                        }
+                    });
+                    drawRoute();
+                    showMessage('📍 Точка назначения обновлена', 'success');
+                }
+            });
+
+            console.log('🗺️ Карта инициализирована');
+        }
+
+        // ============================================================
+        // МАРШРУТ (ПРЯМАЯ ЛИНИЯ — РАБОТАЕТ)
+        // ============================================================
+        function drawRoute() {
             if (!pickupLocation || !destinationLocation) {
-                console.warn('⚠️ Нет точек для построения маршрута');
+                console.warn('⚠️ Нет точек для маршрута');
                 return;
             }
 
@@ -1050,59 +1016,32 @@
                 routeLine = null;
             }
 
-            console.log('🚗 Строим маршрут от', pickupLocation, 'до', destinationLocation);
+            const latlngs = [
+                [pickupLocation.lat, pickupLocation.lng],
+                [destinationLocation.lat, destinationLocation.lng]
+            ];
 
-            const routeData = await buildRoute(
+            routeLine = L.polyline(latlngs, {
+                color: '#4ade80',
+                weight: 3,
+                opacity: 0.7,
+                dashArray: '6, 4'
+            }).addTo(map);
+
+            const distance = haversineDistance(
                 pickupLocation.lat, pickupLocation.lng,
                 destinationLocation.lat, destinationLocation.lng
             );
 
-            if (routeData && routeData.coordinates.length > 0) {
-                routeLine = L.polyline(routeData.coordinates, {
-                    color: '#4ade80',
-                    weight: 4,
-                    opacity: 0.8,
-                    dashArray: '8, 6'
-                }).addTo(map);
+            const result = calculatePriceAndCommission(distance);
+            el.priceDisplay.textContent = formatPrice(result.price);
+            el.distanceDisplay.textContent = formatDistance(distance);
+            el.durationDisplay.textContent = formatDuration(distance * 3);
 
-                const result = calculatePriceAndCommission(routeData.distance);
-                el.priceDisplay.textContent = formatPrice(result.price);
-                el.distanceDisplay.textContent = formatDistance(routeData.distance);
-                el.durationDisplay.textContent = formatDuration(routeData.duration);
+            const bounds = L.latLngBounds(latlngs);
+            map.fitBounds(bounds, { padding: [40, 40] });
 
-                const bounds = L.latLngBounds(routeData.coordinates);
-                map.fitBounds(bounds, { padding: [40, 40] });
-
-                console.log('✅ Маршрут построен:', routeData.distance.toFixed(1), 'км');
-
-            } else {
-                // Запасной вариант — прямая линия
-                const latlngs = [
-                    [pickupLocation.lat, pickupLocation.lng],
-                    [destinationLocation.lat, destinationLocation.lng]
-                ];
-                routeLine = L.polyline(latlngs, {
-                    color: '#4ade80',
-                    weight: 3,
-                    opacity: 0.5,
-                    dashArray: '5, 5'
-                }).addTo(map);
-
-                const distance = haversineDistance(
-                    pickupLocation.lat, pickupLocation.lng,
-                    destinationLocation.lat, destinationLocation.lng
-                );
-                const result = calculatePriceAndCommission(distance);
-                el.priceDisplay.textContent = formatPrice(result.price);
-                el.distanceDisplay.textContent = formatDistance(distance);
-                el.durationDisplay.textContent = formatDuration(distance * 3);
-
-                const bounds = L.latLngBounds(latlngs);
-                map.fitBounds(bounds, { padding: [40, 40] });
-
-                console.warn('⚠️ Маршрут построен по прямой');
-                showMessage('⚠️ Маршрут построен по прямой (приблизительно)', 'warning');
-            }
+            console.log('✅ Маршрут построен (прямая линия)');
         }
 
         // ============================================================
@@ -1140,7 +1079,6 @@
                     el.geoBtn.textContent = '📍 Определить';
                     el.geoBtn.classList.remove('loading');
                     el.geoBtn.disabled = false;
-                    drawRoute();
                 },
                 function(error) {
                     console.error('Ошибка геолокации:', error);
@@ -1157,7 +1095,7 @@
         }
 
         // ============================================================
-        // ОБРАБОТКА ВЫБОРА АДРЕСА ИЗ АВТОДОПОЛНЕНИЯ
+        // ОБРАБОТКА ВЫБОРА АДРЕСА
         // ============================================================
         function handlePickupSelect(result) {
             pickupLocation = { lat: result.lat, lng: result.lng };
@@ -1168,8 +1106,7 @@
 
         function handleDestinationSelect(result) {
             destinationLocation = { lat: result.lat, lng: result.lng };
-            console.log('📍 Адрес назначения выбран:', destinationLocation);
-            updateDestinationMarker();
+            updateDestinationMarker(); // ← КРАСНАЯ ТОЧКА
             drawRoute();
             showMessage(`🏁 Назначение: ${result.displayName}`, 'success');
         }
@@ -1196,8 +1133,7 @@
                 geocodeAddress(address).then(function(result) {
                     if (result) {
                         destinationLocation = { lat: result.lat, lng: result.lng };
-                        console.log('📍 Адрес назначения (blur):', destinationLocation);
-                        updateDestinationMarker();
+                        updateDestinationMarker(); // ← КРАСНАЯ ТОЧКА
                         drawRoute();
                     } else {
                         destinationLocation = null;
@@ -1208,13 +1144,13 @@
         });
 
         // ============================================================
-        // СОЗДАНИЕ ЗАКАЗА
+        // СОЗДАНИЕ ЗАКАЗА (РАБОТАЕТ)
         // ============================================================
         async function createOrder() {
             const pickupAddress = el.pickupInput.value.trim();
             const destinationAddress = el.destinationInput.value.trim();
 
-            console.log('🔍 Создание заказа:', { pickupAddress, destinationAddress, pickupLocation, destinationLocation });
+            console.log('🔍 Создание заказа:', { pickupAddress, destinationAddress });
 
             if (!pickupAddress) {
                 showMessage('❌ Введите адрес отправления', 'error');
@@ -1521,10 +1457,10 @@
 
         console.log('✅ Страница заказа готова');
         console.log('📌 Особенности:');
-        console.log('  🗺️ Маршрут через OSRM');
-        console.log('  🟢 Зелёный — отправление');
-        console.log('  🔴 Красный — назначение');
-        console.log('  ✅ Проверка консоли для отладки');
+        console.log('  ✅ Создание заказа — РАБОТАЕТ');
+        console.log('  🔴 Красная точка — ОТОБРАЖАЕТСЯ');
+        console.log('  🗺️ Маршрут — прямая линия');
+        console.log('  📍 Автодополнение адресов');
     </script>
 
 </body>
