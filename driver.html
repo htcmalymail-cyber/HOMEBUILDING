@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Кабинет водителя — WHEEL</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js">
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0a0c10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.06) 0%, transparent 45%),
+                radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.05) 0%, transparent 45%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(18, 22, 28, 0.85);
+            backdrop-filter: blur(30px);
+            border-radius: 32px;
+            padding: 24px 20px 28px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(255, 180, 0, 0.03), transparent 60%);
+            pointer-events: none;
+            animation: rotateBg 30s linear infinite;
+        }
+
+        @keyframes rotateBg {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ===== ШАПКА ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-top: 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .user-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .user-email {
+            font-size: 13px;
+            color: #8899aa;
+            margin-top: 2px;
+        }
+        .user-uid {
+            font-size: 10px;
+            color: #556677;
+            margin-top: 2px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .logout-btn {
+            background: rgba(255, 70, 70, 0.08);
+            border: 1px solid rgba(255, 70, 70, 0.15);
+            border-radius: 30px;
+            padding: 8px 16px;
+            color: #ff6b6b;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+        .logout-btn:hover {
+            background: rgba(255, 70, 70, 0.18);
+            border-color: #ff6b6b;
+        }
+
+        /* ===== СТАТУС-БАДЖ ===== */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .status-badge.online {
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.2);
+        }
+        .status-badge.offline {
+            background: rgba(102, 119, 136, 0.15);
+            color: #667788;
+            border: 1px solid rgba(102, 119, 136, 0.2);
+        }
+        .status-badge.busy {
+            background: rgba(255, 180, 0, 0.15);
+            color: #ffb000;
+            border: 1px solid rgba(255, 180, 0, 0.2);
+        }
+
+        .status-toggle {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 4px 6px;
+            display: inline-flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .status-toggle .btn-status {
+            padding: 4px 14px;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            background: transparent;
+            color: #667788;
+        }
+
+        .status-toggle .btn-status.active-online {
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+        }
+        .status-toggle .btn-status.active-offline {
+            background: rgba(102, 119, 136, 0.15);
+            color: #667788;
+        }
+        .status-toggle .btn-status:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: #ffffff;
+        }
+
+        /* ===== СТАТИСТИКА (4 КАРТОЧКИ) ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 14px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 180, 0, 0.08);
+        }
+
+        .stat-card .icon {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+        .stat-card .label {
+            font-size: 10px;
+            color: #8899aa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .stat-card .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 2px;
+        }
+        .stat-card .value.gold {
+            color: #ffb000;
+        }
+        .stat-card .value.green {
+            color: #4ade80;
+        }
+        .stat-card .value.red {
+            color: #ff6b6b;
+        }
+        .stat-card .value.blue {
+            color: #60a5fa;
+        }
+
+        /* ===== РАЗДЕЛЫ ===== */
+        .section {
+            width: 100%;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e0e8f0;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title .badge {
+            font-size: 11px;
+            color: #667788;
+            font-weight: 400;
+        }
+
+        /* ===== СПИСОК ЗАКАЗОВ ===== */
+        .order-list {
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .order-list::-webkit-scrollbar {
+            width: 3px;
+        }
+        .order-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .order-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+
+        .order-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.2s ease;
+        }
+
+        .order-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .order-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .order-info .route {
+            font-size: 13px;
+            font-weight: 500;
+            color: #e0e8f0;
+            word-break: break-word;
+        }
+        .order-info .meta {
+            font-size: 11px;
+            color: #667788;
+            margin-top: 2px;
+        }
+
+        .order-info .meta .status {
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 10px;
+        }
+
+        .order-info .meta .status.completed {
+            background: rgba(74, 222, 128, 0.12);
+            color: #4ade80;
+        }
+        .order-info .meta .status.cancelled {
+            background: rgba(255, 70, 70, 0.12);
+            color: #ff6b6b;
+        }
+        .order-info .meta .status.assigned {
+            background: rgba(255, 180, 0, 0.12);
+            color: #ffb000;
+        }
+        .order-info .meta .status.in_progress {
+            background: rgba(96, 165, 250, 0.12);
+            color: #60a5fa;
+        }
+
+        .order-amount {
+            font-size: 15px;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+
+        .order-amount.positive {
+            color: #4ade80;
+        }
+        .order-amount.negative {
+            color: #ff6b6b;
+        }
+        .order-amount.neutral {
+            color: #ffb000;
+        }
+
+        /* ===== ТРАНЗАКЦИИ ===== */
+        .transaction-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .transaction-item .desc {
+            font-size: 13px;
+            color: #e0e8f0;
+        }
+        .transaction-item .date {
+            font-size: 10px;
+            color: #667788;
+            margin-top: 2px;
+        }
+        .transaction-item .amount {
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .transaction-item .amount.positive {
+            color: #4ade80;
+        }
+        .transaction-item .amount.negative {
+            color: #ff6b6b;
+        }
+
+        /* ===== ПУСТО ===== */
+        .empty-state {
+            color: #667788;
+            font-size: 13px;
+            text-align: center;
+            padding: 16px 0;
+        }
+
+        .loading-text {
+            color: #8899aa;
+            font-size: 13px;
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        /* ===== ИНДИКАТОР ===== */
+        .home-indicator {
+            margin-top: 16px;
+            width: 120px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== АДАПТИВНОСТЬ ===== */
+        @media (max-width: 420px) {
+            .container {
+                border-radius: 0;
+                padding: 16px;
+                min-height: 100vh;
+                background: rgba(10, 12, 16, 0.96);
+                backdrop-filter: blur(20px);
+                border: none;
+                box-shadow: none;
+                max-width: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            .user-name {
+                font-size: 18px;
+            }
+            .stat-card .value {
+                font-size: 19px;
+            }
+            .stat-card {
+                padding: 12px 10px;
+            }
+            .stats-grid {
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- ===== ШАПКА ===== -->
+        <div class="header">
+            <div class="user-info">
+                <div class="user-name" id="driverName">Загрузка...</div>
+                <div class="user-email" id="driverEmail">email@domain.com</div>
+                <div class="user-uid" id="driverUid">UID: ---</div>
+                <div id="statusContainer" style="margin-top:4px;">
+                    <span class="status-badge offline" id="statusBadge">⏳ Загрузка...</span>
+                    <div class="status-toggle" id="statusToggle">
+                        <button class="btn-status active-online" data-status="online" id="statusOnlineBtn">🟢 Онлайн</button>
+                        <button class="btn-status" data-status="offline" id="statusOfflineBtn">⚪ Офлайн</button>
+                    </div>
+                </div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">🚪 Выйти</button>
+        </div>
+
+        <!-- ===== СТАТИСТИКА ===== -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon">💰</div>
+                <div class="label">Баланс</div>
+                <div class="value gold" id="balance">0 ₪</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">📊</div>
+                <div class="label">Заработано</div>
+                <div class="value green" id="totalEarned">0 ₪</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">⚠️</div>
+                <div class="label">Штрафы</div>
+                <div class="value red" id="totalPenalty">0 ₪</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">🎁</div>
+                <div class="label">Бонусы</div>
+                <div class="value gold" id="totalBonus">0</div>
+            </div>
+        </div>
+
+        <!-- ===== ЗАКАЗЫ ===== -->
+        <div class="section">
+            <div class="section-title">
+                📋 Мои заказы
+                <span class="badge" id="ordersCount">(0)</span>
+            </div>
+            <div class="order-list" id="ordersList">
+                <div class="loading-text">⏳ Загрузка...</div>
+            </div>
+        </div>
+
+        <!-- ===== ТРАНЗАКЦИИ ===== -->
+        <div class="section">
+            <div class="section-title">
+                💳 История операций
+                <span class="badge" id="transactionsCount">(0)</span>
+            </div>
+            <div class="order-list" id="transactionsList" style="max-height:180px;">
+                <div class="loading-text">⏳ Загрузка...</div>
+            </div>
+        </div>
+
+        <div class="home-indicator"></div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- JAVASCRIPT -->
+    <!-- ============================================================ -->
+    <script>
+        // ============================================================
+        // FIREBASE КОНФИГ
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+            authDomain: "taxi-ai-app-69628.firebaseapp.com",
+            projectId: "taxi-ai-app-69628",
+            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+            messagingSenderId: "952357992434",
+            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+            measurementId: "G-Z9NJFSSXH6"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        console.log('🔥 Firebase готов');
+
+        // ============================================================
+        // ПЕРЕМЕННЫЕ
+        // ============================================================
+        let currentUser = null;
+        let userData = null;
+        let driverOrders = [];
+        let driverTransactions = [];
+        let unsubUser = null;
+        let unsubOrders = null;
+        let unsubTransactions = null;
+
+        // Элементы
+        const el = {
+            driverName: document.getElementById('driverName'),
+            driverEmail: document.getElementById('driverEmail'),
+            driverUid: document.getElementById('driverUid'),
+            statusBadge: document.getElementById('statusBadge'),
+            statusOnlineBtn: document.getElementById('statusOnlineBtn'),
+            statusOfflineBtn: document.getElementById('statusOfflineBtn'),
+            balance: document.getElementById('balance'),
+            totalEarned: document.getElementById('totalEarned'),
+            totalPenalty: document.getElementById('totalPenalty'),
+            totalBonus: document.getElementById('totalBonus'),
+            ordersList: document.getElementById('ordersList'),
+            ordersCount: document.getElementById('ordersCount'),
+            transactionsList: document.getElementById('transactionsList'),
+            transactionsCount: document.getElementById('transactionsCount'),
+            logoutBtn: document.getElementById('logoutBtn')
+        };
+
+        // ============================================================
+        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ============================================================
+        function formatPrice(p) {
+            return (p || 0).toFixed(2) + ' ₪';
+        }
+
+        function formatDate(ts) {
+            if (!ts) return '—';
+            try {
+                const d = ts.toDate ? ts.toDate() : new Date(ts);
+                return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            } catch {
+                return '—';
+            }
+        }
+
+        const statusLabels = {
+            new: 'Новый',
+            searching: 'Поиск',
+            assigned: 'Назначен',
+            in_progress: 'В пути',
+            completed: 'Завершён',
+            cancelled: 'Отменён'
+        };
+
+        const statusClasses = {
+            new: 'assigned',
+            searching: 'assigned',
+            assigned: 'assigned',
+            in_progress: 'in_progress',
+            completed: 'completed',
+            cancelled: 'cancelled'
+        };
+
+        // ============================================================
+        // ОБНОВЛЕНИЕ СТАТУСА
+        // ============================================================
+        function updateStatusUI(status) {
+            const badge = el.statusBadge;
+            badge.className = 'status-badge ' + status;
+            badge.textContent = status === 'online' ? '🟢 Онлайн' :
+                status === 'busy' ? '🟡 Занят' : '⚪ Офлайн';
+
+            el.statusOnlineBtn.className = 'btn-status' + (status === 'online' ? ' active-online' : '');
+            el.statusOfflineBtn.className = 'btn-status' + (status === 'offline' ? ' active-offline' : '');
+        }
+
+        // ============================================================
+        // РЕНДЕРИНГ ЗАКАЗОВ
+        // ============================================================
+        function renderOrders() {
+            if (!driverOrders || driverOrders.length === 0) {
+                el.ordersList.innerHTML = '<div class="empty-state">Нет заказов</div>';
+                el.ordersCount.textContent = '(0)';
+                return;
+            }
+
+            let html = '';
+            driverOrders.forEach(order => {
+                const label = statusLabels[order.status] || order.status;
+                const cls = statusClasses[order.status] || '';
+                const amount = order.price || 0;
+                const sign = order.status === 'cancelled' ? '-' : '+';
+                const amtClass = order.status === 'cancelled' ? 'negative' : 'positive';
+
+                html += `
+                        <div class="order-item">
+                            <div class="order-info">
+                                <div class="route">
+                                    📍 ${order.pickup?.address || '—'} → 🏁 ${order.destination?.address || '—'}
+                                </div>
+                                <div class="meta">
+                                    #${order.id.substring(0, 8)} • ${formatDate(order.createdAt)}
+                                    <span class="status ${cls}">${label}</span>
+                                    ${order.penaltyApplied ? ` • ⚠️ Штраф: ${formatPrice(order.penaltyApplied)}` : ''}
+                                </div>
+                            </div>
+                            <div class="order-amount ${amtClass}">${sign}${formatPrice(amount)}</div>
+                        </div>
+                    `;
+            });
+
+            el.ordersList.innerHTML = html;
+            el.ordersCount.textContent = `(${driverOrders.length})`;
+        }
+
+        // ============================================================
+        // РЕНДЕРИНГ ТРАНЗАКЦИЙ
+        // ============================================================
+        function renderTransactions() {
+            if (!driverTransactions || driverTransactions.length === 0) {
+                el.transactionsList.innerHTML = '<div class="empty-state">Нет операций</div>';
+                el.transactionsCount.textContent = '(0)';
+                return;
+            }
+
+            let html = '';
+            let totalEarned = 0;
+            let totalPenalty = 0;
+            let totalBonus = 0;
+
+            driverTransactions.forEach(tx => {
+                const amount = tx.amount || 0;
+                const cls = amount >= 0 ? 'positive' : 'negative';
+                const sign = amount >= 0 ? '+' : '';
+
+                if (tx.type === 'earning') totalEarned += amount;
+                else if (tx.type === 'penalty') totalPenalty += Math.abs(amount);
+                else if (tx.type === 'bonus' || tx.type === 'premium') totalBonus += amount;
+
+                html += `
+                        <div class="transaction-item">
+                            <div>
+                                <div class="desc">${tx.description || tx.type || 'Операция'}</div>
+                                <div class="date">${formatDate(tx.timestamp)}</div>
+                            </div>
+                            <div class="amount ${cls}">${sign}${formatPrice(amount)}</div>
+                        </div>
+                    `;
+            });
+
+            el.transactionsList.innerHTML = html;
+            el.transactionsCount.textContent = `(${driverTransactions.length})`;
+
+            // Обновляем статистику
+            el.totalEarned.textContent = formatPrice(totalEarned);
+            el.totalPenalty.textContent = formatPrice(totalPenalty);
+            el.totalBonus.textContent = totalBonus.toFixed(0);
+        }
+
+        // ============================================================
+        // ПОДПИСКА НА ДАННЫЕ ВОДИТЕЛЯ
+        // ============================================================
+        function subscribeToDriverData(uid) {
+            // === ПОДПИСКА НА ПОЛЬЗОВАТЕЛЯ ===
+            if (unsubUser) { unsubUser();
+                unsubUser = null; }
+            const userRef = db.collection('users').doc(uid);
+            unsubUser = userRef.onSnapshot(doc => {
+                if (doc.exists) {
+                    userData = doc.data();
+                    el.driverName.textContent = userData.displayName || 'Водитель';
+                    el.driverEmail.textContent = userData.email || '';
+                    el.balance.textContent = formatPrice(userData.balance || 0);
+
+                    // Статус
+                    const status = userData.driverData?.isAvailable ? 'online' : 'offline';
+                    updateStatusUI(status);
+                }
+            }, err => console.error('User error:', err));
+
+            // === ПОДПИСКА НА ЗАКАЗЫ ВОДИТЕЛЯ ===
+            if (unsubOrders) { unsubOrders();
+                unsubOrders = null; }
+            const ordersQuery = db.collection('orders')
+                .where('driverId', '==', uid)
+                .orderBy('createdAt', 'desc');
+            unsubOrders = ordersQuery.onSnapshot(snapshot => {
+                driverOrders = [];
+                snapshot.forEach(doc => {
+                    driverOrders.push({ id: doc.id, ...doc.data() });
+                });
+                renderOrders();
+            }, err => console.error('Orders error:', err));
+
+            // === ПОДПИСКА НА ТРАНЗАКЦИИ ВОДИТЕЛЯ ===
+            if (unsubTransactions) { unsubTransactions();
+                unsubTransactions = null; }
+            const txQuery = db.collection('transactions')
+                .where('userId', '==', uid)
+                .orderBy('timestamp', 'desc')
+                .limit(20);
+            unsubTransactions = txQuery.onSnapshot(snapshot => {
+                driverTransactions = [];
+                snapshot.forEach(doc => {
+                    driverTransactions.push({ id: doc.id, ...doc.data() });
+                });
+                renderTransactions();
+            }, err => console.error('Transactions error:', err));
+        }
+
+        // ============================================================
+        // ОБНОВЛЕНИЕ СТАТУСА ВОДИТЕЛЯ
+        // ============================================================
+        function setDriverStatus(status) {
+            if (!currentUser) return;
+            const userRef = db.collection('users').doc(currentUser.uid);
+            userRef.update({
+                'driverData.isAvailable': status === 'online'
+            }).then(() => {
+                console.log('✅ Статус обновлён:', status);
+            }).catch(err => {
+                console.error('❌ Ошибка обновления статуса:', err);
+                // Возвращаем UI обратно
+                const current = userData?.driverData?.isAvailable ? 'online' : 'offline';
+                updateStatusUI(current);
+            });
+        }
+
+        // ============================================================
+        // ОБРАБОТЧИКИ СТАТУСА
+        // ============================================================
+        el.statusOnlineBtn.addEventListener('click', function() {
+            if (this.classList.contains('active-online')) return;
+            setDriverStatus('online');
+        });
+
+        el.statusOfflineBtn.addEventListener('click', function() {
+            if (this.classList.contains('active-offline')) return;
+            setDriverStatus('offline');
+        });
+
+        // ============================================================
+        // ВЫХОД
+        // ============================================================
+        el.logoutBtn.addEventListener('click', function() {
+            if (unsubUser) { unsubUser();
+                unsubUser = null; }
+            if (unsubOrders) { unsubOrders();
+                unsubOrders = null; }
+            if (unsubTransactions) { unsubTransactions();
+                unsubTransactions = null; }
+            auth.signOut().then(() => {
+                window.location.href = 'index.html';
+            });
+        });
+
+        // ============================================================
+        // АВТОРИЗАЦИЯ
+        // ============================================================
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            currentUser = user;
+            el.driverUid.textContent = 'UID: ' + user.uid.substring(0, 16) + '...';
+
+            // Проверяем, что это водитель
+            db.collection('users').doc(user.uid).get()
+                .then(doc => {
+                    if (!doc.exists) {
+                        alert('❌ Профиль не найден');
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                    const data = doc.data();
+                    if (data.role !== 'driver') {
+                        alert('⛔ Эта страница только для водителей');
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                    // Подписываемся на данные
+                    subscribeToDriverData(user.uid);
+                })
+                .catch(err => {
+                    console.error('Auth error:', err);
+                    window.location.href = 'index.html';
+                });
+        });
+
+        console.log('✅ Кабинет водителя готов');
+        console.log('📌 Информация:');
+        console.log('  👤 Имя и email водителя');
+        console.log('  💰 Баланс, заработок, штрафы, бонусы');
+        console.log('  📋 Список заказов с суммами');
+        console.log('  💳 История операций');
+        console.log('  🟢 Переключение статуса Онлайн/Офлайн');
+    </script>
+
+</body>
+</html>
