@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Заказ такси — WHEEL</title>
 
-    <!-- ===== Leaflet CSS ===== -->
+    <!-- ===== Leaflet ===== -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
     </script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js">
+    </script>
 
-    <!-- ===== Firebase (compat) ===== -->
+    <!-- ===== Firebase ===== -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
@@ -19,7 +22,7 @@
     </script>
 
     <style>
-        /* ===== ОБЩИЕ СТИЛИ ===== */
+        /* ===== RESET & BASE ===== */
         * {
             margin: 0;
             padding: 0;
@@ -27,48 +30,25 @@
         }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0c10;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
-            padding: 16px;
+            padding: 12px;
             background-image:
                 radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.06) 0%, transparent 45%),
                 radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.05) 0%, transparent 45%);
             background-attachment: fixed;
+            color: #ffffff;
         }
 
         .container {
             width: 100%;
             max-width: 480px;
-            background: rgba(18, 22, 28, 0.85);
-            backdrop-filter: blur(30px);
-            border-radius: 32px;
-            padding: 20px 20px 24px;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin: 0 auto;
             position: relative;
-            overflow: hidden;
-            min-height: 600px;
-        }
-
-        .container::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 30% 20%, rgba(255, 180, 0, 0.03), transparent 60%);
-            pointer-events: none;
-            animation: rotateBg 30s linear infinite;
-        }
-
-        @keyframes rotateBg {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         /* ===== ШАПКА ===== */
@@ -76,9 +56,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 12px 16px;
+            background: rgba(18, 22, 28, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             margin-bottom: 12px;
-            position: relative;
-            z-index: 10;
         }
 
         .header-left {
@@ -89,7 +72,7 @@
 
         .back-btn {
             background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            border: none;
             border-radius: 30px;
             padding: 6px 14px;
             color: #8899aa;
@@ -99,7 +82,6 @@
             transition: all 0.3s ease;
             font-family: inherit;
         }
-
         .back-btn:hover {
             background: rgba(255, 255, 255, 0.12);
             color: #ffffff;
@@ -110,16 +92,13 @@
             font-weight: 700;
             color: #ffffff;
         }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .header-title span {
+            color: #ffb000;
         }
 
         .balance-display {
             background: rgba(255, 180, 0, 0.08);
-            border: 1px solid rgba(255, 180, 0, 0.15);
+            border: 1px solid rgba(255, 180, 0, 0.12);
             border-radius: 30px;
             padding: 4px 14px;
             font-size: 14px;
@@ -128,44 +107,117 @@
         }
 
         /* ===== КАРТА ===== */
-        #map {
-            height: 260px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            margin-bottom: 12px;
+        .map-wrapper {
             position: relative;
-            z-index: 1;
+            border-radius: 18px;
             overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 12px;
+            background: #11151a;
         }
 
-        .leaflet-control-attribution {
-            font-size: 9px !important;
-            color: #667788 !important;
+        #map {
+            height: 300px;
+            width: 100%;
         }
 
-        /* ===== ПОДСКАЗКА НА КАРТЕ ===== */
         .map-hint {
             position: absolute;
-            bottom: 70px;
+            bottom: 12px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(12px);
             color: #8899aa;
             font-size: 11px;
-            padding: 4px 14px;
+            padding: 6px 16px;
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.06);
             z-index: 1000;
             pointer-events: none;
             white-space: nowrap;
+            transition: opacity 0.3s ease;
         }
-
+        .map-hint.hidden {
+            opacity: 0;
+        }
         .map-hint .icon {
             color: #ffb000;
         }
 
-        /* ===== АВТОКОМПЛИТ ===== */
+        /* ===== ОШИБКИ ===== */
+        .error-box {
+            background: rgba(255, 70, 70, 0.08);
+            border: 1px solid rgba(255, 70, 70, 0.12);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            color: #ff6b6b;
+            font-size: 13px;
+            text-align: center;
+            display: none;
+        }
+
+        /* ===== СТАТУС ЗАКАЗА ===== */
+        .order-status {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            display: none;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .order-status.active {
+            display: block;
+        }
+        .order-status .status-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e0e8f0;
+        }
+        .order-status .status-text .emoji {
+            margin-right: 6px;
+        }
+        .order-status .status-detail {
+            font-size: 13px;
+            color: #8899aa;
+            margin-top: 4px;
+        }
+        .order-status .status-detail .highlight {
+            color: #4ade80;
+        }
+        .order-status .status-detail .warning {
+            color: #ffb000;
+        }
+
+        /* ===== ФОРМА ===== */
+        .form-section {
+            background: rgba(18, 22, 28, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 18px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .form-row:last-of-type {
+            margin-bottom: 12px;
+        }
+
+        .form-row .icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            width: 28px;
+            text-align: center;
+        }
+
         .autocomplete-wrapper {
             position: relative;
             flex: 1;
@@ -183,15 +235,17 @@
             outline: none;
             transition: all 0.3s ease;
         }
-
         .autocomplete-wrapper input:focus {
             border-color: #ffb000;
             background: rgba(255, 255, 255, 0.06);
             box-shadow: 0 0 0 4px rgba(255, 180, 0, 0.06);
         }
-
         .autocomplete-wrapper input::placeholder {
             color: #556677;
+        }
+        .autocomplete-wrapper input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .autocomplete-list {
@@ -209,29 +263,24 @@
             margin-top: 4px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
-
         .autocomplete-list .item {
-            padding: 8px 14px;
+            padding: 10px 14px;
             cursor: pointer;
             color: #e0e8f0;
             font-size: 13px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.04);
             transition: all 0.2s ease;
         }
-
         .autocomplete-list .item:hover {
             background: rgba(255, 180, 0, 0.08);
         }
-
         .autocomplete-list .item:last-child {
             border-bottom: none;
         }
-
         .autocomplete-list .item .highlight {
             color: #ffb000;
             font-weight: 600;
         }
-
         .autocomplete-list::-webkit-scrollbar {
             width: 3px;
         }
@@ -243,31 +292,11 @@
             border-radius: 10px;
         }
 
-        /* ===== ФОРМА ===== */
-        .form-section {
-            position: relative;
-            z-index: 1;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
-            align-items: center;
-        }
-
-        .form-row .icon {
-            font-size: 18px;
-            flex-shrink: 0;
-            width: 28px;
-            text-align: center;
-        }
-
         .geo-btn {
             background: rgba(255, 180, 0, 0.08);
             border: 1px solid rgba(255, 180, 0, 0.12);
             border-radius: 12px;
-            padding: 8px 12px;
+            padding: 8px 14px;
             color: #ffb000;
             font-size: 12px;
             font-weight: 600;
@@ -276,52 +305,48 @@
             font-family: inherit;
             white-space: nowrap;
             flex-shrink: 0;
+            min-width: 80px;
         }
-
         .geo-btn:hover {
             background: rgba(255, 180, 0, 0.15);
-            border-color: rgba(255, 180, 0, 0.25);
         }
-
         .geo-btn:active {
             transform: scale(0.95);
         }
-
         .geo-btn.loading {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+        .geo-btn.success {
+            border-color: rgba(74, 222, 128, 0.3);
+            color: #4ade80;
         }
 
         /* ===== ИНФОРМАЦИОННАЯ ПАНЕЛЬ ===== */
         .info-panel {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 6px;
-            margin: 10px 0 12px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 14px;
-            padding: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            gap: 8px;
+            margin-bottom: 12px;
         }
-
         .info-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 10px 8px;
             text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.03);
         }
-
         .info-item .label {
             font-size: 9px;
             color: #667788;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
         }
-
         .info-item .value {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 700;
-            color: #ffffff;
             margin-top: 2px;
         }
-
         .info-item .value.gold {
             color: #ffb000;
         }
@@ -331,12 +356,23 @@
         .info-item .value.blue {
             color: #60a5fa;
         }
+        .info-item .value.pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
 
         /* ===== КНОПКИ ===== */
         .btn-group {
             display: flex;
             gap: 8px;
-            margin-top: 4px;
         }
 
         .btn-order {
@@ -351,22 +387,23 @@
             cursor: pointer;
             transition: all 0.3s ease;
             font-family: inherit;
-            box-shadow: 0 8px 24px rgba(255, 140, 0, 0.2);
+            box-shadow: 0 4px 20px rgba(255, 140, 0, 0.2);
         }
-
-        .btn-order:hover {
+        .btn-order:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(255, 140, 0, 0.35);
+            box-shadow: 0 8px 30px rgba(255, 140, 0, 0.35);
         }
-
-        .btn-order:active {
+        .btn-order:active:not(:disabled) {
             transform: scale(0.97);
         }
-
         .btn-order:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none !important;
+        }
+        .btn-order.loading {
+            background: linear-gradient(135deg, #667788, #445566);
+            box-shadow: none;
         }
 
         .btn-cancel {
@@ -380,17 +417,15 @@
             cursor: pointer;
             transition: all 0.3s ease;
             font-family: inherit;
+            min-width: 60px;
         }
-
-        .btn-cancel:hover {
+        .btn-cancel:hover:not(:disabled) {
             background: rgba(255, 70, 70, 0.12);
             border-color: rgba(255, 70, 70, 0.3);
         }
-
-        .btn-cancel:active {
+        .btn-cancel:active:not(:disabled) {
             transform: scale(0.95);
         }
-
         .btn-cancel:disabled {
             opacity: 0.3;
             cursor: not-allowed;
@@ -400,77 +435,34 @@
         .message {
             margin-top: 10px;
             padding: 10px 14px;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 13px;
             font-weight: 500;
             display: none;
             text-align: center;
         }
-
         .message.error {
             background: rgba(239, 68, 68, 0.1);
             color: #ef4444;
             border: 1px solid rgba(239, 68, 68, 0.15);
             display: block;
         }
-
         .message.success {
             background: rgba(74, 222, 128, 0.1);
             color: #4ade80;
             border: 1px solid rgba(74, 222, 128, 0.15);
             display: block;
         }
-
         .message.info {
-            background: rgba(255, 180, 0, 0.1);
-            color: #ffb000;
-            border: 1px solid rgba(255, 180, 0, 0.15);
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.15);
             display: block;
         }
-
         .message.warning {
             background: rgba(255, 180, 0, 0.1);
             color: #ffb000;
             border: 1px solid rgba(255, 180, 0, 0.15);
-            display: block;
-        }
-
-        .error-box {
-            background: rgba(255, 70, 70, 0.08);
-            border: 1px solid rgba(255, 70, 70, 0.12);
-            border-radius: 10px;
-            padding: 8px 12px;
-            margin-bottom: 10px;
-            color: #ff6b6b;
-            font-size: 13px;
-            text-align: center;
-            display: none;
-        }
-
-        /* ===== СТАТУС ЗАКАЗА ===== */
-        .order-status {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            padding: 10px 14px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            display: none;
-            text-align: center;
-        }
-
-        .order-status .status-text {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e0e8f0;
-        }
-
-        .order-status .status-detail {
-            font-size: 12px;
-            color: #8899aa;
-            margin-top: 4px;
-        }
-
-        .order-status.active {
             display: block;
         }
 
@@ -480,49 +472,61 @@
             color: #667788;
             text-align: center;
             margin-top: 10px;
+            line-height: 1.5;
         }
-
         .note span {
             color: #ff6b6b;
         }
-
-        /* ===== ИНДИКАТОР ===== */
-        .home-indicator {
-            margin-top: 16px;
-            width: 120px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            margin-left: auto;
-            margin-right: auto;
-            position: relative;
-            z-index: 1;
+        .note .gold {
+            color: #ffb000;
         }
 
-        /* ===== АДАПТИВНОСТЬ ===== */
+        /* ===== АДАПТИВ ===== */
         @media (max-width: 480px) {
+            body {
+                padding: 8px;
+                align-items: stretch;
+            }
             .container {
-                border-radius: 0;
-                padding: 16px;
-                min-height: 100vh;
-                background: rgba(10, 12, 16, 0.96);
-                backdrop-filter: blur(20px);
-                border: none;
-                box-shadow: none;
                 max-width: 100%;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
             }
             #map {
-                height: 200px;
+                height: 220px;
+            }
+            .header {
+                padding: 10px 12px;
             }
             .header-title {
                 font-size: 16px;
             }
             .balance-display {
                 font-size: 12px;
-                padding: 4px 10px;
+                padding: 3px 10px;
+            }
+            .form-section {
+                padding: 12px;
+            }
+            .info-panel {
+                gap: 4px;
+            }
+            .info-item {
+                padding: 6px 4px;
+            }
+            .info-item .value {
+                font-size: 14px;
+            }
+            .btn-order {
+                font-size: 14px;
+                padding: 12px;
+            }
+            .btn-cancel {
+                font-size: 13px;
+                padding: 12px 14px;
+            }
+            .map-hint {
+                font-size: 10px;
+                padding: 4px 12px;
+                bottom: 8px;
             }
             .autocomplete-wrapper input {
                 font-size: 13px;
@@ -531,27 +535,7 @@
             .geo-btn {
                 font-size: 11px;
                 padding: 6px 10px;
-            }
-            .info-panel {
-                grid-template-columns: 1fr 1fr 1fr;
-                padding: 6px;
-                gap: 4px;
-            }
-            .info-item .value {
-                font-size: 13px;
-            }
-            .btn-order {
-                font-size: 14px;
-                padding: 12px;
-            }
-            .btn-cancel {
-                font-size: 13px;
-                padding: 10px 14px;
-            }
-            .map-hint {
-                font-size: 10px;
-                padding: 3px 10px;
-                bottom: 60px;
+                min-width: 60px;
             }
         }
     </style>
@@ -564,17 +548,17 @@
         <div class="header">
             <div class="header-left">
                 <button class="back-btn" id="backBtn">← Назад</button>
-                <span class="header-title">📍 Заказ</span>
+                <span class="header-title">🚖 <span>Заказ</span></span>
             </div>
-            <div class="header-right">
-                <span class="balance-display" id="balanceDisplay">💰 0 ₪</span>
-            </div>
+            <span class="balance-display" id="balanceDisplay">💰 0 ₪</span>
         </div>
 
         <!-- ===== КАРТА ===== -->
-        <div id="map"></div>
-        <div class="map-hint" id="mapHint">
-            <span class="icon">📍</span> Нажмите на карту, чтобы выбрать точку назначения
+        <div class="map-wrapper">
+            <div id="map"></div>
+            <div class="map-hint" id="mapHint">
+                <span class="icon">📍</span> Нажмите на карту, чтобы установить точки
+            </div>
         </div>
 
         <!-- ===== ОШИБКИ ===== -->
@@ -584,8 +568,10 @@
 
         <!-- ===== СТАТУС ЗАКАЗА ===== -->
         <div class="order-status" id="orderStatus">
-            <div class="status-text" id="statusText">⏳ Поиск водителя...</div>
-            <div class="status-detail" id="statusDetail">Ближайший водитель: 2.3 км</div>
+            <div class="status-text" id="statusText">
+                <span class="emoji">⏳</span> Поиск водителя...
+            </div>
+            <div class="status-detail" id="statusDetail">Ближайший водитель: <span class="highlight">2.3 км</span></div>
         </div>
 
         <!-- ===== ФОРМА ===== -->
@@ -595,7 +581,7 @@
             <div class="form-row">
                 <span class="icon">📍</span>
                 <div class="autocomplete-wrapper">
-                    <input type="text" id="pickupInput" placeholder="Откуда (адрес или геолокация)" autocomplete="off">
+                    <input type="text" id="pickupInput" placeholder="Откуда (адрес)" autocomplete="off">
                     <div class="autocomplete-list" id="pickupAutocomplete"></div>
                 </div>
                 <button class="geo-btn" id="geoBtn">📍 Определить</button>
@@ -605,18 +591,13 @@
             <div class="form-row">
                 <span class="icon">🏁</span>
                 <div class="autocomplete-wrapper">
-                    <input type="text" id="destinationInput" placeholder="Куда (введите адрес)" autocomplete="off">
+                    <input type="text" id="destinationInput" placeholder="Куда (адрес)" autocomplete="off">
                     <div class="autocomplete-list" id="destinationAutocomplete"></div>
                 </div>
+                <button class="geo-btn" id="swapBtn" title="Поменять местами">⇄</button>
             </div>
 
-            <!-- Время -->
-            <div class="form-row">
-                <span class="icon">⏰</span>
-                <input type="datetime-local" id="timeInput">
-            </div>
-
-            <!-- ===== ИНФОРМАЦИОННАЯ ПАНЕЛЬ ===== -->
+            <!-- ===== ИНФО-ПАНЕЛЬ ===== -->
             <div class="info-panel">
                 <div class="info-item">
                     <div class="label">💵 Стоимость</div>
@@ -634,8 +615,8 @@
 
             <!-- ===== КНОПКИ ===== -->
             <div class="btn-group">
-                <button class="btn-order" id="orderBtn">📍 Заказать такси</button>
-                <button class="btn-cancel" id="cancelBtn" disabled>❌ Отменить</button>
+                <button class="btn-order" id="orderBtn">🚖 Заказать такси</button>
+                <button class="btn-cancel" id="cancelBtn" disabled>✖</button>
             </div>
 
             <!-- ===== СООБЩЕНИЯ ===== -->
@@ -644,11 +625,10 @@
             <!-- ===== ПРИМЕЧАНИЕ ===== -->
             <div class="note">
                 ⚠️ Отмена после подтверждения водителя — <span>штраф 7 ₪</span>
-                <br>💳 Комиссия платформы: <span>10%</span>
+                <br>💳 Комиссия платформы: <span class="gold">10%</span>
             </div>
         </div>
 
-        <div class="home-indicator"></div>
     </div>
 
     <!-- ============================================================ -->
@@ -668,9 +648,6 @@
             measurementId: "G-Z9NJFSSXH6"
         };
 
-        // ============================================================
-        // ИНИЦИАЛИЗАЦИЯ
-        // ============================================================
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -681,6 +658,7 @@
         // ПЕРЕМЕННЫЕ
         // ============================================================
         let map;
+        let routingControl = null;
         let pickupMarker = null;
         let destinationMarker = null;
         let pickupLocation = null;
@@ -690,6 +668,7 @@
         let balance = 0;
         let currentUser = null;
         let unsubOrder = null;
+        let isProcessing = false;
 
         // Тарифы
         const TARIFF = {
@@ -699,7 +678,7 @@
             NIGHT_START_HOUR: 23,
             NIGHT_END_HOUR: 5,
             PENALTY_CANCEL: 7.00,
-            COMMISSION: 0.10 // 10%
+            COMMISSION: 0.10
         };
 
         // ============================================================
@@ -711,8 +690,8 @@
             destinationInput: document.getElementById('destinationInput'),
             pickupAutocomplete: document.getElementById('pickupAutocomplete'),
             destinationAutocomplete: document.getElementById('destinationAutocomplete'),
-            timeInput: document.getElementById('timeInput'),
             geoBtn: document.getElementById('geoBtn'),
+            swapBtn: document.getElementById('swapBtn'),
             orderBtn: document.getElementById('orderBtn'),
             cancelBtn: document.getElementById('cancelBtn'),
             balanceDisplay: document.getElementById('balanceDisplay'),
@@ -736,7 +715,8 @@
             el.message.className = 'message ' + type;
             el.message.textContent = text;
             el.message.style.display = 'block';
-            setTimeout(() => {
+            clearTimeout(el.message._timeout);
+            el.message._timeout = setTimeout(() => {
                 el.message.style.display = 'none';
             }, 5000);
         }
@@ -744,7 +724,8 @@
         function showError(text) {
             el.errorBox.style.display = 'block';
             el.errorText.textContent = text;
-            setTimeout(() => {
+            clearTimeout(el.errorBox._timeout);
+            el.errorBox._timeout = setTimeout(() => {
                 el.errorBox.style.display = 'none';
             }, 8000);
         }
@@ -758,11 +739,13 @@
         }
 
         function formatDistance(km) {
+            if (!km || km < 0) return '—';
             if (km < 1) return (km * 1000).toFixed(0) + ' м';
             return km.toFixed(1) + ' км';
         }
 
         function formatDuration(min) {
+            if (!min || min < 0) return '—';
             if (min < 1) return '< 1 мин';
             if (min < 60) return Math.round(min) + ' мин';
             const h = Math.floor(min / 60);
@@ -786,14 +769,26 @@
             return { price, commission, driverEarn };
         }
 
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            if (!lat1 || !lng1 || !lat2 || !lng2) return 0;
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
         // ============================================================
-        // ГЕОКОДИНГ (адрес → координаты)
+        // ГЕОКОДИНГ
         // ============================================================
         async function geocodeAddress(address) {
             if (!address || address.trim() === '') return null;
             try {
                 const url =
-                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1`;
+                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=1&countrycodes=il`;
                 const response = await fetch(url);
                 const data = await response.json();
                 if (data && data.length > 0) {
@@ -810,8 +805,19 @@
             }
         }
 
+        function reverseGeocode(lat, lng, callback) {
+            const url =
+                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    callback(data && data.display_name ? data.display_name : null);
+                })
+                .catch(() => callback(null));
+        }
+
         // ============================================================
-        // АВТОДОПОЛНЕНИЕ (поиск адресов)
+        // АВТОДОПОЛНЕНИЕ
         // ============================================================
         let searchTimeout = null;
 
@@ -876,29 +882,21 @@
                 if (e.key === 'Escape') {
                     listEl.style.display = 'none';
                 }
+                if (e.key === 'Enter') {
+                    listEl.style.display = 'none';
+                    input.blur();
+                }
             });
-        }
-
-        // ============================================================
-        // РАСЧЁТ РАССТОЯНИЯ (Haversine)
-        // ============================================================
-        function haversineDistance(lat1, lng1, lat2, lng2) {
-            if (!lat1 || !lng1 || !lat2 || !lng2) return 0;
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLng = (lng2 - lng1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLng / 2) * Math.sin(dLng / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
         }
 
         // ============================================================
         // КАРТА
         // ============================================================
         function initMap() {
-            map = L.map('map').setView([32.0853, 34.7818], 13);
+            map = L.map('map', {
+                zoomControl: true,
+                attributionControl: true
+            }).setView([32.0853, 34.7818], 13);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap',
@@ -906,51 +904,25 @@
                 minZoom: 10
             }).addTo(map);
 
-            // Клик по карте — устанавливаем точку отправления (зелёный)
+            // Клик по карте
             map.on('click', function(e) {
                 const lat = e.latlng.lat;
                 const lng = e.latlng.lng;
 
                 if (!pickupLocation) {
-                    pickupLocation = { lat, lng };
-                    updatePickupMarker();
-                    reverseGeocode(lat, lng, function(address) {
-                        if (address) {
-                            el.pickupInput.value = address;
-                        } else {
-                            el.pickupInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                        }
-                    });
+                    setPickupLocation(lat, lng);
                     showMessage('📍 Точка отправления установлена', 'success');
                     return;
                 }
 
                 if (pickupLocation && !destinationLocation) {
-                    destinationLocation = { lat, lng };
-                    updateDestinationMarker();
-                    reverseGeocode(lat, lng, function(address) {
-                        if (address) {
-                            el.destinationInput.value = address;
-                        } else {
-                            el.destinationInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                        }
-                    });
-                    calculateAndUpdate();
+                    setDestinationLocation(lat, lng);
                     showMessage('📍 Точка назначения установлена', 'success');
                     return;
                 }
 
                 if (pickupLocation && destinationLocation) {
-                    destinationLocation = { lat, lng };
-                    updateDestinationMarker();
-                    reverseGeocode(lat, lng, function(address) {
-                        if (address) {
-                            el.destinationInput.value = address;
-                        } else {
-                            el.destinationInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                        }
-                    });
-                    calculateAndUpdate();
+                    setDestinationLocation(lat, lng);
                     showMessage('📍 Точка назначения обновлена', 'success');
                 }
             });
@@ -959,13 +931,12 @@
         }
 
         // ============================================================
-        // МАРКЕРЫ
+        // УПРАВЛЕНИЕ МАРКЕРАМИ И МАРШРУТОМ
         // ============================================================
-        function updatePickupMarker() {
-            if (!pickupLocation) return;
+        function setPickupLocation(lat, lng) {
+            pickupLocation = { lat, lng };
             if (pickupMarker) {
                 map.removeLayer(pickupMarker);
-                pickupMarker = null;
             }
             const greenIcon = L.divIcon({
                 html: '🟢',
@@ -973,17 +944,27 @@
                 iconSize: [30, 30],
                 iconAnchor: [15, 30]
             });
-            pickupMarker = L.marker([pickupLocation.lat, pickupLocation.lng], { icon: greenIcon })
+            pickupMarker = L.marker([lat, lng], { icon: greenIcon })
                 .addTo(map)
                 .bindPopup('📍 Отправление');
-            map.setView([pickupLocation.lat, pickupLocation.lng], 15);
+
+            reverseGeocode(lat, lng, function(address) {
+                if (address) {
+                    el.pickupInput.value = address;
+                } else {
+                    el.pickupInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                }
+            });
+
+            map.setView([lat, lng], 15);
+            updateRoute();
+            calculateAndUpdate();
         }
 
-        function updateDestinationMarker() {
-            if (!destinationLocation) return;
+        function setDestinationLocation(lat, lng) {
+            destinationLocation = { lat, lng };
             if (destinationMarker) {
                 map.removeLayer(destinationMarker);
-                destinationMarker = null;
             }
             const redIcon = L.divIcon({
                 html: '🔴',
@@ -991,31 +972,145 @@
                 iconSize: [30, 30],
                 iconAnchor: [15, 30]
             });
-            destinationMarker = L.marker([destinationLocation.lat, destinationLocation.lng], { icon: redIcon })
+            destinationMarker = L.marker([lat, lng], { icon: redIcon })
                 .addTo(map)
                 .bindPopup('🏁 Назначение');
+
+            reverseGeocode(lat, lng, function(address) {
+                if (address) {
+                    el.destinationInput.value = address;
+                } else {
+                    el.destinationInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                }
+            });
+
+            updateRoute();
+            calculateAndUpdate();
+
+            // Показать маршрут с увеличением
+            if (pickupLocation && destinationLocation) {
+                const bounds = L.latLngBounds(
+                    [pickupLocation.lat, pickupLocation.lng],
+                    [destinationLocation.lat, destinationLocation.lng]
+                );
+                map.fitBounds(bounds, { padding: [40, 40] });
+            }
         }
 
         // ============================================================
-        // ОБРАТНЫЙ ГЕОКОДИНГ
+        // ПОСТРОЕНИЕ МАРШРУТА (Routing Machine)
         // ============================================================
-        function reverseGeocode(lat, lng, callback) {
-            const url =
-                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if (data && data.display_name) {
-                        callback(data.display_name);
-                    } else {
-                        callback(null);
-                    }
+        function updateRoute() {
+            // Удаляем старый маршрут
+            if (routingControl) {
+                map.removeControl(routingControl);
+                routingControl = null;
+            }
+
+            if (!pickupLocation || !destinationLocation) {
+                return;
+            }
+
+            // Проверяем, что точки не совпадают
+            const dist = haversineDistance(
+                pickupLocation.lat, pickupLocation.lng,
+                destinationLocation.lat, destinationLocation.lng
+            );
+            if (dist < 0.01) {
+                return;
+            }
+
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(pickupLocation.lat, pickupLocation.lng),
+                    L.latLng(destinationLocation.lat, destinationLocation.lng)
+                ],
+                routeWhileDragging: false,
+                show: false,
+                lineOptions: {
+                    styles: [{ color: '#4ade80', weight: 4, opacity: 0.8 }],
+                    extendToWaypoints: true,
+                    missingRouteTolerance: 0
+                },
+                createMarker: function() { return null; },
+                router: L.Routing.osrmv1({
+                    serviceUrl: 'https://router.project-osrm.org/route/v1/',
+                    profile: 'driving'
                 })
-                .catch(() => callback(null));
+            }).addTo(map);
+
+            // Получаем расстояние и время от OSRM
+            routingControl.on('routesfound', function(e) {
+                const routes = e.routes;
+                if (routes && routes.length > 0) {
+                    const route = routes[0];
+                    const distance = route.summary.totalDistance / 1000; // в км
+                    const duration = route.summary.totalTime / 60; // в минутах
+
+                    // Обновляем информацию
+                    const result = calculatePriceAndCommission(distance);
+                    el.priceDisplay.textContent = formatPrice(result.price);
+                    el.distanceDisplay.textContent = formatDistance(distance);
+                    el.durationDisplay.textContent = formatDuration(duration);
+
+                    // Сохраняем для заказа
+                    window._routeData = { distance, duration, price: result.price };
+                }
+            });
+
+            // Если OSRM не отвечает, используем Haversine
+            setTimeout(() => {
+                if (!window._routeData) {
+                    const dist = haversineDistance(
+                        pickupLocation.lat, pickupLocation.lng,
+                        destinationLocation.lat, destinationLocation.lng
+                    );
+                    if (dist > 0.01) {
+                        const duration = dist * 3;
+                        const result = calculatePriceAndCommission(dist);
+                        el.priceDisplay.textContent = formatPrice(result.price);
+                        el.distanceDisplay.textContent = formatDistance(dist);
+                        el.durationDisplay.textContent = formatDuration(duration);
+                        window._routeData = { distance: dist, duration, price: result.price };
+                    }
+                }
+            }, 3000);
         }
 
         // ============================================================
-        // ОПРЕДЕЛЕНИЕ ГЕОЛОКАЦИИ
+        // РАСЧЁТ (ручной)
+        // ============================================================
+        function calculateAndUpdate() {
+            if (!pickupLocation || !destinationLocation) {
+                el.priceDisplay.textContent = '—';
+                el.distanceDisplay.textContent = '—';
+                el.durationDisplay.textContent = '—';
+                return;
+            }
+
+            const dist = haversineDistance(
+                pickupLocation.lat, pickupLocation.lng,
+                destinationLocation.lat, destinationLocation.lng
+            );
+
+            if (dist < 0.01) {
+                el.priceDisplay.textContent = '—';
+                el.distanceDisplay.textContent = '—';
+                el.durationDisplay.textContent = '—';
+                return;
+            }
+
+            const duration = dist * 3;
+            const result = calculatePriceAndCommission(dist);
+            el.priceDisplay.textContent = formatPrice(result.price);
+            el.distanceDisplay.textContent = formatDistance(dist);
+            el.durationDisplay.textContent = formatDuration(duration);
+
+            window._routeData = { distance: dist, duration, price: result.price };
+        }
+
+        // ============================================================
+        // ГЕОЛОКАЦИЯ
         // ============================================================
         function getCurrentLocation() {
             el.geoBtn.textContent = '⏳ ...';
@@ -1023,7 +1118,7 @@
             el.geoBtn.disabled = true;
 
             if (!navigator.geolocation) {
-                showError('Геолокация не поддерживается в вашем браузере');
+                showError('Геолокация не поддерживается');
                 el.geoBtn.textContent = '📍 Определить';
                 el.geoBtn.classList.remove('loading');
                 el.geoBtn.disabled = false;
@@ -1034,25 +1129,16 @@
                 function(position) {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
-                    pickupLocation = { lat, lng };
-                    updatePickupMarker();
-
-                    reverseGeocode(lat, lng, function(address) {
-                        if (address) {
-                            el.pickupInput.value = address;
-                        } else {
-                            el.pickupInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                        }
-                    });
-
-                    showMessage('📍 Геолокация определена', 'success');
-                    el.geoBtn.textContent = '📍 Определить';
+                    setPickupLocation(lat, lng);
+                    el.geoBtn.textContent = '✅ Определено';
+                    el.geoBtn.classList.add('success');
                     el.geoBtn.classList.remove('loading');
                     el.geoBtn.disabled = false;
+                    showMessage('📍 Геолокация определена', 'success');
                 },
                 function(error) {
                     console.error('Ошибка геолокации:', error);
-                    showError('Не удалось определить местоположение: ' + error.message);
+                    showError('Не удалось определить местоположение');
                     el.geoBtn.textContent = '📍 Определить';
                     el.geoBtn.classList.remove('loading');
                     el.geoBtn.disabled = false;
@@ -1065,116 +1151,91 @@
         }
 
         // ============================================================
-        // РАСЧЁТ И ОБНОВЛЕНИЕ
-        // ============================================================
-        function calculateAndUpdate() {
-            if (!pickupLocation || !destinationLocation) {
-                el.priceDisplay.textContent = '—';
-                el.distanceDisplay.textContent = '—';
-                el.durationDisplay.textContent = '—';
-                return;
-            }
-
-            const distance = haversineDistance(
-                pickupLocation.lat, pickupLocation.lng,
-                destinationLocation.lat, destinationLocation.lng
-            );
-
-            if (distance === 0) {
-                el.priceDisplay.textContent = '—';
-                el.distanceDisplay.textContent = '—';
-                el.durationDisplay.textContent = '—';
-                return;
-            }
-
-            const result = calculatePriceAndCommission(distance);
-            const duration = distance * 3;
-
-            el.priceDisplay.textContent = formatPrice(result.price);
-            el.distanceDisplay.textContent = formatDistance(distance);
-            el.durationDisplay.textContent = formatDuration(duration);
-        }
-
-        // ============================================================
-        // ОБРАБОТКА ВЫБОРА АДРЕСА ИЗ АВТОДОПОЛНЕНИЯ
+        // ОБРАБОТЧИКИ ВЫБОРА АДРЕСА
         // ============================================================
         function handlePickupSelect(result) {
-            pickupLocation = { lat: result.lat, lng: result.lng };
-            updatePickupMarker();
-            calculateAndUpdate();
-            showMessage(`📍 Отправление: ${result.displayName}`, 'success');
+            setPickupLocation(result.lat, result.lng);
         }
 
         function handleDestinationSelect(result) {
-            destinationLocation = { lat: result.lat, lng: result.lng };
-            updateDestinationMarker();
-            calculateAndUpdate();
-            showMessage(`🏁 Назначение: ${result.displayName}`, 'success');
+            setDestinationLocation(result.lat, result.lng);
         }
 
         // ============================================================
-        // СОЗДАНИЕ ЗАКАЗА
+        // СОЗДАНИЕ ЗАКАЗА (РЕАЛЬНОЕ СОХРАНЕНИЕ В FIRESTORE)
         // ============================================================
         async function createOrder() {
+            if (isProcessing) return;
+
             const pickupAddress = el.pickupInput.value.trim();
             const destinationAddress = el.destinationInput.value.trim();
 
             if (!pickupAddress) {
-                showMessage('Введите адрес отправления или определите геолокацию', 'error');
+                showMessage('Введите адрес отправления', 'error');
+                el.pickupInput.focus();
                 return;
             }
 
             if (!destinationAddress) {
                 showMessage('Введите адрес назначения', 'error');
+                el.destinationInput.focus();
                 return;
             }
 
-            // Если нет геолокации отправления — пытаемся геокодировать
+            // Проверяем геолокацию
             if (!pickupLocation) {
                 const geoResult = await geocodeAddress(pickupAddress);
                 if (geoResult) {
-                    pickupLocation = { lat: geoResult.lat, lng: geoResult.lng };
-                    updatePickupMarker();
+                    setPickupLocation(geoResult.lat, geoResult.lng);
                 } else {
-                    pickupLocation = null;
-                    showMessage('📍 Адрес отправления сохранён как текстовый', 'info');
+                    showMessage('⚠️ Не удалось определить координаты отправления', 'warning');
                 }
             }
 
-            // Если нет геолокации назначения — пытаемся геокодировать
             if (!destinationLocation) {
                 const geoResult = await geocodeAddress(destinationAddress);
                 if (geoResult) {
-                    destinationLocation = { lat: geoResult.lat, lng: geoResult.lng };
-                    updateDestinationMarker();
+                    setDestinationLocation(geoResult.lat, geoResult.lng);
                 } else {
-                    destinationLocation = null;
-                    showMessage('📍 Адрес назначения сохранён как текстовый', 'info');
+                    showMessage('⚠️ Не удалось определить координаты назначения', 'warning');
                 }
             }
 
-            const distance = pickupLocation && destinationLocation ?
-                haversineDistance(pickupLocation.lat, pickupLocation.lng, destinationLocation.lat, destinationLocation.lng) :
-                0;
+            // Получаем данные маршрута
+            let routeData = window._routeData || {};
+            let distance = routeData.distance || 0;
+            let price = routeData.price || 0;
 
-            const result = distance > 0 ? calculatePriceAndCommission(distance) : { price: 0, commission: 0, driverEarn: 0 };
+            // Если нет данных, рассчитываем вручную
+            if (distance === 0 && pickupLocation && destinationLocation) {
+                distance = haversineDistance(
+                    pickupLocation.lat, pickupLocation.lng,
+                    destinationLocation.lat, destinationLocation.lng
+                );
+                const result = calculatePriceAndCommission(distance);
+                price = result.price;
+            }
 
             // Проверяем баланс
-            if (balance < result.price) {
-                showMessage(`❌ Недостаточно средств. Нужно: ${formatPrice(result.price)}, у вас: ${formatPrice(balance)}`,
+            if (balance < price) {
+                showMessage(`❌ Недостаточно средств. Нужно: ${formatPrice(price)}, у вас: ${formatPrice(balance)}`,
                     'error');
                 return;
             }
 
+            isProcessing = true;
             el.orderBtn.disabled = true;
-            el.orderBtn.textContent = '⏳ Заказ создаётся...';
+            el.orderBtn.textContent = '⏳ Создание...';
+            el.orderBtn.classList.add('loading');
 
             try {
                 const user = auth.currentUser;
                 if (!user) {
                     showMessage('❌ Пожалуйста, войдите в аккаунт', 'error');
+                    isProcessing = false;
                     el.orderBtn.disabled = false;
-                    el.orderBtn.textContent = '📍 Заказать такси';
+                    el.orderBtn.textContent = '🚖 Заказать такси';
+                    el.orderBtn.classList.remove('loading');
                     return;
                 }
 
@@ -1192,16 +1253,15 @@
                         lat: destinationLocation ? destinationLocation.lat : null,
                         lng: destinationLocation ? destinationLocation.lng : null
                     },
-                    price: result.price,
-                    commission: result.commission,
-                    driverEarn: result.driverEarn,
+                    price: price,
+                    commission: price * TARIFF.COMMISSION,
+                    driverEarn: price * (1 - TARIFF.COMMISSION),
                     distance: distance,
                     estimatedDuration: distance * 3,
                     isNight: isNight(),
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     assignedManually: false,
                     dispatchHistory: [],
-                    cancelled: false,
                     penaltyApplied: 0
                 };
 
@@ -1214,15 +1274,18 @@
                 el.orderBtn.textContent = '✅ Заказ создан';
                 el.orderBtn.disabled = true;
                 el.cancelBtn.disabled = false;
-                el.cancelBtn.textContent = '❌ Отменить заказ';
+                el.cancelBtn.textContent = '✖';
+
+                el.mapHint.classList.add('hidden');
 
                 subscribeToOrder(currentOrderId);
 
             } catch (error) {
                 console.error('❌ Ошибка создания заказа:', error);
-                showMessage('❌ Ошибка создания заказа: ' + error.message, 'error');
-                el.orderBtn.disabled = false;
-                el.orderBtn.textContent = '📍 Заказать такси';
+                showMessage('❌ Ошибка: ' + error.message, 'error');
+            } finally {
+                isProcessing = false;
+                el.orderBtn.classList.remove('loading');
             }
         }
 
@@ -1237,62 +1300,95 @@
 
             const orderRef = db.collection('orders').doc(orderId);
             unsubOrder = orderRef.onSnapshot(function(doc) {
-                if (!doc.exists) return;
+                if (!doc.exists) {
+                    // Заказ удалён
+                    el.orderStatus.classList.remove('active');
+                    el.cancelBtn.disabled = true;
+                    el.cancelBtn.textContent = '✖';
+                    el.orderBtn.disabled = false;
+                    el.orderBtn.textContent = '🚖 Заказать такси';
+                    return;
+                }
+
                 const data = doc.data();
                 console.log('🔄 Обновление заказа:', data.status);
 
-                if (data.status === 'assigned') {
-                    el.statusText.textContent = '✅ Водитель назначен!';
-                    el.statusDetail.textContent = `🚗 Водитель едет к вам`;
-                    el.orderStatus.classList.add('active');
-                    el.cancelBtn.disabled = false;
-                    showMessage('✅ Водитель назначен! Ожидайте.', 'success');
-                } else if (data.status === 'in_progress') {
-                    el.statusText.textContent = '🚗 Поездка началась!';
-                    el.statusDetail.textContent = 'Водитель уже в пути';
-                    el.orderStatus.classList.add('active');
-                    el.cancelBtn.disabled = true;
-                    el.cancelBtn.textContent = '❌ Отмена недоступна';
-                } else if (data.status === 'completed') {
-                    el.statusText.textContent = '✅ Поездка завершена!';
-                    el.statusDetail.textContent = 'Спасибо за поездку!';
-                    el.orderStatus.classList.add('active');
-                    el.cancelBtn.disabled = true;
-                    el.orderBtn.disabled = true;
-                    showMessage('✅ Поездка завершена!', 'success');
-                } else if (data.status === 'cancelled') {
-                    el.statusText.textContent = '❌ Заказ отменён';
-                    el.statusDetail.textContent = data.penaltyApplied ? `Штраф: ${formatPrice(data.penaltyApplied)}` :
-                        'Без штрафа';
-                    el.orderStatus.classList.add('active');
-                    el.cancelBtn.disabled = true;
-                    el.cancelBtn.textContent = '❌ Отменён';
-                    el.orderBtn.disabled = false;
-                    el.orderBtn.textContent = '📍 Заказать снова';
-                    if (data.penaltyApplied) {
-                        showMessage(`⚠️ Штраф ${formatPrice(data.penaltyApplied)} за отмену`, 'warning');
-                    }
-                    if (unsubOrder) { unsubOrder();
-                        unsubOrder = null; }
+                el.orderStatus.classList.add('active');
+
+                switch (data.status) {
+                    case 'new':
+                    case 'searching':
+                        el.statusText.innerHTML = `<span class="emoji">⏳</span> Поиск водителя...`;
+                        el.statusDetail.innerHTML =
+                            `Ищем ближайшего водителя... <span class="warning">⏱️</span>`;
+                        el.cancelBtn.disabled = false;
+                        el.cancelBtn.textContent = '✖';
+                        break;
+
+                    case 'assigned':
+                        el.statusText.innerHTML = `<span class="emoji">✅</span> Водитель назначен!`;
+                        el.statusDetail.innerHTML =
+                            `🚗 Водитель едет к вам <span class="highlight">${data.driverName || ''}</span>`;
+                        el.cancelBtn.disabled = false;
+                        el.cancelBtn.textContent = '✖';
+                        showMessage('✅ Водитель назначен! Ожидайте.', 'success');
+                        break;
+
+                    case 'in_progress':
+                        el.statusText.innerHTML = `<span class="emoji">🚗</span> Поездка началась!`;
+                        el.statusDetail.innerHTML = `Водитель уже в пути 🛣️`;
+                        el.cancelBtn.disabled = true;
+                        el.cancelBtn.textContent = '⛔';
+                        showMessage('🚗 Поездка началась!', 'info');
+                        break;
+
+                    case 'completed':
+                        el.statusText.innerHTML = `<span class="emoji">🎉</span> Поездка завершена!`;
+                        el.statusDetail.innerHTML = `Спасибо за поездку! 🌟`;
+                        el.cancelBtn.disabled = true;
+                        el.cancelBtn.textContent = '✅';
+                        el.orderBtn.disabled = true;
+                        el.orderBtn.textContent = '✅ Завершён';
+                        showMessage('🎉 Поездка завершена!', 'success');
+                        if (unsubOrder) { unsubOrder();
+                            unsubOrder = null; }
+                        break;
+
+                    case 'cancelled':
+                        const penalty = data.penaltyApplied || 0;
+                        el.statusText.innerHTML = `<span class="emoji">❌</span> Заказ отменён`;
+                        el.statusDetail.innerHTML = penalty ?
+                            `Штраф: <span class="warning">${formatPrice(penalty)}</span>` :
+                            'Без штрафа';
+                        el.cancelBtn.disabled = true;
+                        el.cancelBtn.textContent = '❌';
+                        el.orderBtn.disabled = false;
+                        el.orderBtn.textContent = '🚖 Заказать снова';
+                        if (penalty) {
+                            showMessage(`⚠️ Штраф ${formatPrice(penalty)} за отмену`, 'warning');
+                        }
+                        if (unsubOrder) { unsubOrder();
+                            unsubOrder = null; }
+                        break;
                 }
             }, function(error) {
-                console.error('❌ Ошибка подписки на заказ:', error);
+                console.error('❌ Ошибка подписки:', error);
             });
         }
 
         // ============================================================
-        // ОТМЕНА ЗАКАЗА КЛИЕНТОМ
+        // ОТМЕНА ЗАКАЗА
         // ============================================================
         function cancelOrder() {
             if (!currentOrderId) {
-                showMessage('❌ Нет активного заказа для отмены', 'error');
+                showMessage('❌ Нет активного заказа', 'error');
                 return;
             }
 
-            if (!confirm('Вы уверены, что хотите отменить заказ?')) return;
+            if (!confirm('❌ Вы уверены, что хотите отменить заказ?')) return;
 
             el.cancelBtn.disabled = true;
-            el.cancelBtn.textContent = '⏳ Отмена...';
+            el.cancelBtn.textContent = '⏳';
 
             const orderRef = db.collection('orders').doc(currentOrderId);
 
@@ -1300,23 +1396,20 @@
                 if (!doc.exists) {
                     showMessage('❌ Заказ не найден', 'error');
                     el.cancelBtn.disabled = false;
-                    el.cancelBtn.textContent = '❌ Отменить заказ';
+                    el.cancelBtn.textContent = '✖';
                     return;
                 }
 
                 const data = doc.data();
                 let penalty = 0;
 
-                // Штраф клиенту, если водитель уже назначен
                 if (data.status === 'assigned' || data.status === 'in_progress') {
-                    // Если водитель уже подтвердил — штраф
                     if (data.assignedAt) {
                         const assignedTime = data.assignedAt.toDate ? data.assignedAt.toDate() : new Date(data
-                        .assignedAt);
+                            .assignedAt);
                         const elapsed = (Date.now() - assignedTime.getTime()) / 60000;
                         if (elapsed > 2) {
                             penalty = TARIFF.PENALTY_CANCEL;
-                            showMessage(`⚠️ Штраф ${formatPrice(penalty)} за отмену после подтверждения`, 'warning');
                         }
                     } else {
                         penalty = TARIFF.PENALTY_CANCEL;
@@ -1331,30 +1424,29 @@
                     cancelledBy: 'client'
                 }).then(function() {
                     if (penalty > 0) {
-                        // Списываем штраф с клиента
                         const user = auth.currentUser;
                         if (user) {
-                            const userRef = db.collection('users').doc(user.uid);
-                            userRef.update({
+                            db.collection('users').doc(user.uid).update({
                                 balance: firebase.firestore.FieldValue.increment(-penalty),
                                 penalty: firebase.firestore.FieldValue.increment(penalty)
                             }).then(function() {
-                                console.log('💰 Штраф списан с клиента:', penalty);
+                                console.log('💰 Штраф списан:', penalty);
+                                updateBalance();
                                 showMessage(`💰 Списан штраф ${formatPrice(penalty)}`, 'warning');
                             }).catch(function(err) {
-                                console.error('❌ Ошибка списания штрафа:', err);
+                                console.error('❌ Ошибка списания:', err);
                             });
                         }
                     }
                     el.cancelBtn.disabled = true;
-                    el.cancelBtn.textContent = '❌ Отменён';
+                    el.cancelBtn.textContent = '❌';
                     showMessage('✅ Заказ отменён', 'info');
                 });
             }).catch(function(error) {
                 console.error('❌ Ошибка отмены:', error);
-                showMessage('❌ Ошибка отмены: ' + error.message, 'error');
+                showMessage('❌ Ошибка: ' + error.message, 'error');
                 el.cancelBtn.disabled = false;
-                el.cancelBtn.textContent = '❌ Отменить заказ';
+                el.cancelBtn.textContent = '✖';
             });
         }
 
@@ -1368,8 +1460,7 @@
             db.collection('users').doc(user.uid).get()
                 .then(function(doc) {
                     if (doc.exists) {
-                        const data = doc.data();
-                        balance = data.balance || 0;
+                        balance = doc.data().balance || 0;
                         el.balanceDisplay.textContent = '💰 ' + formatPrice(balance);
                     }
                 })
@@ -1377,6 +1468,73 @@
                     console.error('❌ Ошибка загрузки баланса:', err);
                 });
         }
+
+        // ============================================================
+        // ОБРАБОТЧИКИ СОБЫТИЙ
+        // ============================================================
+
+        // === Назад ===
+        el.backBtn.addEventListener('click', function() {
+            if (currentOrderId && orderStatus !== 'completed' && orderStatus !== 'cancelled') {
+                if (!confirm('У вас есть активный заказ. Вернуться в кабинет?')) return;
+            }
+            if (unsubOrder) { unsubOrder();
+                unsubOrder = null; }
+            window.location.href = 'cabinet.html';
+        });
+
+        // === Геолокация ===
+        el.geoBtn.addEventListener('click', getCurrentLocation);
+
+        // === Поменять местами ===
+        el.swapBtn.addEventListener('click', function() {
+            if (!pickupLocation || !destinationLocation) {
+                showMessage('Установите обе точки', 'warning');
+                return;
+            }
+
+            const tempLoc = { ...pickupLocation };
+            const tempAddress = el.pickupInput.value;
+
+            setPickupLocation(destinationLocation.lat, destinationLocation.lng);
+            setDestinationLocation(tempLoc.lat, tempLoc.lng);
+
+            const tempInput = el.pickupInput.value;
+            el.pickupInput.value = el.destinationInput.value;
+            el.destinationInput.value = tempInput;
+
+            showMessage('🔄 Точки поменяны местами', 'info');
+        });
+
+        // === Ввод адреса "Откуда" ===
+        el.pickupInput.addEventListener('blur', function() {
+            const address = this.value.trim();
+            if (address && !pickupLocation) {
+                geocodeAddress(address).then(function(result) {
+                    if (result) {
+                        setPickupLocation(result.lat, result.lng);
+                    }
+                });
+            }
+        });
+
+        // === Ввод адреса "Куда" ===
+        el.destinationInput.addEventListener('blur', function() {
+            const address = this.value.trim();
+            if (address && !destinationLocation) {
+                geocodeAddress(address).then(function(result) {
+                    if (result) {
+                        setDestinationLocation(result.lat, result.lng);
+                    }
+                });
+            }
+        });
+
+        // === Заказать ===
+        el.orderBtn.addEventListener('click', createOrder);
+
+        // === Отменить ===
+        el.cancelBtn.addEventListener('click', cancelOrder);
 
         // ============================================================
         // АВТОРИЗАЦИЯ
@@ -1389,10 +1547,6 @@
             currentUser = user;
             updateBalance();
 
-            const now = new Date();
-            now.setMinutes(now.getMinutes() + 15);
-            el.timeInput.value = now.toISOString().slice(0, 16);
-
             initMap();
 
             setupAutocomplete(el.pickupInput, el.pickupAutocomplete, handlePickupSelect);
@@ -1401,71 +1555,14 @@
             setTimeout(getCurrentLocation, 500);
         });
 
-        // ============================================================
-        // ОБРАБОТЧИКИ СОБЫТИЙ
-        // ============================================================
-
-        // === Кнопка "Назад" ===
-        el.backBtn.addEventListener('click', function() {
-            if (currentOrderId) {
-                if (!confirm('У вас есть активный заказ. Вернуться в кабинет?')) return;
-            }
-            if (unsubOrder) { unsubOrder();
-                unsubOrder = null; }
-            window.location.href = 'cabinet.html';
-        });
-
-        // === Кнопка "Определить геолокацию" ===
-        el.geoBtn.addEventListener('click', getCurrentLocation);
-
-        // === Ввод адреса "Откуда" (ручной ввод) ===
-        el.pickupInput.addEventListener('blur', function() {
-            const address = this.value.trim();
-            if (address && !pickupLocation) {
-                geocodeAddress(address).then(function(result) {
-                    if (result) {
-                        pickupLocation = { lat: result.lat, lng: result.lng };
-                        updatePickupMarker();
-                        calculateAndUpdate();
-                    }
-                });
-            }
-        });
-
-        // === Ввод адреса "Куда" (ручной ввод) ===
-        el.destinationInput.addEventListener('blur', function() {
-            const address = this.value.trim();
-            if (address && !destinationLocation) {
-                geocodeAddress(address).then(function(result) {
-                    if (result) {
-                        destinationLocation = { lat: result.lat, lng: result.lng };
-                        updateDestinationMarker();
-                        calculateAndUpdate();
-                    } else {
-                        destinationLocation = null;
-                        calculateAndUpdate();
-                        showMessage('📍 Адрес сохранён как текстовый', 'info');
-                    }
-                });
-            }
-        });
-
-        // === Кнопка "Заказать такси" ===
-        el.orderBtn.addEventListener('click', createOrder);
-
-        // === Кнопка "Отменить заказ" ===
-        el.cancelBtn.addEventListener('click', cancelOrder);
-
-        console.log('✅ Страница заказа готова');
-        console.log('📌 Инструкция:');
-        console.log('  1. Нажмите "📍 Определить" для геолокации');
-        console.log('  2. Введите адрес назначения (появятся подсказки)');
-        console.log('  3. Нажмите "Заказать такси"');
-        console.log('  4. Для отмены нажмите "Отменить"');
-        console.log('  5. Штраф 7 ₪ при отмене после подтверждения водителя');
-        console.log('  6. Левый клик по карте — точка отправления (🟢)');
-        console.log('  7. Левый клик повторно — точка назначения (🔴)');
-        console.log('  8. Комиссия платформы 10%');
+        console.log('✅ Страница заказа готова (улучшенная версия)');
+        console.log('📌 Новые функции:');
+        console.log('  🗺️ Построение маршрута через OSRM');
+        console.log('  🔄 Поменять местами точки');
+        console.log('  📍 Реальное создание заказа в Firebase');
+        console.log('  🚦 Реальный статус заказа с подпиской');
+        console.log('  💰 Проверка баланса перед заказом');
+        console.log('  ⚡ Улучшенный UX и анимации');
     </script>
 
 </body>
