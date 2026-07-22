@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🤖 ИИ-Диспетчер WHEEL</title>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js">
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0c10;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(18, 22, 28, 0.9);
+            border-radius: 16px;
+            padding: 16px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .header h1 span {
+            color: #ffb000;
+        }
+
+        .status-badge {
+            padding: 4px 14px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-badge.active {
+            background: rgba(74, 222, 128, 0.12);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.15);
+        }
+        .status-badge.inactive {
+            background: rgba(102, 119, 136, 0.1);
+            color: #667788;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .status-badge.waiting {
+            background: rgba(255, 180, 0, 0.12);
+            color: #ffb000;
+            border: 1px solid rgba(255, 180, 0, 0.15);
+        }
+
+        .card {
+            background: rgba(18, 22, 28, 0.85);
+            border-radius: 14px;
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8899aa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+        .stat-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .stat-item .number {
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .stat-item .number.gold {
+            color: #ffb000;
+        }
+        .stat-item .number.green {
+            color: #4ade80;
+        }
+        .stat-item .number.blue {
+            color: #60a5fa;
+        }
+        .stat-item .number.red {
+            color: #ff6b6b;
+        }
+        .stat-item .label {
+            font-size: 10px;
+            color: #667788;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .log-box {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 10px;
+            max-height: 350px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.8;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .log-box .entry {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+        .log-box .entry.error {
+            color: #ff6b6b;
+        }
+        .log-box .entry.success {
+            color: #4ade80;
+        }
+        .log-box .entry.warning {
+            color: #ffb000;
+        }
+        .log-box .entry.info {
+            color: #60a5fa;
+        }
+        .log-box .entry.bold {
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ffb000, #ff6a00);
+            color: #0a0c10;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: rgba(74, 222, 128, 0.12);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.15);
+        }
+        .btn-success:hover {
+            background: rgba(74, 222, 128, 0.2);
+        }
+
+        .btn-danger {
+            background: rgba(255, 70, 70, 0.12);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 70, 70, 0.15);
+        }
+        .btn-danger:hover {
+            background: rgba(255, 70, 70, 0.2);
+        }
+
+        .btn-warning {
+            background: rgba(255, 180, 0, 0.12);
+            color: #ffb000;
+            border: 1px solid rgba(255, 180, 0, 0.15);
+        }
+
+        .flex {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .mb-8 {
+            margin-bottom: 8px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-muted {
+            color: #667788;
+            font-size: 12px;
+        }
+        .text-gold {
+            color: #ffb000;
+        }
+        .text-green {
+            color: #4ade80;
+        }
+        .text-red {
+            color: #ff6b6b;
+        }
+
+        .order-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .order-item .id {
+            color: #8899aa;
+            font-weight: 500;
+        }
+        .order-item .status {
+            font-weight: 600;
+        }
+        .order-item .status.new {
+            color: #60a5fa;
+        }
+        .order-item .status.assigned {
+            color: #4ade80;
+        }
+        .order-item .status.searching {
+            color: #ffb000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- ===== HEADER ===== -->
+        <div class="header">
+            <h1>🤖 <span>ИИ-Диспетчер</span></h1>
+            <span class="status-badge waiting" id="statusBadge">⏳ Запуск...</span>
+        </div>
+
+        <!-- ===== СТАТИСТИКА ===== -->
+        <div class="card">
+            <div class="card-title">📊 Статистика</div>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="number blue" id="totalOrders">0</div>
+                    <div class="label">Всего заказов</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number gold" id="newOrders">0</div>
+                    <div class="label">Новых (new)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number green" id="assignedOrders">0</div>
+                    <div class="label">Назначено</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number gold" id="driversOnline">0</div>
+                    <div class="label">Водителей онлайн</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number green" id="offersSent">0</div>
+                    <div class="label">Предложений</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number red" id="penalties">0</div>
+                    <div class="label">Штрафов</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== УПРАВЛЕНИЕ ===== -->
+        <div class="card">
+            <div class="card-title">🛠️ Управление</div>
+            <div class="flex">
+                <button class="btn btn-success" id="startBtn">▶️ Запустить</button>
+                <button class="btn btn-danger" id="stopBtn">⏹️ Остановить</button>
+                <button class="btn btn-warning" id="forceCheckBtn">🔍 Проверить сейчас</button>
+                <button class="btn btn-primary" id="createTestBtn">📦 Создать тест</button>
+            </div>
+        </div>
+
+        <!-- ===== АКТИВНЫЕ ЗАКАЗЫ ===== -->
+        <div class="card">
+            <div class="card-title">📋 Активные заказы (new/searching)</div>
+            <div id="ordersList">
+                <div class="text-muted text-center" style="padding:10px;">Нет активных заказов</div>
+            </div>
+        </div>
+
+        <!-- ===== ЛОГ ===== -->
+        <div class="card">
+            <div class="card-title">📋 Лог ИИ-диспетчера</div>
+            <div class="log-box" id="logBox">
+                <div class="entry info">🚀 ИИ-диспетчер загружен...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ============================================================
+        // FIREBASE CONFIG
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+            authDomain: "taxi-ai-app-69628.firebaseapp.com",
+            projectId: "taxi-ai-app-69628",
+            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+            messagingSenderId: "952357992434",
+            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+            measurementId: "G-Z9NJFSSXH6"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // ============================================================
+        // STATE
+        // ============================================================
+        let isRunning = false;
+        let checkInterval = null;
+        let stats = {
+            totalOrders: 0,
+            newOrders: 0,
+            assignedOrders: 0,
+            driversOnline: 0,
+            offersSent: 0,
+            penalties: 0
+        };
+
+        let allOrders = [];
+        let allDrivers = [];
+        let processedOrders = new Set();
+
+        const AI_RADIUS_KM = 2.5;
+        const CHECK_INTERVAL = 5000; // 5 секунд
+
+        // ============================================================
+        // LOG
+        // ============================================================
+        const logBox = document.getElementById('logBox');
+
+        function addLog(message, type = 'info', bold = false) {
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'entry ' + type + (bold ? ' bold' : '');
+            entry.textContent = `[${time}] ${message}`;
+            logBox.appendChild(entry);
+            logBox.scrollTop = logBox.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        // ============================================================
+        // UTILITY
+        // ============================================================
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            if (!lat1 || !lng1 || !lat2 || !lng2) return Infinity;
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) ** 2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function getDistance(driver, order) {
+            if (!driver?.location || !order?.pickup?.lat) return Infinity;
+            return haversineDistance(
+                driver.location.lat, driver.location.lng,
+                order.pickup.lat, order.pickup.lng
+            );
+        }
+
+        // ============================================================
+        // UPDATE STATS
+        // ============================================================
+        function updateStats() {
+            document.getElementById('totalOrders').textContent = stats.totalOrders;
+            document.getElementById('newOrders').textContent = stats.newOrders;
+            document.getElementById('assignedOrders').textContent = stats.assignedOrders;
+            document.getElementById('driversOnline').textContent = stats.driversOnline;
+            document.getElementById('offersSent').textContent = stats.offersSent;
+            document.getElementById('penalties').textContent = stats.penalties;
+        }
+
+        // ============================================================
+        // LOAD DATA
+        // ============================================================
+        async function loadData() {
+            try {
+                // Загружаем заказы
+                const ordersSnapshot = await db.collection('orders')
+                    .where('status', 'in', ['new', 'searching'])
+                    .get();
+
+                allOrders = [];
+                ordersSnapshot.forEach(doc => {
+                    allOrders.push({ id: doc.id, ...doc.data() });
+                });
+
+                stats.newOrders = allOrders.length;
+
+                // Загружаем водителей
+                const driversSnapshot = await db.collection('users')
+                    .where('role', '==', 'driver')
+                    .get();
+
+                allDrivers = [];
+                driversSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.driverData?.isAvailable) {
+                        allDrivers.push({
+                            uid: doc.id,
+                            displayName: data.displayName || 'Водитель',
+                            location: data.driverData?.location || null,
+                            isAvailable: data.driverData?.isAvailable || false
+                        });
+                    }
+                });
+
+                stats.driversOnline = allDrivers.filter(d => d.isAvailable).length;
+
+                updateStats();
+
+                // Обновляем список заказов
+                renderOrders();
+
+                return { orders: allOrders, drivers: allDrivers };
+
+            } catch (error) {
+                addLog(`❌ Ошибка загрузки данных: ${error.message}`, 'error');
+                return { orders: [], drivers: [] };
+            }
+        }
+
+        // ============================================================
+        // RENDER ORDERS
+        // ============================================================
+        function renderOrders() {
+            const container = document.getElementById('ordersList');
+
+            if (allOrders.length === 0) {
+                container.innerHTML =
+                    `<div class="text-muted text-center" style="padding:10px;">Нет активных заказов</div>`;
+                return;
+            }
+
+            let html = '';
+            allOrders.forEach(order => {
+                const statusClass = order.status === 'new' ? 'new' : 'searching';
+                const statusLabel = order.status === 'new' ? '🆕 Новый' : '🔍 Поиск';
+                html += `
+                    <div class="order-item">
+                        <span class="id">#${order.id.substring(0,8)}</span>
+                        <span>📍 ${order.pickup?.address || '—'}</span>
+                        <span class="status ${statusClass}">${statusLabel}</span>
+                        <span style="color:#667788; font-size:11px;">${order.driverId ? '👤 назначен' : '⏳ ждёт'}</span>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // ============================================================
+        // FIND BEST DRIVER
+        // ============================================================
+        function findBestDriver(order) {
+            const availableDrivers = allDrivers.filter(d => d.isAvailable && d.location);
+
+            if (availableDrivers.length === 0) {
+                addLog(`❌ Нет доступных водителей для заказа #${order.id.substring(0,8)}`, 'warning');
+                return null;
+            }
+
+            // Ищем ближайшего водителя
+            let bestDriver = null;
+            let bestDistance = Infinity;
+
+            availableDrivers.forEach(driver => {
+                const dist = getDistance(driver, order);
+                if (dist < bestDistance) {
+                    bestDistance = dist;
+                    bestDriver = driver;
+                }
+            });
+
+            // Проверяем, что водитель в радиусе
+            if (bestDistance > AI_RADIUS_KM) {
+                addLog(`⚠️ Ближайший водитель на ${bestDistance.toFixed(2)} км (больше ${AI_RADIUS_KM} км)`, 'warning');
+                return null;
+            }
+
+            return { driver: bestDriver, distance: bestDistance };
+        }
+
+        // ============================================================
+        // SEND OFFER TO DRIVER
+        // ============================================================
+        async function sendOffer(order, driver, distance) {
+            const offerId = `offer_${order.id}_${Date.now()}`;
+
+            addLog(`📨 ПРЕДЛОЖЕНИЕ: #${order.id.substring(0,8)} → ${driver.displayName} (${distance.toFixed(2)} км)`, 'success',
+                true);
+
+            // 1. Обновляем заказ — назначаем водителя
+            try {
+                await db.collection('orders').doc(order.id).update({
+                    driverId: driver.uid,
+                    driverName: driver.displayName,
+                    status: 'assigned',
+                    assignedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    assignedByAI: true,
+                    dispatchHistory: firebase.firestore.FieldValue.arrayUnion({
+                        driverId: driver.uid,
+                        timestamp: new Date().toISOString(),
+                        method: 'ai_dispatcher',
+                        distance: distance,
+                        offerId: offerId
+                    })
+                });
+
+                stats.offersSent++;
+                updateStats();
+
+                addLog(`✅ ЗАКАЗ #${order.id.substring(0,8)} НАЗНАЧЕН водителю ${driver.displayName}`, 'success');
+
+                // 2. Отправляем уведомление водителю (через Firestore)
+                await db.collection('driverNotifications').doc(driver.uid).set({
+                    orderId: order.id,
+                    offerId: offerId,
+                    status: 'pending',
+                    orderData: order,
+                    distance: distance,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    expiresAt: new Date(Date.now() + 30000).toISOString() // 30 секунд
+                }, { merge: true });
+
+                addLog(`📨 Уведомление отправлено водителю ${driver.displayName}`, 'success');
+
+                // 3. Запускаем таймер на отмену (30 секунд)
+                setTimeout(async () => {
+                    const notificationDoc = await db.collection('driverNotifications')
+                        .doc(driver.uid)
+                        .get();
+
+                    if (notificationDoc.exists) {
+                        const data = notificationDoc.data();
+                        if (data.status === 'pending') {
+                            // Водитель не ответил — отменяем
+                            await db.collection('orders').doc(order.id).update({
+                                status: 'searching',
+                                driverId: null,
+                                driverName: null,
+                                dispatchHistory: firebase.firestore.FieldValue.arrayUnion({
+                                    timestamp: new Date().toISOString(),
+                                    method: 'ai_dispatcher_timeout',
+                                    offerId: offerId
+                                })
+                            });
+
+                            await db.collection('driverNotifications').doc(driver.uid).update({
+                                status: 'expired'
+                            });
+
+                            addLog(`⏰ Таймаут: водитель ${driver.displayName} не ответил на заказ #${order.id.substring(0,8)}`,
+                                'warning');
+
+                            // Назначаем штраф (2 минуты)
+                            await db.collection('users').doc(driver.uid).update({
+                                'driverData.isAvailable': false,
+                                'driverData.penaltyEnd': firebase.firestore.FieldValue.serverTimestamp()
+                            });
+
+                            stats.penalties++;
+                            updateStats();
+
+                            addLog(`⛔ Штраф 2 минуты для водителя ${driver.displayName}`, 'error');
+                        }
+                    }
+                }, 30000);
+
+            } catch (error) {
+                addLog(`❌ Ошибка назначения: ${error.message}`, 'error');
+            }
+        }
+
+        // ============================================================
+        // MAIN DISPATCHER LOGIC
+        // ============================================================
+        async function dispatchOrders() {
+            if (!isRunning) {
+                addLog('⏸️ Диспетчер остановлен', 'warning');
+                return;
+            }
+
+            addLog('🔍 Проверка заказов...', 'info');
+
+            // Загружаем свежие данные
+            await loadData();
+
+            // Фильтруем заказы, которые ещё не обработаны
+            const pendingOrders = allOrders.filter(o => !processedOrders.has(o.id));
+
+            if (pendingOrders.length === 0) {
+                addLog(`ℹ️ Нет новых заказов для обработки (${allOrders.length} всего)`, 'info');
+                return;
+            }
+
+            addLog(`📦 Найдено ${pendingOrders.length} новых заказов`, 'info');
+
+            for (const order of pendingOrders) {
+                // Проверяем, не назначен ли уже заказ
+                if (order.driverId) {
+                    addLog(`⏭️ Заказ #${order.id.substring(0,8)} уже назначен водителю ${order.driverId}`, 'warning');
+                    processedOrders.add(order.id);
+                    continue;
+                }
+
+                // Ищем лучшего водителя
+                const result = findBestDriver(order);
+
+                if (!result) {
+                    addLog(`⚠️ Не найден подходящий водитель для заказа #${order.id.substring(0,8)}`, 'warning');
+                    processedOrders.add(order.id);
+                    continue;
+                }
+
+                // Отправляем предложение
+                await sendOffer(order, result.driver, result.distance);
+
+                // Отмечаем как обработанный
+                processedOrders.add(order.id);
+
+                // Небольшая задержка между назначениями
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // Обновляем статистику
+            stats.totalOrders = allOrders.length;
+            stats.newOrders = allOrders.filter(o => o.status === 'new').length;
+            stats.assignedOrders = allOrders.filter(o => o.status === 'assigned').length;
+
+            updateStats();
+            renderOrders();
+
+            addLog(`✅ Цикл завершён. Обработано ${pendingOrders.length} заказов`, 'success');
+        }
+
+        // ============================================================
+        // START / STOP
+        // ============================================================
+        function startDispatcher() {
+            if (isRunning) {
+                addLog('⚠️ Диспетчер уже работает', 'warning');
+                return;
+            }
+
+            isRunning = true;
+            document.getElementById('statusBadge').className = 'status-badge active';
+            document.getElementById('statusBadge').textContent = '🟢 Активен';
+
+            addLog('🚀 ИИ-ДИСПЕТЧЕР ЗАПУЩЕН', 'success', true);
+            addLog(`📏 Радиус поиска: ${AI_RADIUS_KM} км (5 минут)`, 'info');
+            addLog(`⏱️ Интервал проверки: ${CHECK_INTERVAL/1000} секунд`, 'info');
+
+            // Запускаем первый раз
+            dispatchOrders();
+
+            // Запускаем интервал
+            if (checkInterval) clearInterval(checkInterval);
+            checkInterval = setInterval(dispatchOrders, CHECK_INTERVAL);
+        }
+
+        function stopDispatcher() {
+            if (!isRunning) {
+                addLog('⚠️ Диспетчер уже остановлен', 'warning');
+                return;
+            }
+
+            isRunning = false;
+            document.getElementById('statusBadge').className = 'status-badge inactive';
+            document.getElementById('statusBadge').textContent = '⚪ Остановлен';
+
+            if (checkInterval) {
+                clearInterval(checkInterval);
+                checkInterval = null;
+            }
+
+            addLog('⏹️ ИИ-ДИСПЕТЧЕР ОСТАНОВЛЕН', 'error', true);
+        }
+
+        // ============================================================
+        // FORCE CHECK
+        // ============================================================
+        function forceCheck() {
+            addLog('🔍 ПРИНУДИТЕЛЬНАЯ ПРОВЕРКА', 'info', true);
+            dispatchOrders();
+        }
+
+        // ============================================================
+        // CREATE TEST ORDER
+        // ============================================================
+        async function createTestOrder() {
+            const user = auth.currentUser;
+            if (!user) {
+                addLog('❌ Нет авторизованного пользователя', 'error');
+                return;
+            }
+
+            addLog('📦 СОЗДАНИЕ ТЕСТОВОГО ЗАКАЗА...', 'info', true);
+
+            // Создаём заказ с координатами Тель-Авива
+            const orderData = {
+                clientId: user.uid,
+                clientName: 'Тест ' + new Date().toLocaleTimeString(),
+                status: 'new',
+                pickup: {
+                    address: 'Тест Тель-Авив',
+                    lat: 32.0853 + (Math.random() - 0.5) * 0.02,
+                    lng: 34.7818 + (Math.random() - 0.5) * 0.02
+                },
+                destination: {
+                    address: 'Тест Иерусалим',
+                    lat: 31.7683 + (Math.random() - 0.5) * 0.02,
+                    lng: 35.2137 + (Math.random() - 0.5) * 0.02
+                },
+                price: 20 + Math.random() * 20,
+                commission: 2,
+                driverEarn: 18,
+                distance: 2.5,
+                estimatedDuration: 10,
+                isNight: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                assignedManually: false,
+                dispatchHistory: [],
+                penaltyApplied: 0,
+                _test: true,
+                _created: new Date().toISOString()
+            };
+
+            try {
+                const docRef = await db.collection('orders').add(orderData);
+                addLog(`✅ ТЕСТОВЫЙ ЗАКАЗ СОЗДАН! ID: ${docRef.id}`, 'success', true);
+
+                // Обновляем список
+                await loadData();
+                renderOrders();
+
+                // Запускаем проверку
+                setTimeout(() => {
+                    dispatchOrders();
+                }, 2000);
+
+            } catch (error) {
+                addLog(`❌ Ошибка создания: ${error.message}`, 'error');
+            }
+        }
+
+        // ============================================================
+        // EVENT LISTENERS
+        // ============================================================
+        document.getElementById('startBtn').addEventListener('click', startDispatcher);
+        document.getElementById('stopBtn').addEventListener('click', stopDispatcher);
+        document.getElementById('forceCheckBtn').addEventListener('click', forceCheck);
+        document.getElementById('createTestBtn').addEventListener('click', createTestOrder);
+
+        // ============================================================
+        // INIT
+        // ============================================================
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                addLog('❌ Пользователь не авторизован. Войдите в аккаунт.', 'error');
+                document.getElementById('statusBadge').className = 'status-badge inactive';
+                document.getElementById('statusBadge').textContent = '⚪ Нет авторизации';
+                return;
+            }
+
+            addLog(`✅ Авторизован: ${user.email}`, 'success');
+            document.getElementById('statusBadge').className = 'status-badge waiting';
+            document.getElementById('statusBadge').textContent = '⏳ Готов к запуску';
+
+            // Загружаем данные
+            await loadData();
+            renderOrders();
+
+            addLog(`📊 Загружено ${allOrders.length} заказов, ${allDrivers.length} водителей`, 'info');
+
+            // Автоматически запускаем
+            setTimeout(() => {
+                startDispatcher();
+            }, 1000);
+        });
+
+        addLog('🚀 ИИ-Диспетчер загружен', 'info', true);
+        addLog('📌 Нажмите "Запустить" для начала работы', 'info');
+        addLog('📌 Нажмите "Создать тест" для тестового заказа', 'info');
+        console.log('✅ ИИ-Диспетчер готов');
+    </script>
+
+</body>
+</html>
