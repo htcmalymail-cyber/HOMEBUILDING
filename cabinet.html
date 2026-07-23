@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="ru" dir="ltr">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Личный кабинет — WHEEL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Кабинет — WHEEL</title>
 
-    <!-- Firebase SDK (compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
@@ -14,577 +13,247 @@
     </script>
 
     <style>
-        /* ===== ОСНОВНЫЕ СТИЛИ ===== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
-            font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0c10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             min-height: 100vh;
-            padding: 16px;
-            background-image:
-                radial-gradient(circle at 20% 30%, rgba(255, 180, 0, 0.06) 0%, transparent 45%),
-                radial-gradient(circle at 80% 70%, rgba(0, 160, 255, 0.05) 0%, transparent 45%),
-                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
-            background-attachment: fixed;
+            padding: 12px;
+            color: #fff;
         }
-
         .container {
-            width: 100%;
-            max-width: 420px;
-            background: rgba(18, 22, 28, 0.85);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-radius: 48px;
-            padding: 24px 24px 32px;
-            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            position: relative;
-            overflow: hidden;
-            min-height: 500px;
-            transition: all 0.3s ease;
+            max-width: 480px;
+            margin: 0 auto;
         }
-
-        .container::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 30% 20%, rgba(255, 180, 0, 0.03), transparent 60%);
-            pointer-events: none;
-            animation: rotateBg 30s linear infinite;
-        }
-
-        @keyframes rotateBg {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== */
-        .lang-switcher {
-            position: absolute;
-            top: 18px;
-            right: 22px;
-            z-index: 10;
-            display: flex;
-            gap: 4px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 30px;
-            padding: 4px 8px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        body[dir="rtl"] .lang-switcher {
-            right: auto;
-            left: 22px;
-        }
-
-        .lang-btn {
-            background: transparent;
-            border: none;
-            font-size: 18px;
-            line-height: 1;
-            padding: 3px 4px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            opacity: 0.4;
-            filter: grayscale(0.8);
-            transform: scale(0.85);
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .lang-btn:hover {
-            opacity: 0.8;
-            filter: grayscale(0.2);
-            transform: scale(0.95);
-        }
-
-        .lang-btn.active {
-            opacity: 1;
-            filter: grayscale(0);
-            transform: scale(1);
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 50%;
-            box-shadow: 0 0 16px rgba(255, 180, 0, 0.15);
-        }
-
-        .lang-btn .flag {
-            font-size: 20px;
-            line-height: 1;
-            display: block;
-        }
-
-        /* ===== ШАПКА ===== */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
-            padding-top: 8px;
-            position: relative;
-            z-index: 1;
+            padding: 12px 16px;
+            background: rgba(18, 22, 28, 0.85);
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 12px;
         }
-
-        .user-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            flex: 1;
-            min-width: 0;
-        }
-
-        .user-name {
-            font-size: 22px;
+        .header-title {
+            font-size: 20px;
             font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 0.3px;
-            word-break: break-word;
         }
-
-        .user-email {
-            font-size: 13px;
-            color: #8899aa;
-            margin-top: 2px;
-            word-break: break-all;
+        .header-title span {
+            color: #ffb000;
         }
-
-        .user-uid {
-            font-size: 10px;
-            color: #556677;
-            margin-top: 2px;
-            font-family: 'SF Mono', monospace;
-            word-break: break-all;
-        }
-
         .logout-btn {
             background: rgba(255, 70, 70, 0.08);
             border: 1px solid rgba(255, 70, 70, 0.15);
             border-radius: 30px;
-            padding: 8px 16px;
+            padding: 6px 16px;
             color: #ff6b6b;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
             font-family: inherit;
-            white-space: nowrap;
-            flex-shrink: 0;
-            margin-left: 10px;
         }
-
         .logout-btn:hover {
-            background: rgba(255, 70, 70, 0.18);
-            border-color: #ff6b6b;
-            transform: scale(1.02);
+            background: rgba(255, 70, 70, 0.15);
         }
 
-        .logout-btn:active {
-            transform: scale(0.95);
+        .card {
+            background: rgba(18, 22, 28, 0.85);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 12px;
         }
-
-        /* ===== СТАТИСТИКА ===== */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            width: 100%;
-            margin-bottom: 24px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 20px;
-            padding: 18px 14px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            text-align: center;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .stat-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 180, 0, 0.08);
-            transform: translateY(-2px);
-        }
-
-        .stat-card .icon {
-            font-size: 20px;
-            margin-bottom: 4px;
-        }
-
-        .stat-card .label {
-            font-size: 11px;
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
             color: #8899aa;
+            margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 14px;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-row .label {
+            color: #8899aa;
+        }
+        .info-row .value {
             font-weight: 600;
         }
-
-        .stat-card .value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #ffffff;
-            margin-top: 4px;
-        }
-
-        .stat-card .value.gold {
+        .info-row .value.gold {
             color: #ffb000;
         }
-        .stat-card .value.negative {
-            color: #ff6b6b;
-        }
-        .stat-card .value.positive {
+        .info-row .value.green {
             color: #4ade80;
         }
-        .stat-card .value.rating {
+        .info-row .value.blue {
             color: #60a5fa;
         }
 
-        /* ===== КНОПКА ЗАКАЗА ===== */
-        .order-btn {
-            width: 100%;
-            padding: 16px;
+        .btn {
+            padding: 12px;
             border: none;
-            border-radius: 20px;
-            background: linear-gradient(135deg, #ffb000, #ff6a00);
-            color: #0a0c10;
-            font-size: 17px;
-            font-weight: 700;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 24px rgba(255, 140, 0, 0.2);
             font-family: inherit;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            position: relative;
-            z-index: 1;
-            letter-spacing: 0.3px;
+            width: 100%;
+            transition: all 0.3s;
         }
-
-        .order-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(255, 140, 0, 0.35);
-        }
-
-        .order-btn:active {
+        .btn:active {
             transform: scale(0.97);
         }
-
-        /* ===== БЛОК ОШИБОК ===== */
-        .error-box {
-            background: rgba(255, 70, 70, 0.08);
-            border: 1px solid rgba(255, 70, 70, 0.15);
-            border-radius: 14px;
-            padding: 12px 16px;
-            margin-bottom: 16px;
-            color: #ff6b6b;
-            font-size: 13px;
-            text-align: center;
-            display: none;
-            position: relative;
-            z-index: 1;
+        .btn-primary {
+            background: linear-gradient(135deg, #ffb000, #ff6a00);
+            color: #0a0c10;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #8899aa;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
         }
 
-        /* ===== ИСТОРИЯ ===== */
-        .history-section {
-            width: 100%;
-            margin-top: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .history-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #e0e8f0;
-            margin-bottom: 12px;
+        .flex {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            gap: 8px;
         }
-
-        .history-title .badge {
-            font-size: 11px;
-            color: #667788;
-            font-weight: 400;
-        }
-
-        .history-list {
-            max-height: 220px;
-            overflow-y: auto;
-            padding-right: 4px;
-        }
-
-        .history-list::-webkit-scrollbar {
-            width: 3px;
-        }
-        .history-list::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .history-list::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
-        }
-
-        .transaction-item {
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 16px;
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            transition: all 0.2s ease;
-        }
-
-        .transaction-item:hover {
-            background: rgba(255, 255, 255, 0.04);
-            border-color: rgba(255, 255, 255, 0.06);
-        }
-
-        .transaction-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
+        .flex .btn {
             flex: 1;
-            min-width: 0;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-muted {
+            color: #667788;
+            font-size: 12px;
         }
 
-        .transaction-desc {
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(18, 22, 28, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 12px 24px;
+            color: #fff;
             font-size: 14px;
             font-weight: 500;
-            color: #e0e8f0;
-            word-break: break-word;
-        }
-
-        .transaction-date {
-            font-size: 11px;
-            color: #667788;
-            margin-top: 2px;
-        }
-
-        .transaction-amount {
-            font-size: 16px;
-            font-weight: 700;
-            flex-shrink: 0;
-            margin-left: 12px;
-        }
-
-        .transaction-amount.positive {
-            color: #4ade80;
-        }
-        .transaction-amount.negative {
-            color: #ff6b6b;
-        }
-
-        .empty-history {
-            color: #667788;
-            font-size: 14px;
+            z-index: 9999;
+            max-width: 90%;
             text-align: center;
-            padding: 30px 0;
+            display: none;
+        }
+        .toast.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
         }
 
-        .loading-text {
-            color: #8899aa;
-            font-size: 14px;
-            text-align: center;
-            padding: 20px 0;
-        }
-
-        /* ===== ИНДИКАТОР ===== */
-        .home-indicator {
-            margin-top: 20px;
-            width: 120px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.12);
+        .role-badge {
+            display: inline-block;
+            padding: 4px 14px;
             border-radius: 20px;
-            margin-left: auto;
-            margin-right: auto;
-            position: relative;
-            z-index: 1;
+            font-size: 12px;
+            font-weight: 600;
         }
-
-        /* ===== АДАПТИВНОСТЬ ===== */
-        @media (max-width: 480px) {
-            .container {
-                border-radius: 0;
-                padding: 18px 16px 24px;
-                background: rgba(10, 12, 16, 0.96);
-                backdrop-filter: blur(20px);
-                border: none;
-                box-shadow: none;
-                max-width: 100%;
-                min-height: 100vh;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            }
-
-            .lang-switcher {
-                top: 14px;
-                right: 14px;
-                padding: 3px 6px;
-                gap: 2px;
-            }
-
-            body[dir="rtl"] .lang-switcher {
-                right: auto;
-                left: 14px;
-            }
-
-            .lang-btn {
-                width: 26px;
-                height: 26px;
-                font-size: 15px;
-            }
-            .lang-btn .flag {
-                font-size: 17px;
-            }
-
-            .user-name {
-                font-size: 19px;
-            }
-            .stat-card .value {
-                font-size: 20px;
-            }
-            .order-btn {
-                font-size: 15px;
-                padding: 14px;
-            }
-            .stats-grid {
-                gap: 8px;
-            }
-            .stat-card {
-                padding: 14px 10px;
-            }
-            .transaction-desc {
-                font-size: 13px;
-            }
-            .transaction-amount {
-                font-size: 14px;
-            }
+        .role-badge.driver {
+            background: rgba(255, 180, 0, 0.12);
+            color: #ffb000;
         }
-
-        /* ===== RTL ===== */
-        body[dir="rtl"] .transaction-amount {
-            margin-left: 0;
-            margin-right: 12px;
-        }
-        body[dir="rtl"] .user-info {
-            align-items: flex-end;
-        }
-        body[dir="rtl"] .logout-btn {
-            margin-left: 0;
-            margin-right: 10px;
+        .role-badge.client {
+            background: rgba(96, 165, 250, 0.12);
+            color: #60a5fa;
         }
     </style>
 </head>
 <body>
 
-    <div class="container" id="app">
+    <div class="container">
 
-        <!-- ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== -->
-        <div class="lang-switcher">
-            <button class="lang-btn" data-lang="he" title="עברית">
-                <span class="flag">🇮🇱</span>
-            </button>
-            <button class="lang-btn" data-lang="ar" title="العربية">
-                <span class="flag">🇸🇦</span>
-            </button>
-            <button class="lang-btn active" data-lang="ru" title="Русский">
-                <span class="flag">🇷🇺</span>
-            </button>
-            <button class="lang-btn" data-lang="en" title="English">
-                <span class="flag">🇬🇧</span>
-            </button>
-        </div>
-
-        <!-- ===== ШАПКА ===== -->
         <div class="header">
-            <div class="user-info">
-                <div class="user-name" id="userName">⏳ Загрузка...</div>
-                <div class="user-email" id="userEmail">---</div>
-                <div class="user-uid" id="userUid">UID: ---</div>
-            </div>
-            <button class="logout-btn" id="logoutBtn">🚪 <span data-i18n="logout">Выйти</span></button>
+            <span class="header-title">🚖 <span>Кабинет</span></span>
+            <button class="logout-btn" id="logoutBtn">🚪 Выйти</button>
         </div>
 
-        <!-- ===== БЛОК ОШИБОК ===== -->
-        <div class="error-box" id="errorBox">
-            ⚠️ <span id="errorText">Ошибка</span>
-        </div>
-
-        <!-- ===== СТАТИСТИКА ===== -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="icon">💰</div>
-                <div class="label" data-i18n="balance">Баланс</div>
-                <div class="value gold" id="balance">0 ₽</div>
+        <div class="card">
+            <div class="card-title">👤 Профиль</div>
+            <div class="info-row">
+                <span class="label">Имя</span>
+                <span class="value" id="userName">—</span>
             </div>
-            <div class="stat-card">
-                <div class="icon">⭐</div>
-                <div class="label" data-i18n="rating">Рейтинг</div>
-                <div class="value rating" id="rating">0.0</div>
+            <div class="info-row">
+                <span class="label">Email</span>
+                <span class="value" id="userEmail">—</span>
             </div>
-            <div class="stat-card">
-                <div class="icon">🎁</div>
-                <div class="label" data-i18n="bonus">Бонусы</div>
-                <div class="value gold" id="bonus">0</div>
+            <div class="info-row">
+                <span class="label">Роль</span>
+                <span class="value" id="userRole">—</span>
             </div>
-            <div class="stat-card">
-                <div class="icon">📊</div>
-                <div class="label" data-i18n="spent">Потрачено</div>
-                <div class="value negative" id="totalSpent">0 ₽</div>
+            <div class="info-row">
+                <span class="label">💰 Баланс</span>
+                <span class="value gold" id="userBalance">0 ₪</span>
+            </div>
+            <div class="info-row">
+                <span class="label">⭐ Рейтинг</span>
+                <span class="value blue" id="userRating">0</span>
             </div>
         </div>
 
-        <!-- ===== КНОПКА ЗАКАЗА ===== -->
-        <button class="order-btn" id="orderBtn">
-            <span>📍</span>
-            <span data-i18n="orderBtn">Заказать такси</span>
-        </button>
-
-        <!-- ===== ИСТОРИЯ ===== -->
-        <div class="history-section">
-            <div class="history-title">
-                <span>📋 <span data-i18n="history">История операций</span></span>
-                <span class="badge" data-i18n="last10">последние 10</span>
-            </div>
-            <div class="history-list" id="historyList">
-                <div class="loading-text">⏳ <span data-i18n="loading">Загрузка...</span></div>
-            </div>
+        <div id="driverActions" style="display:none;">
+            <button class="btn btn-primary" id="goToWorkBtn">🚗 Перейти к работе</button>
         </div>
 
-        <div class="home-indicator"></div>
+        <div id="clientActions" style="display:none;">
+            <button class="btn btn-primary" id="goToOrderBtn">📍 Заказать такси</button>
+        </div>
+
+        <button class="btn btn-secondary mt-8" id="refreshBtn">🔄 Обновить данные</button>
+
     </div>
 
-    <!-- ============================================================ -->
-    <!-- JAVASCRIPT -->
-    <!-- ============================================================ -->
+    <div class="toast" id="toast">
+        <span id="toastMessage">Сообщение</span>
+    </div>
+
     <script>
         // ============================================================
-        // 1. КОНФИГ FIREBASE
+        // FIREBASE КОНФИГ
         // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
@@ -596,316 +265,106 @@
             measurementId: "G-Z9NJFSSXH6"
         };
 
-        // ============================================================
-        // 2. ИНИЦИАЛИЗАЦИЯ
-        // ============================================================
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        console.log('🔥 Firebase готов');
-
         // ============================================================
-        // 3. ПЕРЕВОДЫ
+        // STATE
         // ============================================================
-        const translations = {
-            ru: {
-                logout: "Выйти",
-                balance: "Баланс",
-                rating: "Рейтинг",
-                bonus: "Бонусы",
-                spent: "Потрачено",
-                orderBtn: "Заказать такси",
-                history: "История операций",
-                last10: "последние 10",
-                loading: "Загрузка...",
-                noTransactions: "Нет операций"
-            },
-            en: {
-                logout: "Log out",
-                balance: "Balance",
-                rating: "Rating",
-                bonus: "Bonuses",
-                spent: "Spent",
-                orderBtn: "Order taxi",
-                history: "Transaction history",
-                last10: "last 10",
-                loading: "Loading...",
-                noTransactions: "No transactions"
-            },
-            he: {
-                logout: "התנתק",
-                balance: "יתרה",
-                rating: "דירוג",
-                bonus: "בונוסים",
-                spent: "הוצאות",
-                orderBtn: "הזמן מונית",
-                history: "היסטוריית פעולות",
-                last10: "10 אחרונים",
-                loading: "טוען...",
-                noTransactions: "אין פעולות"
-            },
-            ar: {
-                logout: "تسجيل خروج",
-                balance: "الرصيد",
-                rating: "التقييم",
-                bonus: "المكافآت",
-                spent: "الإنفاق",
-                orderBtn: "اطلب سيارة",
-                history: "سجل العمليات",
-                last10: "آخر 10",
-                loading: "جاري التحميل...",
-                noTransactions: "لا توجد عمليات"
-            }
-        };
+        let currentUser = null;
+        let userData = null;
 
-        let currentLang = 'ru';
+        const $ = id => document.getElementById(id);
+        const toast = $('toast');
+        const toastMessage = $('toastMessage');
 
-        function switchLanguage(lang) {
-            currentLang = lang;
-            const t = translations[lang];
-            if (!t) return;
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key] !== undefined) el.textContent = t[key];
-            });
-            if (lang === 'ar' || lang === 'he') {
-                document.body.setAttribute('dir', 'rtl');
-                document.documentElement.lang = lang;
-            } else {
-                document.body.setAttribute('dir', 'ltr');
-                document.documentElement.lang = 'en';
-            }
-            document.querySelectorAll('.lang-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-lang') === lang) btn.classList.add('active');
-            });
-            localStorage.setItem('wheel_lang', lang);
+        function showToast(text, type = 'info') {
+            toast.className = 'toast show';
+            toastMessage.textContent = text;
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => toast.className = 'toast', 3000);
         }
 
-        document.querySelectorAll('.lang-btn').forEach(btn => {
-            btn.addEventListener('click', () => switchLanguage(btn.getAttribute('data-lang')));
+        function formatPrice(p) { return (p || 0).toFixed(2) + ' ₪'; }
+
+        // ============================================================
+        // ЗАГРУЗКА ПРОФИЛЯ
+        // ============================================================
+        function loadProfile() {
+            if (!currentUser) return;
+
+            db.collection('users').doc(currentUser.uid).get()
+                .then(doc => {
+                    if (!doc.exists) {
+                        showToast('❌ Профиль не найден', 'error');
+                        return;
+                    }
+                    userData = doc.data();
+
+                    $('userName').textContent = userData.displayName || '—';
+                    $('userEmail').textContent = currentUser.email || '—';
+                    $('userBalance').textContent = formatPrice(userData.balance || 0);
+                    $('userRating').textContent = userData.rating || 0;
+
+                    const role = userData.role || 'client';
+                    const roleEl = $('userRole');
+                    roleEl.textContent = role === 'driver' ? '🚗 Водитель' : '👤 Клиент';
+                    roleEl.className = 'value ' + (role === 'driver' ? 'gold' : 'blue');
+
+                    // Показываем нужные кнопки
+                    if (role === 'driver') {
+                        $('driverActions').style.display = 'block';
+                        $('clientActions').style.display = 'none';
+                    } else {
+                        $('driverActions').style.display = 'none';
+                        $('clientActions').style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    showToast('❌ Ошибка загрузки профиля', 'error');
+                    console.error(err);
+                });
+        }
+
+        // ============================================================
+        // КНОПКИ ПЕРЕХОДА
+        // ============================================================
+        $('goToWorkBtn').addEventListener('click', () => {
+            window.location.href = 'driver-work.html';
         });
 
-        const savedLang = localStorage.getItem('wheel_lang');
-        if (savedLang && translations[savedLang]) switchLanguage(savedLang);
+        $('goToOrderBtn').addEventListener('click', () => {
+            window.location.href = 'order.html';
+        });
+
+        $('refreshBtn').addEventListener('click', () => {
+            showToast('🔄 Данные обновлены', 'info');
+            loadProfile();
+        });
 
         // ============================================================
-        // 4. ЭЛЕМЕНТЫ
+        // ВЫХОД
         // ============================================================
-        const el = {
-            userName: document.getElementById('userName'),
-            userEmail: document.getElementById('userEmail'),
-            userUid: document.getElementById('userUid'),
-            balance: document.getElementById('balance'),
-            rating: document.getElementById('rating'),
-            bonus: document.getElementById('bonus'),
-            totalSpent: document.getElementById('totalSpent'),
-            historyList: document.getElementById('historyList'),
-            errorBox: document.getElementById('errorBox'),
-            errorText: document.getElementById('errorText')
-        };
-
-        // ============================================================
-        // 5. ФУНКЦИИ
-        // ============================================================
-        function showError(text) {
-            el.errorBox.style.display = 'block';
-            el.errorText.textContent = text;
-        }
-
-        function hideError() {
-            el.errorBox.style.display = 'none';
-        }
-
-        function updateUI(data) {
-            console.log('📊 updateUI:', data);
-            if (!data) return;
-            el.balance.textContent = (data.balance || 0).toFixed(2) + ' ₽';
-            el.rating.textContent = (data.rating || 0).toFixed(1);
-            el.bonus.textContent = data.bonus || 0;
-            el.totalSpent.textContent = (data.totalSpent || 0).toFixed(2) + ' ₽';
-        }
-
-        function renderTransactions(transactions) {
-            console.log('📋 renderTransactions:', transactions ? transactions.length : 0);
-            if (!transactions || transactions.length === 0) {
-                el.historyList.innerHTML = `<div class="empty-history">${translations[currentLang].noTransactions}</div>`;
-                return;
-            }
-            let html = '';
-            transactions.forEach(function(tx) {
-                const amount = tx.amount || 0;
-                const sign = amount >= 0 ? '+' : '';
-                const cls = amount >= 0 ? 'positive' : 'negative';
-                let date = '—';
-                if (tx.timestamp) {
-                    try {
-                        if (tx.timestamp.seconds) {
-                            date = new Date(tx.timestamp.seconds * 1000).toLocaleString('ru-RU');
-                        } else {
-                            date = new Date(tx.timestamp).toLocaleString('ru-RU');
-                        }
-                    } catch (e) {
-                        date = '—';
-                    }
-                }
-                html += `
-                        <div class="transaction-item">
-                            <div class="transaction-info">
-                                <div class="transaction-desc">${tx.description || 'Операция'}</div>
-                                <div class="transaction-date">${date}</div>
-                            </div>
-                            <div class="transaction-amount ${cls}">${sign}${amount.toFixed(2)} ₽</div>
-                        </div>
-                    `;
+        $('logoutBtn').addEventListener('click', () => {
+            auth.signOut().then(() => {
+                window.location.href = 'index.html';
             });
-            el.historyList.innerHTML = html;
-        }
+        });
 
         // ============================================================
-        // 6. ОСНОВНАЯ ЛОГИКА
+        // INIT
         // ============================================================
-        auth.onAuthStateChanged(function(user) {
-            console.log('🔐 onAuthStateChanged, user:', user ? user.uid : 'null');
-
+        auth.onAuthStateChanged(user => {
             if (!user) {
-                console.log('❌ Не авторизован → index.html');
                 window.location.href = 'index.html';
                 return;
             }
-
-            el.userUid.textContent = 'UID: ' + user.uid.substring(0, 16) + '...';
-
-            const userRef = db.collection('users').doc(user.uid);
-
-            userRef.get()
-                .then(function(doc) {
-                    console.log('📥 getDoc:', doc.exists ? '✅ существует' : '❌ НЕТ');
-
-                    if (!doc.exists) {
-                        console.log('⚠️ Создаём документ...');
-                        const newData = {
-                            uid: user.uid,
-                            email: user.email,
-                            role: 'client',
-                            displayName: user.displayName || 'Пользователь',
-                            balance: 0,
-                            rating: 0,
-                            bonus: 0,
-                            penalty: 0,
-                            premium: 0,
-                            totalEarned: 0,
-                            totalSpent: 0,
-                            driverData: null,
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        };
-
-                        userRef.set(newData)
-                            .then(function() {
-                                console.log('✅ Документ создан');
-                                el.userName.textContent = newData.displayName;
-                                el.userEmail.textContent = user.email;
-                                updateUI(newData);
-                                hideError();
-                                subscribeUser(userRef);
-                                subscribeTransactions(user.uid);
-                            })
-                            .catch(function(err) {
-                                console.error('❌ Ошибка создания:', err);
-                                showError('Ошибка создания: ' + err.message);
-                            });
-                        return;
-                    }
-
-                    const data = doc.data();
-                    console.log('✅ Данные:', data);
-                    el.userName.textContent = data.displayName || 'Пользователь';
-                    el.userEmail.textContent = user.email || '';
-                    updateUI(data);
-                    hideError();
-
-                    subscribeUser(userRef);
-                    subscribeTransactions(user.uid);
-                })
-                .catch(function(err) {
-                    console.error('❌ Ошибка загрузки:', err);
-                    showError('Ошибка: ' + err.message);
-                    el.historyList.innerHTML = '<div class="empty-history">❌ Ошибка</div>';
-                });
+            currentUser = user;
+            loadProfile();
         });
 
-        // ============================================================
-        // 7. ПОДПИСКИ (REAL-TIME)
-        // ============================================================
-        let unsubUser = null;
-        let unsubTx = null;
-
-        function subscribeUser(userRef) {
-            if (unsubUser) { unsubUser();
-                unsubUser = null; }
-            unsubUser = userRef.onSnapshot(function(snap) {
-                if (snap.exists) {
-                    const data = snap.data();
-                    console.log('🔄 Обновление user:', data);
-                    el.userName.textContent = data.displayName || 'Пользователь';
-                    el.userEmail.textContent = data.email || '';
-                    updateUI(data);
-                    hideError();
-                }
-            }, function(err) {
-                console.error('❌ Ошибка подписки user:', err);
-                showError('Ошибка обновления: ' + err.message);
-            });
-        }
-
-        function subscribeTransactions(uid) {
-            if (unsubTx) { unsubTx();
-                unsubTx = null; }
-
-            const q = db.collection('transactions')
-                .where('userId', '==', uid)
-                .orderBy('timestamp', 'desc')
-                .limit(10);
-
-            unsubTx = q.onSnapshot(function(snapshot) {
-                const transactions = [];
-                snapshot.forEach(function(doc) {
-                    transactions.push({ id: doc.id, ...doc.data() });
-                });
-                console.log('🔄 Транзакции обновлены:', transactions.length);
-                renderTransactions(transactions);
-            }, function(err) {
-                console.error('❌ Ошибка подписки tx:', err);
-                el.historyList.innerHTML = '<div class="empty-history">❌ Ошибка истории</div>';
-            });
-        }
-
-        // ============================================================
-        // 8. ОБРАБОТЧИКИ КНОПОК
-        // ============================================================
-
-        // === ВЫХОД → index.html ===
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            console.log('🚪 Выход → index.html');
-            if (unsubUser) { unsubUser();
-                unsubUser = null; }
-            if (unsubTx) { unsubTx();
-                unsubTx = null; }
-            auth.signOut()
-                .then(function() {
-                    window.location.href = 'index.html';
-                })
-                .catch(function() {
-                    window.location.href = 'index.html';
-                });
-        });
-
-        // === ЗАКАЗАТЬ → order.html ===
-        document.getElementById('orderBtn').addEventListener('click', function() {
-            console.log('📍 Заказ → order.html');
-            window.location.href = 'order.html';
-        });
+        console.log('✅ cabinet.html загружен (без автоматического редиректа)');
     </script>
 
 </body>
