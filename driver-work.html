@@ -17,6 +17,7 @@
     </script>
 
     <style>
+        /* ===== Стили (все как в предыдущей версии) ===== */
         * {
             margin: 0;
             padding: 0;
@@ -110,8 +111,6 @@
             margin-bottom: 10px;
             background: #11151a;
         }
-
-        /* ===== Убираем белые квадратики и фон маркеров ===== */
         .leaflet-marker-icon,
         .leaflet-marker-shadow,
         .leaflet-popup-tip,
@@ -609,13 +608,13 @@
         let routePoints = [],
             routeLine = null,
             isTracking = false;
-        let isArrivedToClient = false; // флаг для этапа "прибыл к клиенту"
+        let isArrivedToClient = false;
 
-        const AI_RADIUS_KM = 2.5,
-            OFFER_TIMEOUT = 30,
-            PENALTY_SECONDS = 120,
-            GPS_INTERVAL = 60000,
-            GPS_MIN_DIST = 0.05;
+        const AI_RADIUS_KM = 2.5;
+        const OFFER_TIMEOUT = 30;
+        const PENALTY_SECONDS = 120;
+        const GPS_INTERVAL = 60000;
+        const GPS_MIN_DIST = 0.05;
 
         const $ = id => document.getElementById(id);
 
@@ -631,6 +630,12 @@
         }
 
         function formatPrice(p) { return (p || 0).toFixed(2) + ' ₪'; }
+
+        function formatDistance(km) {
+            if (!km) return '0 м';
+            if (km < 1) return (km * 1000).toFixed(0) + ' м';
+            return km.toFixed(2) + ' км';
+        }
 
         function formatDate(ts) {
             if (!ts) return '—';
@@ -650,6 +655,14 @@
         function getDistanceToOrder(order) {
             if (!driverLocation || !order?.pickup?.lat) return Infinity;
             return haversineDistance(driverLocation.lat, driverLocation.lng, order.pickup.lat, order.pickup.lng);
+        }
+
+        function calculateRealDistance(points) {
+            let total = 0;
+            for (let i = 1; i < points.length; i++) {
+                total += haversineDistance(points[i - 1].lat, points[i - 1].lng, points[i].lat, points[i].lng);
+            }
+            return total;
         }
 
         // ============================================================
@@ -751,11 +764,13 @@
             if (isTracking && activeOrder) {
                 routePoints.push({ lat, lng, timestamp: new Date().toISOString() });
                 updateRouteLine();
+                // Обновляем отображение расстояния в реальном времени
+                renderActiveOrder(activeOrder);
             }
         }
 
         // ============================================================
-        // ПОДПИСКА НА ЗАКАЗЫ
+        // ПОДПИСКА НА ЗАКАЗЫ (АВТО-ПРЕДЛОЖЕНИЕ)
         // ============================================================
         function subscribeToOrders() {
             if (unsubOrders) { unsubOrders();
@@ -788,15 +803,11 @@
                             activeOrder = foundActive;
                             $('activeOrderTitle').style.display = 'block';
                             updateOrderMarkers();
-                            // Если статус in_progress — значит поездка уже началась
                             if (activeOrder.status === 'in_progress' && !isTracking) {
                                 startTracking();
-                                isArrivedToClient = true; // считаем что уже на маршруте
+                                isArrivedToClient = true;
                             }
-                            // Если статус assigned — сбрасываем флаг прибытия
-                            if (activeOrder.status === 'assigned') {
-                                isArrivedToClient = false;
-                            }
+                            if (activeOrder.status === 'assigned') isArrivedToClient = false;
                             $('statusBadge').className = 'status-badge busy';
                             $('statusBadge').textContent = '🟡 Занят';
                             $('driverStatus').textContent = 'Выполняет заказ';
@@ -841,7 +852,7 @@
         }
 
         // ============================================================
-        // ДОСТУПНЫЕ ЗАКАЗЫ (без изменений)
+        // ДОСТУПНЫЕ ЗАКАЗЫ
         // ============================================================
         function renderAvailableOrders() {
             const list = $('availableOrdersList');
@@ -913,7 +924,7 @@
         };
 
         // ============================================================
-        // ПРЕДЛОЖЕНИЕ (без изменений)
+        // ПРЕДЛОЖЕНИЕ
         // ============================================================
         function sendOffer(order) {
             if (currentOffer || activeOrder || isPenaltyActive || !isOnline) return;
@@ -1017,7 +1028,7 @@
         }
 
         // ============================================================
-        // ШТРАФ (без изменений)
+        // ШТРАФ
         // ============================================================
         function startPenalty(seconds) {
             if (isPenaltyActive) return;
@@ -1058,7 +1069,7 @@
         }
 
         // ============================================================
-        // АКТИВНЫЙ ЗАКАЗ (с новым этапом "Начать поездку")
+        // АКТИВНЫЙ ЗАКАЗ (С ОТОБРАЖЕНИЕМ РЕАЛЬНОГО РАССТОЯНИЯ)
         // ============================================================
         function renderActiveOrder(order) {
             const dist = order.distance ? order.distance.toFixed(1) + ' км' : '—';
@@ -1066,8 +1077,13 @@
                 statusDetail = '',
                 steps = '';
 
+            // Вычисляем текущее реальное расстояние
+            let currentDist = 0;
+            if (isTracking && routePoints.length > 1) {
+                currentDist = calculateRealDistance(routePoints);
+            }
+
             if (order.status === 'assigned') {
-                // Если ещё не прибыли к клиенту
                 if (!isArrivedToClient) {
                     buttons = `
                         <button class="btn-icon btn-warning" id="arriveBtn"><span class="icon">📍</span><span class="label">Прибыл к клиенту</span></button>
@@ -1078,7 +1094,6 @@
                     steps =
                         `<div class="trip-steps"><div class="trip-step active"><span class="icon">📍</span> К клиенту</div><div class="trip-step-line"></div><div class="trip-step"><span class="icon">🚗</span> В пути</div><div class="trip-step-line"></div><div class="trip-step"><span class="icon">🏁</span> Назначение</div></div>`;
                 } else {
-                    // Прибыли к клиенту, ждём начала поездки
                     buttons = `
                         <button class="btn-icon btn-success" id="startTripBtn"><span class="icon">🚀</span><span class="label">Начать поездку</span></button>
                         <button class="btn-icon btn-primary" id="navigateDestBtn"><span class="icon">📍</span><span class="label">К назначению</span></button>
@@ -1094,7 +1109,7 @@
                     <button class="btn-icon btn-primary" id="navigateDestBtn"><span class="icon">📍</span><span class="label">К назначению</span></button>
                     <button class="btn-icon btn-danger" id="cancelBtn"><span class="icon">✖</span><span class="label">Отменить</span></button>
                 `;
-                statusDetail = '🚗 В пути';
+                statusDetail = `🚗 В пути • Реальное расстояние: ${formatDistance(currentDist)}`;
                 steps =
                     `<div class="trip-steps"><div class="trip-step"><span class="icon">📍</span> К клиенту</div><div class="trip-step-line active"></div><div class="trip-step active"><span class="icon">🚗</span> В пути</div><div class="trip-step-line"></div><div class="trip-step"><span class="icon">🏁</span> Назначение</div></div>`;
             }
@@ -1106,14 +1121,14 @@
                         <span class="price">${formatPrice(order.price)}</span>
                     </div>
                     <div class="route">📍 ${order.pickup?.address || '—'} <span class="arrow">→</span> 🏁 ${order.destination?.address || '—'}</div>
-                    <div class="meta">👤 ${order.clientName || 'Клиент'} • 📏 ${dist}</div>
+                    <div class="meta">👤 ${order.clientName || 'Клиент'} • 📏 План: ${dist} ${isTracking ? `• 🛣️ Проехали: ${formatDistance(currentDist)}` : ''}</div>
                     ${steps}
                     <div class="btn-group">${buttons}</div>
                     <div style="margin-top:6px; font-size:12px; color:#8899aa; text-align:center;">${statusDetail}</div>
                 </div>
             `;
 
-            // Обработчики кнопок
+            // Обработчики
             $('arriveBtn')?.addEventListener('click', () => arriveToClient(order));
             $('navigateBtn')?.addEventListener('click', () => openWaze(order.pickup?.lat, order.pickup?.lng, 'клиенту'));
             $('startTripBtn')?.addEventListener('click', () => startTrip(order));
@@ -1134,7 +1149,6 @@
         // ДЕЙСТВИЯ С ПОЕЗДКОЙ
         // ============================================================
 
-        // 1. Прибыл к клиенту
         function arriveToClient(order) {
             if (!driverLocation || !order.pickup?.lat) { showToast('⚠️ Нет данных о местоположении', 'warning'); return; }
             const dist = haversineDistance(driverLocation.lat, driverLocation.lng, order.pickup.lat, order.pickup.lng);
@@ -1142,41 +1156,32 @@
                 showToast(`⚠️ Вы далеко от клиента (${(dist*1000).toFixed(0)} м)`, 'warning');
                 return;
             }
-            // Устанавливаем флаг, что прибыли
             isArrivedToClient = true;
-            // Обновляем заказ (опционально можно добавить промежуточный статус, но оставим assigned)
             showToast('✅ Вы прибыли к клиенту! Нажмите "Начать поездку"', 'success');
-            // Перерисовываем активный заказ, чтобы показать кнопку "Начать поездку"
             renderActiveOrder(order);
         }
 
-        // 2. Начать поездку (переход к назначению)
         function startTrip(order) {
             if (!isArrivedToClient) {
                 showToast('⚠️ Сначала подтвердите прибытие к клиенту', 'warning');
                 return;
             }
-
-            // Меняем статус заказа на in_progress
             db.collection('orders').doc(order.id).update({
                 status: 'in_progress',
                 startedAt: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
                 showToast('🚗 Поездка началась!', 'success');
-                // Запускаем трекинг
                 startTracking();
-                // Открываем Waze до конечной точки
                 openWaze(order.destination?.lat, order.destination?.lng, 'назначению');
-                // Обновляем UI
-                isArrivedToClient = false; // сбрасываем флаг, чтобы не показывать повторно
-                // Подписка сама обновит статус, но мы можем сразу перерисовать
-                // Можно подождать обновления через onSnapshot
+                isArrivedToClient = false;
             }).catch(err => showToast('❌ Ошибка: ' + err.message, 'error'));
         }
 
-        // 3. Прибыл к назначению
         function arriveToDestination(order) {
-            if (!driverLocation || !order.destination?.lat) { showToast('⚠️ Нет данных о местоположении', 'warning'); return; }
+            if (!driverLocation || !order.destination?.lat) {
+                showToast('⚠️ Нет данных о местоположении', 'warning');
+                return;
+            }
             const dist = haversineDistance(driverLocation.lat, driverLocation.lng, order.destination.lat, order.destination
                 .lng);
             if (dist > 0.2) {
@@ -1189,19 +1194,24 @@
             const factor = realDist / (order.distance || 1);
             const finalPrice = (order.price || 0) * factor;
 
+            // Сначала сохраняем данные, потом переходим
             db.collection('orders').doc(order.id).update({
                 status: 'completed',
                 completedAt: firebase.firestore.FieldValue.serverTimestamp(),
                 realDistance: realDist,
                 finalPrice: finalPrice,
                 routePoints: routePoints
-            }).then(() => {
+            })
+            .then(() => {
                 showToast(`✅ Поездка завершена!`, 'success');
                 window.location.href = `trip-complete.html?orderId=${order.id}`;
-            }).catch(err => showToast('❌ Ошибка: ' + err.message, 'error'));
+            })
+            .catch(err => {
+                showToast('❌ Ошибка сохранения данных: ' + err.message, 'error');
+                console.error(err);
+            });
         }
 
-        // 4. Отмена заказа (без изменений)
         function cancelDriverOrder(order) {
             if (!confirm('⚠️ Отменить поездку?')) return;
             const reason = prompt('Причина отмены:');
@@ -1229,7 +1239,7 @@
         }
 
         // ============================================================
-        // ТРЕКИНГ (без изменений)
+        // ТРЕКИНГ
         // ============================================================
         function startTracking() {
             isTracking = true;
@@ -1264,50 +1274,30 @@
             }).addTo(map);
         }
 
-        function calculateRealDistance(points) {
-            let total = 0;
-            for (let i = 1; i < points.length; i++) {
-                total += haversineDistance(points[i - 1].lat, points[i - 1].lng, points[i].lat, points[i].lng);
-            }
-            return total;
-        }
-
         // ============================================================
-        // НАВИГАЦИЯ (Waze) — прямой редирект без браузера
+        // НАВИГАЦИЯ (Waze)
         // ============================================================
         function openWaze(lat, lng, name) {
             if (!lat || !lng) { showToast('⚠️ Нет координат для навигации', 'error'); return; }
-            // Прямой переход на waze:// (откроет приложение, если установлено)
             const wazeLink = `waze://?ll=${lat},${lng}&navigate=yes`;
-            // Запасной вариант — веб-версия Waze
             const fallback = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
-
-            // Пытаемся открыть Waze через intent (для Android)
             try {
-                // Если это Android, используем intent
                 if (navigator.userAgent.toLowerCase().includes('android')) {
                     window.location.href = wazeLink;
-                    // Таймаут: если приложение не открылось, переходим на веб-версию
-                    setTimeout(() => {
-                        window.location.href = fallback;
-                    }, 1500);
+                    setTimeout(() => { window.location.href = fallback; }, 1500);
                 } else {
-                    // Для iOS и других — пробуем waze://, потом fallback
                     window.location.href = wazeLink;
-                    setTimeout(() => {
-                        window.location.href = fallback;
-                    }, 1500);
+                    setTimeout(() => { window.location.href = fallback; }, 1500);
                 }
                 showToast(`🧭 Открываем Waze к ${name}`, 'info');
             } catch (e) {
-                // Если ошибка — сразу fallback
                 window.open(fallback, '_blank');
                 showToast(`🧭 Открыт Waze (веб) к ${name}`, 'info');
             }
         }
 
         // ============================================================
-        // СТАТУС (без изменений)
+        // СТАТУС
         // ============================================================
         function setDriverStatus(status) {
             if (isPenaltyActive) { showToast('⛔ Вы на штрафе!', 'error'); return; }
@@ -1342,7 +1332,7 @@
         }
 
         // ============================================================
-        // ПОДПИСКА НА ПОЛЬЗОВАТЕЛЯ (без изменений)
+        // ПОДПИСКА НА ПОЛЬЗОВАТЕЛЯ
         // ============================================================
         function subscribeToUser(uid) {
             if (unsubUser) { unsubUser();
@@ -1430,9 +1420,11 @@
             console.log('Заказов:', availableOrders.length);
             console.log('Подписка:', unsubOrders ? '✅' : '❌');
             console.log('Прибыл к клиенту:', isArrivedToClient);
+            console.log('Трекинг:', isTracking);
+            console.log('Точек маршрута:', routePoints.length);
         };
 
-        console.log('✅ driver-work.html (обновлённый) загружен');
+        console.log('✅ driver-work.html (исправленный) загружен');
         console.log('📌 diagnostic() — состояние');
     </script>
 
