@@ -4,14 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Кабинет — WHEEL</title>
-
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js">
-    </script>
-
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -101,6 +96,9 @@
         }
         .info-row .value.blue {
             color: #60a5fa;
+        }
+        .info-row .value.pink {
+            color: #f472b6;
         }
 
         .btn {
@@ -203,9 +201,7 @@
     </style>
 </head>
 <body>
-
     <div class="container">
-
         <div class="header">
             <span class="header-title">🚖 <span>Кабинет</span></span>
             <button class="logout-btn" id="logoutBtn">🚪 Выйти</button>
@@ -233,6 +229,10 @@
                 <span class="label">⭐ Рейтинг</span>
                 <span class="value blue" id="userRating">0</span>
             </div>
+            <div class="info-row">
+                <span class="label">🎁 Бонусы (накоплено)</span>
+                <span class="value pink" id="userBonus">0 ₪</span>
+            </div>
         </div>
 
         <div id="driverActions" style="display:none;">
@@ -244,7 +244,6 @@
         </div>
 
         <button class="btn btn-secondary mt-8" id="refreshBtn">🔄 Обновить данные</button>
-
     </div>
 
     <div class="toast" id="toast">
@@ -252,9 +251,7 @@
     </div>
 
     <script>
-        // ============================================================
-        // FIREBASE КОНФИГ
-        // ============================================================
+        // ===== FIREBASE CONFIG =====
         const firebaseConfig = {
             apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
             authDomain: "taxi-ai-app-69628.firebaseapp.com",
@@ -264,14 +261,11 @@
             appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
             measurementId: "G-Z9NJFSSXH6"
         };
-
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // ============================================================
-        // STATE
-        // ============================================================
+        // ===== STATE =====
         let currentUser = null;
         let userData = null;
 
@@ -288,9 +282,7 @@
 
         function formatPrice(p) { return (p || 0).toFixed(2) + ' ₪'; }
 
-        // ============================================================
-        // ЗАГРУЗКА ПРОФИЛЯ
-        // ============================================================
+        // ===== LOAD PROFILE =====
         function loadProfile() {
             if (!currentUser) return;
 
@@ -306,13 +298,13 @@
                     $('userEmail').textContent = currentUser.email || '—';
                     $('userBalance').textContent = formatPrice(userData.balance || 0);
                     $('userRating').textContent = userData.rating || 0;
+                    $('userBonus').textContent = formatPrice(userData.bonus || 0);
 
                     const role = userData.role || 'client';
                     const roleEl = $('userRole');
                     roleEl.textContent = role === 'driver' ? '🚗 Водитель' : '👤 Клиент';
                     roleEl.className = 'value ' + (role === 'driver' ? 'gold' : 'blue');
 
-                    // Показываем нужные кнопки
                     if (role === 'driver') {
                         $('driverActions').style.display = 'block';
                         $('clientActions').style.display = 'none';
@@ -327,9 +319,7 @@
                 });
         }
 
-        // ============================================================
-        // КНОПКИ ПЕРЕХОДА
-        // ============================================================
+        // ===== BUTTONS =====
         $('goToWorkBtn').addEventListener('click', () => {
             window.location.href = 'driver-work.html';
         });
@@ -343,18 +333,14 @@
             loadProfile();
         });
 
-        // ============================================================
-        // ВЫХОД
-        // ============================================================
+        // ===== LOGOUT =====
         $('logoutBtn').addEventListener('click', () => {
             auth.signOut().then(() => {
                 window.location.href = 'index.html';
             });
         });
 
-        // ============================================================
-        // INIT
-        // ============================================================
+        // ===== INIT =====
         auth.onAuthStateChanged(user => {
             if (!user) {
                 window.location.href = 'index.html';
@@ -364,8 +350,7 @@
             loadProfile();
         });
 
-        console.log('✅ cabinet.html загружен (без автоматического редиректа)');
+        console.log('✅ cabinet.html загружен (с бонусами)');
     </script>
-
 </body>
 </html>
