@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WHEEL — Работа водителя</title>
 
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
@@ -13,13 +12,11 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js">
     </script>
 
-    <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
     </script>
 
     <style>
-        /* ===== Базовые стили (все из вашей версии) ===== */
         * {
             margin: 0;
             padding: 0;
@@ -30,7 +27,7 @@
             background: #0a0c10;
             min-height: 100vh;
             padding: 10px;
-            color: #ffffff;
+            color: #fff;
         }
         .container {
             max-width: 480px;
@@ -42,7 +39,6 @@
             align-items: center;
             padding: 10px 14px;
             background: rgba(18, 22, 28, 0.9);
-            backdrop-filter: blur(16px);
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             margin-bottom: 10px;
@@ -66,13 +62,13 @@
             color: #8899aa;
             font-size: 18px;
             cursor: pointer;
-            transition: all 0.2s;
             font-family: inherit;
         }
         .back-btn:hover {
             background: rgba(255, 255, 255, 0.12);
             color: #fff;
         }
+
         .status-badge {
             padding: 4px 14px;
             border-radius: 100px;
@@ -87,17 +83,14 @@
         .status-badge.offline {
             background: rgba(102, 119, 136, 0.1);
             color: #667788;
-            border: 1px solid rgba(255, 255, 255, 0.05);
         }
         .status-badge.busy {
             background: rgba(255, 180, 0, 0.12);
             color: #ffb000;
-            border: 1px solid rgba(255, 180, 0, 0.15);
         }
         .status-badge.penalty {
             background: rgba(255, 70, 70, 0.12);
             color: #ff6b6b;
-            border: 1px solid rgba(255, 70, 70, 0.15);
             animation: blink 1s infinite;
         }
         @keyframes blink {
@@ -115,17 +108,11 @@
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             margin-bottom: 10px;
-            overflow: hidden;
             background: #11151a;
-        }
-        .leaflet-control-attribution {
-            font-size: 8px !important;
-            color: #667788 !important;
         }
 
         .info-panel {
             background: rgba(18, 22, 28, 0.9);
-            backdrop-filter: blur(16px);
             border-radius: 14px;
             padding: 10px 14px;
             border: 1px solid rgba(255, 255, 255, 0.04);
@@ -164,16 +151,15 @@
             color: #ff6b6b;
         }
 
-        /* Карточка предложения */
         .offer-card {
             background: rgba(255, 180, 0, 0.08);
             border: 2px solid rgba(255, 180, 0, 0.3);
             border-radius: 14px;
             padding: 14px;
             margin-bottom: 10px;
-            animation: pulse-border 1.5s infinite;
+            animation: pulse 1.5s infinite;
         }
-        @keyframes pulse-border {
+        @keyframes pulse {
             0%,
             100% {
                 border-color: rgba(255, 180, 0, 0.3);
@@ -240,11 +226,7 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
             font-family: inherit;
-        }
-        .offer-actions .btn:active {
-            transform: scale(0.95);
         }
         .offer-actions .btn-accept {
             background: linear-gradient(135deg, #4ade80, #22c55e);
@@ -275,7 +257,6 @@
 
         .order-card {
             background: rgba(18, 22, 28, 0.9);
-            backdrop-filter: blur(16px);
             border-radius: 14px;
             padding: 14px;
             border: 1px solid rgba(255, 255, 255, 0.04);
@@ -317,6 +298,7 @@
             flex-wrap: wrap;
             margin-top: 4px;
         }
+
         .trip-steps {
             display: flex;
             align-items: center;
@@ -369,17 +351,12 @@
             font-size: 11px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
             font-family: inherit;
             min-width: 50px;
             flex: 0.5;
         }
         .btn-icon:active {
             transform: scale(0.92);
-        }
-        .btn-icon:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
         }
         .btn-icon .icon {
             font-size: 22px;
@@ -394,7 +371,7 @@
             color: #4ade80;
             border: 1px solid rgba(74, 222, 128, 0.15);
         }
-        .btn-icon.btn-success:hover:not(:disabled) {
+        .btn-icon.btn-success:hover {
             background: rgba(74, 222, 128, 0.2);
         }
         .btn-icon.btn-danger {
@@ -402,7 +379,7 @@
             color: #ff6b6b;
             border: 1px solid rgba(255, 70, 70, 0.15);
         }
-        .btn-icon.btn-danger:hover:not(:disabled) {
+        .btn-icon.btn-danger:hover {
             background: rgba(255, 70, 70, 0.2);
         }
         .btn-icon.btn-warning {
@@ -410,7 +387,7 @@
             color: #ffb000;
             border: 1px solid rgba(255, 180, 0, 0.15);
         }
-        .btn-icon.btn-warning:hover:not(:disabled) {
+        .btn-icon.btn-warning:hover {
             background: rgba(255, 180, 0, 0.2);
         }
         .btn-icon.btn-primary {
@@ -418,7 +395,7 @@
             color: #60a5fa;
             border: 1px solid rgba(96, 165, 250, 0.15);
         }
-        .btn-icon.btn-primary:hover:not(:disabled) {
+        .btn-icon.btn-primary:hover {
             background: rgba(96, 165, 250, 0.2);
         }
         .btn-icon.btn-secondary {
@@ -426,7 +403,7 @@
             color: #8899aa;
             border: 1px solid rgba(255, 255, 255, 0.06);
         }
-        .btn-icon.btn-secondary:hover:not(:disabled) {
+        .btn-icon.btn-secondary:hover {
             background: rgba(255, 255, 255, 0.08);
             color: #fff;
         }
@@ -447,8 +424,8 @@
             font-weight: 600;
             color: #8899aa;
             margin: 6px 0 4px;
-            letter-spacing: 0.5px;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .toast {
@@ -464,7 +441,6 @@
             color: #fff;
             font-size: 14px;
             font-weight: 500;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
             z-index: 2000;
             display: none;
             max-width: 88%;
@@ -484,31 +460,13 @@
                 transform: translateX(-50%) translateY(0);
             }
         }
-        .toast.success {
-            border-color: rgba(74, 222, 128, 0.15);
-        }
-        .toast.error {
-            border-color: rgba(255, 70, 70, 0.15);
-        }
-        .toast.warning {
-            border-color: rgba(255, 180, 0, 0.15);
-        }
 
         @media (max-width: 420px) {
-            body {
-                padding: 6px;
-            }
             #map {
                 height: 220px;
             }
             .header-title {
                 font-size: 16px;
-            }
-            .info-panel {
-                padding: 6px 10px;
-            }
-            .info-row {
-                font-size: 12px;
             }
             .offer-card .price-big {
                 font-size: 18px;
@@ -517,9 +475,6 @@
                 font-size: 13px;
                 padding: 8px;
             }
-            .order-card .price {
-                font-size: 16px;
-            }
         }
     </style>
 </head>
@@ -527,17 +482,14 @@
 
     <div class="container">
 
-        <!-- ===== HEADER ===== -->
         <div class="header">
-            <button class="back-btn" id="backBtn" title="Выйти из режима работы">←</button>
+            <button class="back-btn" id="backBtn">←</button>
             <div class="header-title">🚖 <span>Работа</span></div>
             <span class="status-badge online" id="statusBadge">🟢 Онлайн</span>
         </div>
 
-        <!-- ===== MAP ===== -->
         <div id="map"></div>
 
-        <!-- ===== INFO PANEL ===== -->
         <div class="info-panel">
             <div class="info-row">
                 <span class="label">👤 Водитель</span>
@@ -557,16 +509,13 @@
             </div>
         </div>
 
-        <!-- ===== PENALTY BANNER ===== -->
         <div class="penalty-banner" id="penaltyBanner">
-            ⛔ ШТРАФ ЗА ОТКАЗ! <br>
+            ⛔ ШТРАФ ЗА ОТКАЗ!<br>
             Новые заказы через: <span class="timer" id="penaltyTimer">2:00</span>
         </div>
 
-        <!-- ===== OFFER CONTAINER ===== -->
         <div id="offerContainer"></div>
 
-        <!-- ===== AVAILABLE ORDERS ===== -->
         <div class="section-title">📋 Доступные заказы</div>
         <div id="availableOrdersList">
             <div class="empty-state">
@@ -575,11 +524,9 @@
             </div>
         </div>
 
-        <!-- ===== ACTIVE ORDER ===== -->
         <div class="section-title" id="activeOrderTitle" style="display:none;">🚗 Активный заказ</div>
         <div id="activeOrderCard"></div>
 
-        <!-- ===== CONTROLS ===== -->
         <div class="btn-group" style="margin-top:4px;">
             <button class="btn-icon btn-success" id="onlineBtn">
                 <span class="icon">🟢</span>
@@ -601,17 +548,13 @@
 
     </div>
 
-    <!-- ===== TOAST ===== -->
     <div class="toast" id="toast">
         <span id="toastMessage">Сообщение</span>
     </div>
 
-    <!-- ============================================================ -->
-    <!-- JAVASCRIPT -->
-    <!-- ============================================================ -->
     <script>
         // ============================================================
-        // FIREBASE CONFIG
+        // FIREBASE КОНФИГ
         // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
@@ -627,243 +570,157 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        console.log('🔥 WHEEL — Работа водителя (финальная версия)');
-
         // ============================================================
         // STATE
         // ============================================================
-        let currentUser = null;
-        let userData = null;
-        let driverLocation = null;
-        let lastSentLocation = null; // для оптимизации GPS
-        let availableOrders = [];
-        let activeOrder = null;
-        let currentOffer = null;
-        let isOnline = false;
-        let isPenaltyActive = false;
-        let map = null;
-        let driverMarker = null;
-        let clientMarker = null;
-        let destinationMarker = null;
-        let watchId = null;
-        let offerTimer = null;
-        let offerRemaining = 30;
-        let penaltyTimer = null;
-        let penaltyRemaining = 0;
-        let unsubOrders = null; // одна подписка на все заказы
-        let unsubUser = null;
-        let isTracking = false;
-        let routePoints = [];
-        let routeLine = null;
+        let currentUser, userData, driverLocation, lastSentLocation;
+        let availableOrders = [],
+            activeOrder = null,
+            currentOffer = null;
+        let isOnline = false,
+            isPenaltyActive = false;
+        let map, driverMarker, clientMarker, destinationMarker;
+        let watchId, offerTimer, penaltyTimer;
+        let unsubOrders = null,
+            unsubUser = null;
+        let routePoints = [],
+            routeLine = null,
+            isTracking = false;
 
-        const AI_RADIUS_KM = 2.5;
-        const OFFER_TIMEOUT = 30;
-        const PENALTY_SECONDS = 120;
-        const GPS_UPDATE_INTERVAL = 60000; // 60 сек
-        const GPS_MIN_DISTANCE = 0.05; // 50 м
+        const AI_RADIUS_KM = 2.5,
+            OFFER_TIMEOUT = 30,
+            PENALTY_SECONDS = 120,
+            GPS_INTERVAL = 60000,
+            GPS_MIN_DIST = 0.05;
 
-        // ============================================================
-        // DOM REFS
-        // ============================================================
         const $ = id => document.getElementById(id);
-        const el = {
-            backBtn: $('backBtn'),
-            statusBadge: $('statusBadge'),
-            driverName: $('driverName'),
-            driverStatus: $('driverStatus'),
-            locationTime: $('locationTime'),
-            ordersCount: $('ordersCount'),
-            availableOrdersList: $('availableOrdersList'),
-            activeOrderCard: $('activeOrderCard'),
-            activeOrderTitle: $('activeOrderTitle'),
-            offerContainer: $('offerContainer'),
-            penaltyBanner: $('penaltyBanner'),
-            penaltyTimer: $('penaltyTimer'),
-            onlineBtn: $('onlineBtn'),
-            offlineBtn: $('offlineBtn'),
-            refreshLocationBtn: $('refreshLocationBtn'),
-            refreshBtn: $('refreshBtn'),
-            toast: $('toast'),
-            toastMessage: $('toastMessage'),
-            map: $('map')
-        };
 
         // ============================================================
         // UTILITY
         // ============================================================
         function showToast(text, type = 'info') {
-            el.toast.className = 'toast show ' + type;
-            el.toastMessage.textContent = text;
-            clearTimeout(el.toast._timeout);
-            el.toast._timeout = setTimeout(() => {
-                el.toast.className = 'toast';
-            }, 3500);
+            const t = $('toast');
+            t.className = 'toast show ' + type;
+            $('toastMessage').textContent = text;
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.className = 'toast', 3500);
         }
 
         function formatPrice(p) { return (p || 0).toFixed(2) + ' ₪'; }
 
         function formatDate(ts) {
             if (!ts) return '—';
-            try {
-                const d = ts.toDate ? ts.toDate() : new Date(ts);
-                return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-            } catch { return '—'; }
+            try { const d = ts.toDate ? ts.toDate() : new Date(ts); return d.toLocaleString('ru-RU'); } catch { return '—'; }
         }
 
         function haversineDistance(lat1, lng1, lat2, lng2) {
             if (!lat1 || !lng1 || !lat2 || !lng2) return Infinity;
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLng = (lng2 - lng1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) ** 2 +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLng / 2) ** 2;
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
+            const R = 6371,
+                dLat = (lat2 - lat1) * Math.PI / 180,
+                dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(
+                dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
         function getDistanceToOrder(order) {
             if (!driverLocation || !order?.pickup?.lat) return Infinity;
-            return haversineDistance(
-                driverLocation.lat, driverLocation.lng,
-                order.pickup.lat, order.pickup.lng
-            );
+            return haversineDistance(driverLocation.lat, driverLocation.lng, order.pickup.lat, order.pickup.lng);
         }
 
         // ============================================================
-        // MAP
+        // КАРТА
         // ============================================================
         function initMap() {
             map = L.map('map').setView([32.0853, 34.7818], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap',
-                maxZoom: 19
-            }).addTo(map);
-            console.log('🗺️ Карта готова');
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
         }
 
-        function createDriverIcon() {
-            return L.divIcon({ html: '🚗', className: '', iconSize: [32, 32], iconAnchor: [16, 32] });
-        }
+        function createDriverIcon() { return L.divIcon({ html: '🚗', iconSize: [32, 32], iconAnchor: [16, 32] }); }
 
-        function createClientIcon() {
-            return L.divIcon({ html: '🟢', className: '', iconSize: [28, 28], iconAnchor: [14, 28] });
-        }
+        function createClientIcon() { return L.divIcon({ html: '🟢', iconSize: [28, 28], iconAnchor: [14, 28] }); }
 
-        function createDestinationIcon() {
-            return L.divIcon({ html: '🔴', className: '', iconSize: [28, 28], iconAnchor: [14, 28] });
-        }
+        function createDestinationIcon() { return L.divIcon({ html: '🔴', iconSize: [28, 28], iconAnchor: [14, 28] }); }
 
         function updateDriverMarker(lat, lng) {
-            if (driverMarker) {
-                driverMarker.setLatLng([lat, lng]);
-            } else {
-                driverMarker = L.marker([lat, lng], { icon: createDriverIcon() })
-                    .addTo(map)
-                    .bindPopup('🚗 Вы здесь');
+            if (driverMarker) driverMarker.setLatLng([lat, lng]);
+            else {
+                driverMarker = L.marker([lat, lng], { icon: createDriverIcon() }).addTo(map).bindPopup('🚗 Вы здесь');
+                if (!activeOrder) map.setView([lat, lng], 15);
             }
-            if (!activeOrder) map.setView([lat, lng], 15);
         }
 
         function updateOrderMarkers() {
-            // Удаляем старые маркеры клиента и назначения
             if (clientMarker) { map.removeLayer(clientMarker);
                 clientMarker = null; }
             if (destinationMarker) { map.removeLayer(destinationMarker);
                 destinationMarker = null; }
-
             if (!activeOrder) return;
-
             if (activeOrder.pickup?.lat) {
                 clientMarker = L.marker([activeOrder.pickup.lat, activeOrder.pickup.lng], { icon: createClientIcon() })
-                    .addTo(map)
-                    .bindPopup('🟢 Клиент: ' + (activeOrder.pickup.address || ''));
+                    .addTo(map).bindPopup('🟢 Клиент');
             }
             if (activeOrder.destination?.lat) {
                 destinationMarker = L.marker([activeOrder.destination.lat, activeOrder.destination.lng], { icon: createDestinationIcon() })
-                    .addTo(map)
-                    .bindPopup('🔴 Назначение: ' + (activeOrder.destination.address || ''));
+                    .addTo(map).bindPopup('🔴 Назначение');
             }
-
-            // Если есть и клиент, и назначение — центрируем карту на них
             if (driverLocation && clientMarker) {
-                const bounds = L.latLngBounds([driverLocation.lat, driverLocation.lng], [activeOrder.pickup.lat, activeOrder
+                const b = L.latLngBounds([driverLocation.lat, driverLocation.lng], [activeOrder.pickup.lat, activeOrder
                     .pickup.lng
                 ]);
-                if (destinationMarker) bounds.extend([activeOrder.destination.lat, activeOrder.destination.lng]);
-                map.fitBounds(bounds, { padding: [40, 40] });
+                if (destinationMarker) b.extend([activeOrder.destination.lat, activeOrder.destination.lng]);
+                map.fitBounds(b, { padding: [40, 40] });
             }
         }
 
         // ============================================================
-        // GEOLOCATION (оптимизированная)
+        // GPS
         // ============================================================
         function startGeolocation() {
-            if (!navigator.geolocation) {
-                showToast('❌ GPS не поддерживается', 'error');
-                return;
-            }
+            if (!navigator.geolocation) { showToast('❌ GPS не поддерживается', 'error'); return; }
             if (watchId) { navigator.geolocation.clearWatch(watchId);
                 watchId = null; }
 
-            // Первое определение — сразу
             navigator.geolocation.getCurrentPosition(
                 pos => updateLocation(pos.coords.latitude, pos.coords.longitude, true),
-                err => console.error('GPS первичная ошибка:', err),
-                { enableHighAccuracy: true, timeout: 10000 }
+                err => console.error('GPS ошибка:', err), { enableHighAccuracy: true, timeout: 10000 }
             );
 
-            // Далее — реже, с учётом интервала и минимального смещения
             watchId = navigator.geolocation.watchPosition(
                 pos => updateLocation(pos.coords.latitude, pos.coords.longitude, false),
-                err => console.error('GPS ошибка:', err),
-                {
+                err => console.error('GPS ошибка:', err), {
                     enableHighAccuracy: true,
                     timeout: 15000,
-                    maximumAge: GPS_UPDATE_INTERVAL, // не чаще чем раз в 60 сек
+                    maximumAge: GPS_INTERVAL
                 }
             );
 
-            // Также принудительно обновляем время на экране каждые 30 сек (без запроса к БД)
-            setInterval(() => {
-                if (driverLocation) {
-                    el.locationTime.textContent = new Date().toLocaleTimeString();
-                }
-            }, 30000);
-
-            console.log(`📍 GPS запущен (интервал ~${GPS_UPDATE_INTERVAL/1000} сек)`);
+            setInterval(() => { if (driverLocation) $('locationTime').textContent = new Date().toLocaleTimeString(); },
+            30000);
         }
 
         function updateLocation(lat, lng, force = false) {
-            // Проверяем, нужно ли обновлять (если не force и смещение маленькое)
             if (!force && lastSentLocation) {
-                const dist = haversineDistance(lat, lng, lastSentLocation.lat, lastSentLocation.lng);
-                if (dist < GPS_MIN_DISTANCE) {
-                    // Обновляем только маркер на карте, но не отправляем в БД
+                if (haversineDistance(lat, lng, lastSentLocation.lat, lastSentLocation.lng) < GPS_MIN_DIST) {
                     updateDriverMarker(lat, lng);
                     return;
                 }
             }
-
             driverLocation = { lat, lng };
             lastSentLocation = { lat, lng };
-            el.locationTime.textContent = new Date().toLocaleTimeString();
-
+            $('locationTime').textContent = new Date().toLocaleTimeString();
             updateDriverMarker(lat, lng);
 
-            // Отправляем в Firebase только если это необходимо (и водитель онлайн)
             if (currentUser && isOnline) {
                 db.collection('users').doc(currentUser.uid).update({
                     'driverData.location': { lat, lng },
                     'driverData.lastUpdated': firebase.firestore.FieldValue.serverTimestamp()
-                }).catch(err => console.error('Ошибка сохранения GPS:', err));
+                }).catch(() => {});
             }
 
-            // Обновляем отображение заказов (без переподписки)
             updateOrdersUI();
             updateOrderMarkers();
 
-            // Если есть активный заказ и трекинг — добавляем точку в маршрут
             if (isTracking && activeOrder) {
                 routePoints.push({ lat, lng, timestamp: new Date().toISOString() });
                 updateRouteLine();
@@ -871,60 +728,30 @@
         }
 
         // ============================================================
-        // ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ЗАКАЗОВ (без лишних подписок)
-        // ============================================================
-        function updateOrdersUI() {
-            // Обновляем список доступных заказов
-            renderAvailableOrders();
-            // Обновляем активный заказ
-            if (activeOrder) renderActiveOrder(activeOrder);
-            // Счётчик
-            el.ordersCount.textContent = availableOrders.length;
-        }
-
-        // ============================================================
-        // ПОДПИСКА НА ВСЕ ЗАКАЗЫ (ОДНА вместо трёх)
+        // ПОДПИСКА НА ЗАКАЗЫ
         // ============================================================
         function subscribeToOrders() {
-            if (unsubOrders) {
-                unsubOrders();
-                unsubOrders = null;
-            }
-
+            if (unsubOrders) { unsubOrders();
+                unsubOrders = null; }
             if (!currentUser || !isOnline) return;
 
-            console.log('📦 Подписка на заказы (оптимизированная)...');
-
-            // Подписываемся на все заказы, где участвует этот водитель или которые свободны
-            // Используем один запрос с несколькими условиями через 'in'
-            // Но Firestore не позволяет 'in' с несколькими полями, поэтому делаем запрос на все заказы,
-            // где статус в нужных нам состояниях, и фильтруем на клиенте.
-            // Чтобы уменьшить трафик, добавляем лимит 50 (максимум заказов, которые могут быть активны)
             unsubOrders = db.collection('orders')
                 .where('status', 'in', ['new', 'searching', 'assigned', 'in_progress'])
                 .orderBy('createdAt', 'desc')
-                .limit(50) // ограничиваем количество, чтобы не грузить лишнее
+                .limit(50)
                 .onSnapshot(snapshot => {
-                    const allOrders = [];
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        allOrders.push({ id: doc.id, ...data });
-                    });
+                    const all = [];
+                    snapshot.forEach(d => all.push({ id: d.id, ...d.data() }));
 
-                    // Разделяем на доступные и активные
-                    availableOrders = allOrders.filter(o =>
-                        (o.status === 'new' || o.status === 'searching') &&
-                        !o.driverId // не назначен
+                    availableOrders = all.filter(o =>
+                        (o.status === 'new' || o.status === 'searching') && !o.driverId
                     );
-
-                    // Сортируем по расстоянию (если есть геолокация)
                     if (driverLocation) {
                         availableOrders.forEach(o => o.distance = getDistanceToOrder(o));
                         availableOrders.sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
                     }
 
-                    // Активный заказ — где driverId === currentUser.uid и статус assigned/in_progress
-                    const foundActive = allOrders.find(o =>
+                    const foundActive = all.find(o =>
                         o.driverId === currentUser.uid &&
                         (o.status === 'assigned' || o.status === 'in_progress')
                     );
@@ -932,72 +759,67 @@
                     if (foundActive) {
                         if (!activeOrder || activeOrder.id !== foundActive.id) {
                             activeOrder = foundActive;
-                            el.activeOrderTitle.style.display = 'block';
+                            $('activeOrderTitle').style.display = 'block';
                             updateOrderMarkers();
                             if (activeOrder.status === 'in_progress' && !isTracking) startTracking();
-                            // Меняем статус
-                            el.statusBadge.className = 'status-badge busy';
-                            el.statusBadge.textContent = '🟡 Занят';
-                            el.driverStatus.textContent = 'Выполняет заказ';
-                            // Если есть предложение — убираем
+                            $('statusBadge').className = 'status-badge busy';
+                            $('statusBadge').textContent = '🟡 Занят';
+                            $('driverStatus').textContent = 'Выполняет заказ';
                             if (currentOffer) clearOffer();
                         }
                     } else {
                         if (activeOrder) {
                             activeOrder = null;
-                            el.activeOrderCard.innerHTML = '';
-                            el.activeOrderTitle.style.display = 'none';
+                            $('activeOrderCard').innerHTML = '';
+                            $('activeOrderTitle').style.display = 'none';
                             clearOrderMarkers();
                             stopTracking();
                             if (isOnline && !isPenaltyActive) {
-                                el.statusBadge.className = 'status-badge online';
-                                el.statusBadge.textContent = '🟢 Онлайн';
-                                el.driverStatus.textContent = 'Ожидание';
+                                $('statusBadge').className = 'status-badge online';
+                                $('statusBadge').textContent = '🟢 Онлайн';
+                                $('driverStatus').textContent = 'Ожидание';
                             }
                         }
                     }
 
-                    // Обновляем UI
                     renderAvailableOrders();
                     if (activeOrder) renderActiveOrder(activeOrder);
-                    el.ordersCount.textContent = availableOrders.length;
+                    $('ordersCount').textContent = availableOrders.length;
 
-                    // Проверяем, есть ли заказы рядом и нет активного предложения
                     if (!currentOffer && !activeOrder && !isPenaltyActive && isOnline && driverLocation) {
                         const nearby = availableOrders.filter(o => getDistanceToOrder(o) <= AI_RADIUS_KM);
-                        if (nearby.length > 0) {
-                            // Берём ближайший
+                        if (nearby.length) {
                             const best = nearby.reduce((a, b) =>
                                 (getDistanceToOrder(a) || Infinity) < (getDistanceToOrder(b) || Infinity) ? a : b
                             );
                             sendOffer(best);
                         }
                     }
+                }, err => console.error('Ошибка подписки:', err));
+        }
 
-                }, err => {
-                    console.error('Ошибка подписки на заказы:', err);
-                });
+        function updateOrdersUI() {
+            renderAvailableOrders();
+            if (activeOrder) renderActiveOrder(activeOrder);
+            $('ordersCount').textContent = availableOrders.length;
         }
 
         // ============================================================
-        // ОТОБРАЖЕНИЕ ДОСТУПНЫХ ЗАКАЗОВ
+        // ДОСТУПНЫЕ ЗАКАЗЫ
         // ============================================================
         function renderAvailableOrders() {
-            const list = el.availableOrdersList;
-
+            const list = $('availableOrdersList');
             if (currentOffer) {
                 list.innerHTML =
                     `<div class="empty-state"><div class="icon">🤖</div><div>Есть предложение от ИИ-диспетчера</div></div>`;
                 return;
             }
             if (isPenaltyActive) {
-                list.innerHTML =
-                    `<div class="empty-state"><div class="icon">⛔</div><div>Вы на штрафе</div></div>`;
+                list.innerHTML = `<div class="empty-state"><div class="icon">⛔</div><div>Вы на штрафе</div></div>`;
                 return;
             }
-            if (availableOrders.length === 0) {
-                list.innerHTML =
-                    `<div class="empty-state"><div class="icon">📦</div><div>Нет доступных заказов</div></div>`;
+            if (!availableOrders.length) {
+                list.innerHTML = `<div class="empty-state"><div class="icon">📦</div><div>Нет доступных заказов</div></div>`;
                 return;
             }
 
@@ -1027,33 +849,23 @@
             list.innerHTML = html;
         }
 
-        // ============================================================
-        // РУЧНОЕ ПРИНЯТИЕ/ОТКАЗ
-        // ============================================================
-        window.manualAccept = function(orderId) {
+        window.manualAccept = function(id) {
             if (isPenaltyActive) { showToast('⛔ Вы на штрафе!', 'error'); return; }
-            const order = availableOrders.find(o => o.id === orderId);
+            const order = availableOrders.find(o => o.id === id);
             if (!order) return;
-
-            db.collection('orders').doc(orderId).update({
+            db.collection('orders').doc(id).update({
                 driverId: currentUser.uid,
                 driverName: userData?.displayName || 'Водитель',
                 status: 'assigned',
                 assignedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                assignedManually: true,
-                dispatchHistory: firebase.firestore.FieldValue.arrayUnion({
-                    driverId: currentUser.uid,
-                    timestamp: new Date().toISOString(),
-                    method: 'manual'
-                })
-            }).then(() => {
-                showToast('✅ Заказ принят!', 'success');
-            }).catch(err => showToast('❌ Ошибка: ' + err.message, 'error'));
+                assignedManually: true
+            }).then(() => showToast('✅ Заказ принят!', 'success'))
+                .catch(err => showToast('❌ Ошибка: ' + err.message, 'error'));
         };
 
-        window.manualReject = function(orderId) {
+        window.manualReject = function(id) {
             if (!confirm('Отклонить заказ?')) return;
-            db.collection('orders').doc(orderId).update({
+            db.collection('orders').doc(id).update({
                 status: 'searching',
                 dispatchHistory: firebase.firestore.FieldValue.arrayUnion({
                     driverId: currentUser.uid,
@@ -1065,30 +877,34 @@
         };
 
         // ============================================================
-        // ПРЕДЛОЖЕНИЕ (ОТ ИИ)
+        // ПРЕДЛОЖЕНИЕ
         // ============================================================
         function sendOffer(order) {
             if (currentOffer || activeOrder || isPenaltyActive || !isOnline) return;
             currentOffer = order;
             renderOffer(order);
+            showToast(`📨 Предложение от ИИ-диспетчера!`, 'warning');
 
-            showToast(`📨 Предложение от ИИ-диспетчера! #${order.id.substring(0,8)}`, 'warning');
-            console.log(`📨 Предложение отправлено: #${order.id.substring(0,8)}`);
-
-            offerRemaining = OFFER_TIMEOUT;
-            startOfferTimer();
-
-            setTimeout(() => {
-                if (currentOffer?.id === order.id) {
-                    console.log(`⏰ Время истекло, авто-отказ #${order.id.substring(0,8)}`);
-                    autoReject(order);
+            let remaining = OFFER_TIMEOUT;
+            if (offerTimer) clearInterval(offerTimer);
+            offerTimer = setInterval(() => {
+                remaining--;
+                const timer = $('offerTimer');
+                if (timer) {
+                    timer.textContent = remaining + 's';
+                    timer.classList.toggle('warning', remaining < 10);
                 }
-            }, OFFER_TIMEOUT * 1000);
+                if (remaining <= 0) { clearInterval(offerTimer);
+                    offerTimer = null;
+                    autoReject(order); }
+            }, 1000);
+
+            setTimeout(() => { if (currentOffer?.id === order.id) autoReject(order); }, OFFER_TIMEOUT * 1000);
         }
 
         function renderOffer(order) {
             const dist = order.distance !== null ? order.distance.toFixed(1) + ' км' : '—';
-            el.offerContainer.innerHTML = `
+            $('offerContainer').innerHTML = `
                 <div class="offer-card">
                     <div class="offer-header">
                         <span class="offer-badge">🤖 ИИ-диспетчер</span>
@@ -1107,70 +923,36 @@
                     <div style="font-size:10px; color:#667788; margin-top:6px; text-align:center;">⏱️ У вас ${OFFER_TIMEOUT} секунд</div>
                 </div>
             `;
-
             $('acceptOfferBtn').addEventListener('click', () => acceptOffer(order));
             $('rejectOfferBtn').addEventListener('click', () => rejectOffer(order));
-        }
-
-        function startOfferTimer() {
-            if (offerTimer) clearInterval(offerTimer);
-            offerTimer = setInterval(() => {
-                offerRemaining--;
-                const timer = $('offerTimer');
-                if (timer) {
-                    timer.textContent = offerRemaining + 's';
-                    timer.classList.toggle('warning', offerRemaining < 10);
-                }
-                if (offerRemaining <= 0) { clearInterval(offerTimer);
-                    offerTimer = null; }
-            }, 1000);
         }
 
         function acceptOffer(order) {
             if (!currentOffer || currentOffer.id !== order.id) return;
             clearOffer();
-
-            console.log(`✅ Принят заказ #${order.id.substring(0,8)}`);
-
             db.collection('orders').doc(order.id).update({
                 driverId: currentUser.uid,
                 driverName: userData?.displayName || 'Водитель',
                 status: 'assigned',
                 assignedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                assignedByAI: true,
-                dispatchHistory: firebase.firestore.FieldValue.arrayUnion({
-                    driverId: currentUser.uid,
-                    timestamp: new Date().toISOString(),
-                    method: 'ai_auto',
-                    accepted: true
-                })
-            }).then(() => {
-                showToast('✅ Заказ принят!', 'success');
-                currentOffer = null;
-            }).catch(err => {
-                showToast('❌ Ошибка: ' + err.message, 'error');
-                console.error('Ошибка принятия:', err);
-            });
+                assignedByAI: true
+            }).then(() => { showToast('✅ Заказ принят!', 'success');
+                currentOffer = null; })
+                .catch(err => showToast('❌ Ошибка: ' + err.message, 'error'));
         }
 
         function rejectOffer(order) {
             if (!currentOffer || currentOffer.id !== order.id) return;
             clearOffer();
-
-            console.log(`❌ Отказ от заказа #${order.id.substring(0,8)}`);
-
             startPenalty(PENALTY_SECONDS);
-
             db.collection('orders').doc(order.id).update({
                 dispatchHistory: firebase.firestore.FieldValue.arrayUnion({
                     driverId: currentUser.uid,
                     timestamp: new Date().toISOString(),
-                    method: 'ai_auto',
-                    accepted: false,
+                    method: 'ai_rejected',
                     penalty: true
                 })
-            }).catch(err => console.error('Ошибка:', err));
-
+            }).catch(() => {});
             showToast('⛔ Штраф 2 минуты за отказ!', 'error');
             currentOffer = null;
         }
@@ -1178,21 +960,15 @@
         function autoReject(order) {
             if (!currentOffer || currentOffer.id !== order.id) return;
             clearOffer();
-
-            console.log(`⏰ Авто-отказ #${order.id.substring(0,8)}`);
-
             startPenalty(PENALTY_SECONDS);
-
             db.collection('orders').doc(order.id).update({
                 dispatchHistory: firebase.firestore.FieldValue.arrayUnion({
                     driverId: currentUser.uid,
                     timestamp: new Date().toISOString(),
-                    method: 'ai_auto',
-                    autoReject: true,
+                    method: 'ai_timeout',
                     penalty: true
                 })
-            }).catch(err => console.error('Ошибка:', err));
-
+            }).catch(() => {});
             showToast('⛔ Время истекло! Штраф 2 минуты', 'error');
             currentOffer = null;
         }
@@ -1200,7 +976,7 @@
         function clearOffer() {
             if (offerTimer) { clearInterval(offerTimer);
                 offerTimer = null; }
-            el.offerContainer.innerHTML = '';
+            $('offerContainer').innerHTML = '';
             currentOffer = null;
         }
 
@@ -1210,25 +986,27 @@
         function startPenalty(seconds) {
             if (isPenaltyActive) return;
             isPenaltyActive = true;
-            penaltyRemaining = seconds;
-            el.penaltyBanner.style.display = 'block';
-            el.statusBadge.className = 'status-badge penalty';
-            el.statusBadge.textContent = '⛔ Штраф';
+            let rem = seconds;
+            $('penaltyBanner').style.display = 'block';
+            $('statusBadge').className = 'status-badge penalty';
+            $('statusBadge').textContent = '⛔ Штраф';
 
             if (penaltyTimer) clearInterval(penaltyTimer);
             penaltyTimer = setInterval(() => {
-                penaltyRemaining--;
-                const m = String(Math.floor(penaltyRemaining / 60)).padStart(2, '0');
-                const s = String(penaltyRemaining % 60).padStart(2, '0');
-                el.penaltyTimer.textContent = `${m}:${s}`;
-                if (penaltyRemaining <= 0) {
+                rem--;
+                const m = String(Math.floor(rem / 60)).padStart(2, '0');
+                const s = String(rem % 60).padStart(2, '0');
+                $('penaltyTimer').textContent = `${m}:${s}`;
+                if (rem <= 0) {
                     clearInterval(penaltyTimer);
                     penaltyTimer = null;
                     isPenaltyActive = false;
-                    el.penaltyBanner.style.display = 'none';
-                    el.statusBadge.className = 'status-badge online';
-                    el.statusBadge.textContent = '🟢 Онлайн';
-                    el.driverStatus.textContent = 'Ожидание';
+                    $('penaltyBanner').style.display = 'none';
+                    if (isOnline) {
+                        $('statusBadge').className = 'status-badge online';
+                        $('statusBadge').textContent = '🟢 Онлайн';
+                        $('driverStatus').textContent = 'Ожидание';
+                    }
                     showToast('✅ Штраф окончен!', 'success');
                     db.collection('users').doc(currentUser.uid).update({
                         'driverData.isAvailable': true,
@@ -1244,13 +1022,13 @@
         }
 
         // ============================================================
-        // АКТИВНЫЙ ЗАКАЗ (отображение)
+        // АКТИВНЫЙ ЗАКАЗ
         // ============================================================
         function renderActiveOrder(order) {
             const dist = order.distance ? order.distance.toFixed(1) + ' км' : '—';
             let buttons = '',
                 statusDetail = '',
-                tripSteps = '';
+                steps = '';
 
             if (order.status === 'assigned') {
                 buttons = `
@@ -1259,7 +1037,7 @@
                     <button class="btn-icon btn-danger" id="cancelBtn"><span class="icon">✖</span><span class="label">Отменить</span></button>
                 `;
                 statusDetail = '🟡 Ожидайте клиента';
-                tripSteps =
+                steps =
                     `<div class="trip-steps"><div class="trip-step active"><span class="icon">📍</span> К клиенту</div><div class="trip-step-line"></div><div class="trip-step"><span class="icon">🚗</span> В пути</div><div class="trip-step-line"></div><div class="trip-step"><span class="icon">🏁</span> Назначение</div></div>`;
             } else if (order.status === 'in_progress') {
                 buttons = `
@@ -1268,16 +1046,11 @@
                     <button class="btn-icon btn-danger" id="cancelBtn"><span class="icon">✖</span><span class="label">Отменить</span></button>
                 `;
                 statusDetail = '🚗 В пути';
-                tripSteps =
+                steps =
                     `<div class="trip-steps"><div class="trip-step"><span class="icon">📍</span> К клиенту</div><div class="trip-step-line active"></div><div class="trip-step active"><span class="icon">🚗</span> В пути</div><div class="trip-step-line"></div><div class="trip-step"><span class="icon">🏁</span> Назначение</div></div>`;
-            } else if (order.status === 'completed') {
-                tripSteps =
-                    `<div class="trip-steps"><div class="trip-step"><span class="icon">📍</span> К клиенту</div><div class="trip-step-line active"></div><div class="trip-step"><span class="icon">🚗</span> В пути</div><div class="trip-step-line active"></div><div class="trip-step active"><span class="icon">✅</span> Завершено</div></div>`;
-                statusDetail = '✅ Поездка завершена!';
-                buttons = ''; // кнопки не нужны
             }
 
-            el.activeOrderCard.innerHTML = `
+            $('activeOrderCard').innerHTML = `
                 <div class="order-card active">
                     <div class="header-order">
                         <span class="order-id">🚖 #${order.id.substring(0,8)}</span>
@@ -1285,13 +1058,12 @@
                     </div>
                     <div class="route">📍 ${order.pickup?.address || '—'} <span class="arrow">→</span> 🏁 ${order.destination?.address || '—'}</div>
                     <div class="meta">👤 ${order.clientName || 'Клиент'} • 📏 ${dist}</div>
-                    ${tripSteps}
+                    ${steps}
                     <div class="btn-group">${buttons}</div>
                     <div style="margin-top:6px; font-size:12px; color:#8899aa; text-align:center;">${statusDetail}</div>
                 </div>
             `;
 
-            // Обработчики кнопок
             $('arriveBtn')?.addEventListener('click', () => arriveToClient(order));
             $('navigateBtn')?.addEventListener('click', () => openWaze(order.pickup?.lat, order.pickup?.lng, 'клиенту'));
             $('arriveDestBtn')?.addEventListener('click', () => arriveToDestination(order));
@@ -1311,10 +1083,7 @@
         // ДЕЙСТВИЯ С ПОЕЗДКОЙ
         // ============================================================
         function arriveToClient(order) {
-            if (!driverLocation || !order.pickup?.lat) {
-                showToast('⚠️ Нет данных о местоположении', 'warning');
-                return;
-            }
+            if (!driverLocation || !order.pickup?.lat) { showToast('⚠️ Нет данных о местоположении', 'warning'); return; }
             const dist = haversineDistance(driverLocation.lat, driverLocation.lng, order.pickup.lat, order.pickup.lng);
             if (dist > 0.2) {
                 showToast(`⚠️ Вы далеко от клиента (${(dist*1000).toFixed(0)} м)`, 'warning');
@@ -1323,17 +1092,13 @@
             db.collection('orders').doc(order.id).update({
                 status: 'in_progress',
                 startedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                showToast('✅ Поездка началась!', 'success');
-                startTracking();
-            }).catch(err => showToast('❌ Ошибка: ' + err.message, 'error'));
+            }).then(() => { showToast('✅ Поездка началась!', 'success');
+                startTracking(); })
+                .catch(err => showToast('❌ Ошибка: ' + err.message, 'error'));
         }
 
         function arriveToDestination(order) {
-            if (!driverLocation || !order.destination?.lat) {
-                showToast('⚠️ Нет данных о местоположении', 'warning');
-                return;
-            }
+            if (!driverLocation || !order.destination?.lat) { showToast('⚠️ Нет данных о местоположении', 'warning'); return; }
             const dist = haversineDistance(driverLocation.lat, driverLocation.lng, order.destination.lat, order.destination
                 .lng);
             if (dist > 0.2) {
@@ -1353,8 +1118,9 @@
                 finalPrice: finalPrice,
                 routePoints: routePoints
             }).then(() => {
-                showToast(`✅ Поездка завершена! ${formatPrice(finalPrice)}`, 'success');
-                createTransactions(order, finalPrice);
+                showToast(`✅ Поездка завершена!`, 'success');
+                // Переход на страницу завершения
+                window.location.href = `trip-complete.html?orderId=${order.id}`;
             }).catch(err => showToast('❌ Ошибка: ' + err.message, 'error'));
         }
 
@@ -1362,15 +1128,12 @@
             if (!confirm('⚠️ Отменить поездку?')) return;
             const reason = prompt('Причина отмены:');
             if (reason === null) return;
-
-            let penalty = (order.status === 'in_progress') ? 7 : 0;
-            // Если заказ был назначен недавно (менее 2 минут), можно без штрафа
-            if (order.assignedAt && order.status === 'assigned') {
-                const assignedTime = order.assignedAt.toDate ? order.assignedAt.toDate() : new Date(order.assignedAt);
-                const elapsed = (Date.now() - assignedTime.getTime()) / 60000;
-                if (elapsed > 2) penalty = 7;
+            let penalty = 0;
+            if (order.status === 'in_progress') penalty = 7;
+            else if (order.assignedAt) {
+                const t = order.assignedAt.toDate ? order.assignedAt.toDate() : new Date(order.assignedAt);
+                if ((Date.now() - t.getTime()) / 60000 > 2) penalty = 7;
             }
-
             db.collection('orders').doc(order.id).update({
                 status: 'cancelled',
                 cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1378,27 +1141,22 @@
                 penaltyApplied: penalty,
                 cancelledBy: 'driver'
             }).then(() => {
-                if (penalty > 0) {
-                    db.collection('users').doc(currentUser.uid).update({
-                        balance: firebase.firestore.FieldValue.increment(-penalty),
-                        penalty: firebase.firestore.FieldValue.increment(penalty)
-                    }).then(() => showToast(`💰 Штраф ${formatPrice(penalty)}`, 'warning'));
-                }
+                if (penalty > 0) db.collection('users').doc(currentUser.uid).update({
+                    balance: firebase.firestore.FieldValue.increment(-penalty)
+                });
                 showToast('❌ Поездка отменена', 'error');
                 stopTracking();
             }).catch(err => showToast('❌ Ошибка: ' + err.message, 'error'));
         }
 
         // ============================================================
-        // ТРЕКИНГ МАРШРУТА
+        // ТРЕКИНГ
         // ============================================================
         function startTracking() {
             isTracking = true;
             routePoints = [];
-            if (driverLocation) {
-                routePoints.push({ lat: driverLocation.lat, lng: driverLocation.lng, timestamp: new Date()
-                        .toISOString() });
-            }
+            if (driverLocation) routePoints.push({ lat: driverLocation.lat, lng: driverLocation.lng,
+                timestamp: new Date().toISOString() });
             updateRouteLine();
         }
 
@@ -1411,17 +1169,13 @@
                 }).catch(() => {});
             }
             routePoints = [];
-            if (routeLine) {
-                map.removeLayer(routeLine);
-                routeLine = null;
-            }
+            if (routeLine) { map.removeLayer(routeLine);
+                routeLine = null; }
         }
 
         function updateRouteLine() {
-            if (routeLine) {
-                map.removeLayer(routeLine);
-                routeLine = null;
-            }
+            if (routeLine) { map.removeLayer(routeLine);
+                routeLine = null; }
             if (routePoints.length < 2) return;
             routeLine = L.polyline(routePoints.map(p => [p.lat, p.lng]), {
                 color: '#4ade80',
@@ -1443,10 +1197,7 @@
         // НАВИГАЦИЯ (Waze)
         // ============================================================
         function openWaze(lat, lng, name) {
-            if (!lat || !lng) {
-                showToast('⚠️ Нет координат для навигации', 'error');
-                return;
-            }
+            if (!lat || !lng) { showToast('⚠️ Нет координат', 'error'); return; }
             const link = `waze://?ll=${lat},${lng}&navigate=yes`;
             const fallback = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
 
@@ -1456,100 +1207,54 @@
                 iframe.src = link;
                 document.body.appendChild(iframe);
                 let opened = false;
-
-                iframe.onload = () => {
-                    if (!opened) {
-                        opened = true;
+                iframe.onload = () => { if (!opened) { opened = true;
                         document.body.removeChild(iframe);
-                        showToast(`🧭 Waze открыт к ${name}`, 'success');
-                    }
-                };
-                iframe.onerror = () => {
-                    if (!opened) {
-                        opened = true;
+                        showToast(`🧭 Waze открыт к ${name}`, 'success'); } };
+                iframe.onerror = () => { if (!opened) { opened = true;
                         document.body.removeChild(iframe);
                         window.open(fallback, '_blank');
-                        showToast(`🧭 Открыт Waze (веб) к ${name}`, 'info');
-                    }
-                };
-
+                        showToast(`🧭 Открыт Waze (веб)`, 'info'); } };
                 setTimeout(() => {
-                    if (!opened) {
-                        opened = true;
-                        if (document.body.contains(iframe)) document.body.removeChild(iframe);
+                    if (!opened) { opened = true; if (document.body.contains(iframe)) document.body.removeChild(
+                            iframe);
                         window.open(fallback, '_blank');
-                        showToast(`🧭 Открыт Waze (веб) к ${name}`, 'info');
-                    }
+                        showToast(`🧭 Открыт Waze (веб)`, 'info'); }
                 }, 2500);
             } catch (e) {
                 window.open(fallback, '_blank');
-                showToast(`🧭 Открыт Waze (веб) к ${name}`, 'info');
+                showToast(`🧭 Открыт Waze (веб)`, 'info');
             }
         }
 
         // ============================================================
-        // ТРАНЗАКЦИИ (зачисление заработка)
-        // ============================================================
-        function createTransactions(order, finalPrice) {
-            const price = finalPrice || order.price || 0;
-            const commission = price * 0.10;
-            const driverEarn = price - commission;
-
-            db.collection('transactions').add({
-                userId: currentUser.uid,
-                orderId: order.id,
-                type: 'earning',
-                amount: driverEarn,
-                description: `Заработок #${order.id.substring(0,8)}`,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).catch(() => {});
-
-            db.collection('users').doc(currentUser.uid).update({
-                balance: firebase.firestore.FieldValue.increment(driverEarn),
-                totalEarned: firebase.firestore.FieldValue.increment(driverEarn)
-            }).catch(() => {});
-        }
-
-        // ============================================================
-        // СТАТУС (ВКЛ/ВЫКЛ)
+        // СТАТУС
         // ============================================================
         function setDriverStatus(status) {
-            if (isPenaltyActive) {
-                showToast('⛔ Вы на штрафе!', 'error');
-                return;
-            }
+            if (isPenaltyActive) { showToast('⛔ Вы на штрафе!', 'error'); return; }
             isOnline = (status === 'online');
 
             if (status === 'online') {
-                el.statusBadge.className = 'status-badge online';
-                el.statusBadge.textContent = '🟢 Онлайн';
-                el.driverStatus.textContent = 'Ожидание';
+                $('statusBadge').className = 'status-badge online';
+                $('statusBadge').textContent = '🟢 Онлайн';
+                $('driverStatus').textContent = 'Ожидание';
                 db.collection('users').doc(currentUser.uid).update({ 'driverData.isAvailable': true }).catch(() => {});
                 startGeolocation();
-                subscribeToOrders(); // ОДНА подписка на всё
+                subscribeToOrders();
                 showToast('🟢 Вы онлайн', 'success');
             } else {
-                el.statusBadge.className = 'status-badge offline';
-                el.statusBadge.textContent = '⚪ Офлайн';
-                el.driverStatus.textContent = 'Не в сети';
+                $('statusBadge').className = 'status-badge offline';
+                $('statusBadge').textContent = '⚪ Офлайн';
+                $('driverStatus').textContent = 'Не в сети';
                 db.collection('users').doc(currentUser.uid).update({ 'driverData.isAvailable': false }).catch(() => {});
-                if (watchId) {
-                    navigator.geolocation.clearWatch(watchId);
-                    watchId = null;
-                }
-                if (unsubOrders) {
-                    unsubOrders();
-                    unsubOrders = null;
-                }
-                if (unsubUser) {
-                    unsubUser();
-                    unsubUser = null;
-                }
+                if (watchId) { navigator.geolocation.clearWatch(watchId);
+                    watchId = null; }
+                if (unsubOrders) { unsubOrders();
+                    unsubOrders = null; }
                 clearOffer();
-                el.availableOrdersList.innerHTML = '';
-                el.activeOrderCard.innerHTML = '';
-                el.activeOrderTitle.style.display = 'none';
-                el.ordersCount.textContent = '0';
+                $('availableOrdersList').innerHTML = '';
+                $('activeOrderCard').innerHTML = '';
+                $('activeOrderTitle').style.display = 'none';
+                $('ordersCount').textContent = '0';
                 stopTracking();
                 showToast('⚪ Вы офлайн', 'info');
             }
@@ -1559,23 +1264,21 @@
         // ПОДПИСКА НА ПОЛЬЗОВАТЕЛЯ
         // ============================================================
         function subscribeToUser(uid) {
-            if (unsubUser) {
-                unsubUser();
-                unsubUser = null;
-            }
+            if (unsubUser) { unsubUser();
+                unsubUser = null; }
             unsubUser = db.collection('users').doc(uid).onSnapshot(doc => {
                 if (doc.exists) {
                     userData = doc.data();
-                    el.driverName.textContent = userData.displayName || 'Водитель';
+                    $('driverName').textContent = userData.displayName || 'Водитель';
                     const avail = userData.driverData?.isAvailable;
                     if (avail === true && !isOnline) setDriverStatus('online');
                     else if (avail === false && isOnline) setDriverStatus('offline');
-                    else if (avail === undefined) setDriverStatus('online'); // по умолчанию
+                    else if (avail === undefined) setDriverStatus('online');
 
                     if (userData.driverData?.location) {
                         const loc = userData.driverData.location;
                         if (!driverLocation || haversineDistance(driverLocation.lat, driverLocation.lng, loc.lat, loc
-                                .lng) > GPS_MIN_DISTANCE) {
+                                .lng) > GPS_MIN_DIST) {
                             driverLocation = { lat: loc.lat, lng: loc.lng };
                             lastSentLocation = { lat: loc.lat, lng: loc.lng };
                             updateDriverMarker(loc.lat, loc.lng);
@@ -1583,20 +1286,15 @@
                         }
                     }
                 }
-            }, err => console.error('Ошибка данных пользователя:', err));
+            }, err => console.error('Ошибка данных:', err));
         }
 
         // ============================================================
-        // ИНИЦИАЛИЗАЦИЯ
+        // INIT
         // ============================================================
         auth.onAuthStateChanged(user => {
-            if (!user) {
-                // Если нет пользователя — перенаправляем на страницу входа
-                window.location.href = 'index.html';
-                return;
-            }
+            if (!user) { window.location.href = 'index.html'; return; }
             currentUser = user;
-
             db.collection('users').doc(user.uid).get().then(doc => {
                 if (!doc.exists || doc.data().role !== 'driver') {
                     showToast('⛔ Доступ только для водителей', 'error');
@@ -1605,22 +1303,18 @@
                 }
                 initMap();
                 subscribeToUser(user.uid);
-                // Автоматически включаем онлайн, если не было штрафа
                 if (!isPenaltyActive) setDriverStatus('online');
             }).catch(() => window.location.href = 'index.html');
         });
 
         // ============================================================
-        // ОБРАБОТЧИКИ СОБЫТИЙ
+        // EVENTS
         // ============================================================
-        el.onlineBtn.addEventListener('click', () => setDriverStatus('online'));
-        el.offlineBtn.addEventListener('click', () => setDriverStatus('offline'));
+        $('onlineBtn').addEventListener('click', () => setDriverStatus('online'));
+        $('offlineBtn').addEventListener('click', () => setDriverStatus('offline'));
 
-        el.refreshLocationBtn.addEventListener('click', () => {
-            if (!isOnline) {
-                showToast('⚠️ Включите онлайн', 'warning');
-                return;
-            }
+        $('refreshLocationBtn').addEventListener('click', () => {
+            if (!isOnline) { showToast('⚠️ Включите онлайн', 'warning'); return; }
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     pos => updateLocation(pos.coords.latitude, pos.coords.longitude, true),
@@ -1629,65 +1323,34 @@
             }
         });
 
-        el.refreshBtn.addEventListener('click', () => {
+        $('refreshBtn').addEventListener('click', () => {
             showToast('🔄 Обновлено', 'info');
-            // Принудительно обновить UI без переподписки
             updateOrdersUI();
         });
 
-        el.backBtn.addEventListener('click', () => {
-            // При выходе — перенаправляем в кабинет (или на вход, если кабинет не нужен)
-            // Если у вас в cabinet.html нет автоматического редиректа, то можно оставить cabinet.html.
-            // Если есть редирект, замените 'cabinet.html' на 'index.html'
+        $('backBtn').addEventListener('click', () => {
             if (activeOrder && !confirm('У вас активный заказ. Выйти?')) return;
             if (watchId) navigator.geolocation.clearWatch(watchId);
             if (unsubOrders) unsubOrders();
             if (unsubUser) unsubUser();
             clearOffer();
             stopTracking();
-            // ПЕРЕНАПРАВЛЕНИЕ НА КАБИНЕТ ИЛИ НА ВХОД
-            window.location.href = 'cabinet.html'; // если кабинет есть и работает
-            // window.location.href = 'index.html'; // если хотите выходить на страницу входа
+            window.location.href = 'cabinet.html';
         });
 
-        // ============================================================
-        // ДИАГНОСТИКА (для консоли)
-        // ============================================================
         window.diagnostic = function() {
             console.log('=== ДИАГНОСТИКА ===');
             console.log('Онлайн:', isOnline);
             console.log('Штраф:', isPenaltyActive);
             console.log('Активный заказ:', activeOrder ? activeOrder.id : 'нет');
             console.log('Предложение:', currentOffer ? currentOffer.id : 'нет');
-            console.log('Геолокация:', driverLocation ? `${driverLocation.lat}, ${driverLocation.lng}` : 'НЕТ!');
-            console.log('Заказов в списке:', availableOrders.length);
-            availableOrders.forEach(o => {
-                const dist = getDistanceToOrder(o);
-                console.log(`  #${o.id.substring(0,8)}: ${dist.toFixed(2)} км, рядом: ${dist <= AI_RADIUS_KM ? '✅' : '❌'}`);
-            });
-            console.log('Подписка на заказы:', unsubOrders ? '✅ активна' : '❌ не активна');
+            console.log('GPS:', driverLocation ? `${driverLocation.lat}, ${driverLocation.lng}` : 'НЕТ');
+            console.log('Заказов:', availableOrders.length);
+            console.log('Подписка:', unsubOrders ? '✅' : '❌');
         };
 
-        window.forceAI = function() {
-            console.log('🤖 ПРИНУДИТЕЛЬНЫЙ ПОИСК ЗАКАЗОВ...');
-            if (isOnline && !isPenaltyActive && !activeOrder && !currentOffer && driverLocation) {
-                const nearby = availableOrders.filter(o => getDistanceToOrder(o) <= AI_RADIUS_KM);
-                if (nearby.length > 0) {
-                    const best = nearby.reduce((a, b) =>
-                        (getDistanceToOrder(a) || Infinity) < (getDistanceToOrder(b) || Infinity) ? a : b
-                    );
-                    sendOffer(best);
-                } else {
-                    showToast('❌ Нет заказов рядом', 'warning');
-                }
-            } else {
-                showToast('⛔ Условия не выполнены (онлайн, штраф, активный заказ, геолокация)', 'warning');
-            }
-        };
-
-        console.log('✅ WHEEL — Работа водителя (финальная) загружена');
-        console.log('📌 Команды: diagnostic(), forceAI()');
-        console.log('📌 Кнопка "Назад" ведёт на cabinet.html. Если нужно на вход — замените в коде.');
+        console.log('✅ driver-work.html загружен');
+        console.log('📌 diagnostic() — состояние, forceAI() — принудительный поиск');
     </script>
 
 </body>
