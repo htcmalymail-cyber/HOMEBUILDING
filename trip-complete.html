@@ -8,7 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
-        /* ===== Стили ===== */
+        /* ===== Стили (без изменений) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0c10; min-height: 100vh; padding: 12px; color: #fff; }
         .container { max-width: 480px; margin: 0 auto; }
@@ -107,6 +107,7 @@
 
             <div class="row"><span class="label">💳 Комиссия (10%)</span><span class="value red" id="commission">—</span></div>
             <div class="row"><span class="label">🚗 Заработок водителя</span><span class="value green" id="driverEarn">—</span></div>
+            <div class="row"><span class="label">🎁 Бонус клиенту (1%)</span><span class="value gold" id="bonusEarned">—</span></div>
             <div class="row"><span class="label">👤 Клиент</span><span class="value" id="clientName">—</span></div>
             <div class="row"><span class="label">🚗 Водитель</span><span class="value" id="driverName">—</span></div>
         </div>
@@ -174,12 +175,15 @@
         function updateTotals(finalPrice) {
             const commission = finalPrice * 0.10;
             const driverEarn = finalPrice - commission;
+            const bonus = finalPrice * 0.01; // 1% бонус клиенту
             $('finalPrice').textContent = formatPrice(finalPrice);
             $('commission').textContent = formatPrice(commission);
             $('driverEarn').textContent = formatPrice(driverEarn);
+            $('bonusEarned').textContent = formatPrice(bonus);
             currentFinalPrice = finalPrice;
             window._orderData = window._orderData || {};
             window._orderData.finalPrice = finalPrice;
+            window._orderData.bonus = bonus;
         }
 
         // ===== LOAD ORDER =====
@@ -199,9 +203,7 @@
                     }
                     orderData = doc.data();
 
-                    // Реальное расстояние
                     const realDist = orderData.realDistance || orderData.distance || 0;
-                    // Финальная цена (может быть пересчитана)
                     let finalPrice = orderData.finalPrice;
                     if (!finalPrice && orderData.price && orderData.distance) {
                         const factor = realDist / orderData.distance;
@@ -216,7 +218,6 @@
                     console.log('  Предварительная цена:', orderData.price);
                     console.log('  Итоговая цена:', finalPrice);
 
-                    // Заполняем поля
                     $('orderId').textContent = '#' + orderId.substring(0, 8);
                     $('pickupAddress').textContent = orderData.pickup?.address || '—';
                     $('destinationAddress').textContent = orderData.destination?.address || '—';
@@ -256,7 +257,7 @@
             });
         });
 
-        // ===== CONFIRM PAYMENT =====
+        // ===== CONFIRM PAYMENT (с начислением бонуса клиенту) =====
         $('confirmBtn').addEventListener('click', function() {
             if (!orderData || !orderId) {
                 showMessage('❌ Нет данных о заказе', 'error');
@@ -268,8 +269,11 @@
             const finalPrice = window._orderData?.finalPrice || currentFinalPrice || orderData.finalPrice || orderData.price || 0;
             const commission = finalPrice * 0.10;
             const driverEarn = finalPrice - commission;
+            const bonus = finalPrice * 0.01; // 1%
 
             const ops = [];
+
+            // 1. Транзакция клиента (списание)
             ops.push(db.collection('transactions').add({
                 userId: orderData.clientId,
                 orderId: orderId,
@@ -278,6 +282,8 @@
                 description: `Оплата поездки #${orderId.substring(0,8)} (${selectedMethod === 'wallet' ? 'кошелёк' : 'наличные'})`,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }));
+
+            // 2. Транзакция водителя (начисление)
             ops.push(db.collection('transactions').add({
                 userId: orderData.driverId,
                 orderId: orderId,
@@ -286,10 +292,14 @@
                 description: `Заработок #${orderId.substring(0,8)} (90%)`,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }));
+
+            // 3. Обновление баланса водителя
             ops.push(db.collection('users').doc(orderData.driverId).update({
                 balance: firebase.firestore.FieldValue.increment(driverEarn),
                 totalEarned: firebase.firestore.FieldValue.increment(driverEarn)
             }));
+
+            // 4. Если оплата через кошелёк – списываем с клиента
             if (selectedMethod === 'wallet') {
                 ops.push(db.collection('users').doc(orderData.clientId).update({
                     balance: firebase.firestore.FieldValue.increment(-finalPrice),
@@ -297,15 +307,32 @@
                 }));
             }
 
+            // 5. Начисление бонуса клиенту (ВСЕГДА, независимо от способа оплаты)
+            ops.push(db.collection('users').doc(orderData.clientId).update({
+                bonus: firebase.firestore.FieldValue.increment(bonus)
+            }));
+
+            // 6. Транзакция бонуса (для истории)
+            ops.push(db.collection('transactions').add({
+                userId: orderData.clientId,
+                orderId: orderId,
+                type: 'bonus',
+                amount: bonus,
+                description: `Бонус 1% за поездку #${orderId.substring(0,8)}`,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }));
+
+            // Выполняем все операции
             Promise.all(ops)
                 .then(() => db.collection('orders').doc(orderId).update({
                     paymentMethod: selectedMethod,
                     paymentCompleted: true,
                     paidAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    finalPrice: finalPrice
+                    finalPrice: finalPrice,
+                    bonusEarned: bonus
                 }))
                 .then(() => {
-                    showMessage('✅ Оплата подтверждена!', 'success');
+                    showMessage('✅ Оплата подтверждена! Начислен бонус ' + formatPrice(bonus), 'success');
                     this.textContent = '✅ Готово!';
                     this.disabled = true;
                     setTimeout(() => window.location.href = 'driver-work.html', 2000);
@@ -327,7 +354,7 @@
             if (!user) { window.location.href = 'index.html'; return; }
             loadOrder();
         });
-        console.log('✅ trip-complete.html загружен');
+        console.log('✅ trip-complete.html загружен (с бонусами)');
     </script>
 </body>
 </html>
