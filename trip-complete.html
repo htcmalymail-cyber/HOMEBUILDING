@@ -13,6 +13,7 @@
     </script>
 
     <style>
+        /* ===== Стили (без изменений) ===== */
         * {
             margin: 0;
             padding: 0;
@@ -114,15 +115,15 @@
         .trip-info .row .value.red {
             color: #ff6b6b;
         }
-        .trip-info .row .final {
+        .trip-info .row.final {
             border-bottom: 2px solid rgba(255, 180, 0, 0.15);
             padding-bottom: 8px;
         }
-        .trip-info .row .final .label {
+        .trip-info .row.final .label {
             font-weight: 600;
             color: #e0e8f0;
         }
-        .trip-info .row .final .value {
+        .trip-info .row.final .value {
             font-size: 20px;
             color: #ffb000;
         }
@@ -347,7 +348,7 @@
         function formatDistance(km) {
             if (!km) return '—';
             if (km < 1) return (km * 1000).toFixed(0) + ' м';
-            return km.toFixed(1) + ' км';
+            return km.toFixed(2) + ' км';
         }
 
         function showMessage(text, type = 'info') {
@@ -366,23 +367,37 @@
             const params = new URLSearchParams(window.location.search);
             orderId = params.get('orderId');
 
-            if (!orderId) { showMessage('❌ Не указан заказ', 'error'); return; }
+            if (!orderId) {
+                showMessage('❌ Не указан заказ', 'error');
+                return;
+            }
 
             db.collection('orders').doc(orderId).get()
                 .then(doc => {
-                    if (!doc.exists) { showMessage('❌ Заказ не найден', 'error'); return; }
+                    if (!doc.exists) {
+                        showMessage('❌ Заказ не найден', 'error');
+                        return;
+                    }
                     orderData = doc.data();
 
+                    // Если realDistance нет, используем плановое расстояние
+                    const realDist = orderData.realDistance || orderData.distance || 0;
+                    // Если finalPrice нет, пересчитываем по плановой цене и реальному расстоянию
+                    let finalPrice = orderData.finalPrice;
+                    if (!finalPrice && orderData.price && orderData.distance) {
+                        const factor = realDist / orderData.distance;
+                        finalPrice = orderData.price * factor;
+                    } else if (!finalPrice) {
+                        finalPrice = orderData.price || 0;
+                    }
+
+                    // Заполняем поля
                     $('orderId').textContent = '#' + orderId.substring(0, 8);
                     $('pickupAddress').textContent = orderData.pickup?.address || '—';
                     $('destinationAddress').textContent = orderData.destination?.address || '—';
                     $('plannedDistance').textContent = formatDistance(orderData.distance);
-                    $('plannedPrice').textContent = formatPrice(orderData.price);
-
-                    const realDist = orderData.realDistance || orderData.distance || 0;
                     $('realDistance').textContent = formatDistance(realDist);
-
-                    const finalPrice = orderData.finalPrice || orderData.price || 0;
+                    $('plannedPrice').textContent = formatPrice(orderData.price);
                     $('finalPrice').textContent = formatPrice(finalPrice);
 
                     const commission = finalPrice * 0.10;
@@ -391,9 +406,14 @@
 
                     $('clientName').textContent = orderData.clientName || 'Клиент';
                     $('driverName').textContent = orderData.driverName || 'Водитель';
+
+                    // Сохраняем данные для оплаты
+                    window._orderData = { ...orderData, realDistance: realDist, finalPrice };
                 })
-                .catch(err => { showMessage('❌ Ошибка загрузки заказа', 'error');
-                    console.error(err); });
+                .catch(err => {
+                    showMessage('❌ Ошибка загрузки заказа: ' + err.message, 'error');
+                    console.error(err);
+                });
         }
 
         // ============================================================
@@ -411,12 +431,16 @@
         // ПОДТВЕРЖДЕНИЕ ОПЛАТЫ
         // ============================================================
         $('confirmBtn').addEventListener('click', function() {
-            if (!orderData || !orderId) { showMessage('❌ Нет данных о заказе', 'error'); return; }
+            if (!orderData || !orderId) {
+                showMessage('❌ Нет данных о заказе', 'error');
+                return;
+            }
 
             this.disabled = true;
             this.textContent = '⏳ Обработка...';
 
-            const finalPrice = orderData.finalPrice || orderData.price || 0;
+            // Берём финальную цену из загруженных данных
+            const finalPrice = window._orderData?.finalPrice || orderData.finalPrice || orderData.price || 0;
             const commission = finalPrice * 0.10;
             const driverEarn = finalPrice - commission;
 
@@ -486,7 +510,7 @@
             loadOrder();
         });
 
-        console.log('✅ trip-complete.html загружен');
+        console.log('✅ trip-complete.html (исправленный) загружен');
     </script>
 
 </body>
