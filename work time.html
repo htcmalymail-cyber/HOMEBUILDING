@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🐱 Кот-учёт времени</title>
+    
+    <!-- Firebase SDK (совместимый с вашим кодом) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <style>
+        /* ===== ВСЕ СТИЛИ ИЗ ВАШЕГО КОДА ===== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f5f1eb;
+            color: #2d2a24;
+            padding: 16px 12px 80px;
+            transition: background 0.3s, color 0.3s;
+            min-height: 100vh;
+        }
+        body.dark {
+            background: #1e1c19;
+            color: #e8e0d8;
+        }
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        @media (min-width: 1024px) {
+            body {
+                padding: 20px 30px 40px;
+            }
+            .main-layout {
+                display: flex;
+                gap: 30px;
+                max-width: 1200px;
+                margin: 0 auto;
+                align-items: flex-start;
+            }
+            .main-content {
+                flex: 1;
+                min-width: 0;
+            }
+            .debt-sidebar {
+                width: 380px;
+                flex-shrink: 0;
+                position: sticky;
+                top: 20px;
+                max-height: calc(100vh - 40px);
+                overflow-y: auto;
+            }
+            .container {
+                max-width: 100%;
+                padding: 0;
+            }
+        }
+        @media (max-width: 1023px) {
+            .debt-sidebar {
+                margin-top: 20px;
+            }
+        }
+        .cat-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .cat-emoji {
+            font-size: 48px;
+            line-height: 1;
+            animation: wave 2s infinite ease-in-out;
+            transform-origin: 70% 80%;
+        }
+        @keyframes wave {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(8deg); }
+        }
+        .cat-header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        .cat-header .sub {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 30px;
+            background: rgba(0,0,0,0.05);
+            transition: 0.2s;
+            line-height: 1;
+        }
+        body.dark .theme-toggle {
+            background: rgba(255,255,255,0.08);
+        }
+        .lang-select {
+            padding: 6px 10px;
+            border-radius: 30px;
+            border: 1px solid #ddd;
+            background: rgba(255,255,255,0.7);
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.2s;
+            max-width: 80px;
+        }
+        body.dark .lang-select {
+            background: #3a3530;
+            border-color: #4f4842;
+            color: #e8e0d8;
+        }
+        .lang-select option {
+            font-size: 14px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 14px 12px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            transition: background 0.3s;
+        }
+        body.dark .stat-card {
+            background: #2b2824;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .stat-card .label {
+            font-size: 13px;
+            opacity: 0.6;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+        .stat-card .subval {
+            font-size: 13px;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+        .stat-card .action-btn {
+            font-size: 13px;
+            background: none;
+            border: none;
+            color: #8a7a6a;
+            text-decoration: underline dotted;
+            cursor: pointer;
+            padding: 0 4px;
+        }
+        body.dark .stat-card .action-btn {
+            color: #b8a898;
+        }
+        .overtime-positive {
+            color: #b37a4a;
+        }
+        .overtime-zero {
+            color: #4a7a5a;
+        }
+        .overtime-negative {
+            color: #b35e5e;
+        }
+        .date-picker {
+            background: white;
+            padding: 16px 14px;
+            border-radius: 24px;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.3s;
+        }
+        body.dark .date-picker {
+            background: #2b2824;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .date-picker input[type="date"] {
+            flex: 1;
+            min-width: 130px;
+            padding: 10px 14px;
+            border-radius: 40px;
+            border: 1px solid #ddd;
+            background: #f9f6f2;
+            font-size: 15px;
+            font-weight: 500;
+            color: #2d2a24;
+            transition: 0.2s;
+        }
+        body.dark .date-picker input[type="date"] {
+            background: #3a3530;
+            border-color: #4f4842;
+            color: #e8e0d8;
+        }
+        .date-picker input[type="time"] {
+            width: 90px;
+            padding: 10px 8px;
+            border-radius: 40px;
+            border: 1px solid #ddd;
+            background: #f9f6f2;
+            font-size: 15px;
+            font-weight: 500;
+            color: #2d2a24;
+            transition: 0.2s;
+        }
+        body.dark .date-picker input[type="time"] {
+            background: #3a3530;
+            border-color: #4f4842;
+            color: #e8e0d8;
+        }
+        .date-picker button {
+            background: #d8cdc0;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #2d2a24;
+            cursor: pointer;
+            transition: 0.2s;
+            flex: 1 0 auto;
+        }
+        body.dark .date-picker button {
+            background: #4f4842;
+            color: #e8e0d8;
+        }
+        .date-picker button:active {
+            transform: scale(0.96);
+        }
+        .time-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+        .time-row label {
+            font-size: 13px;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .entries-list {
+            background: white;
+            border-radius: 24px;
+            padding: 6px 0;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            transition: background 0.3s;
+            overflow: hidden;
+        }
+        body.dark .entries-list {
+            background: #2b2824;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .entry-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0ebe5;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        body.dark .entry-item {
+            border-bottom-color: #3f3a35;
+        }
+        .entry-item:last-child {
+            border-bottom: none;
+        }
+        .entry-item.closed-day {
+            background: rgba(180, 200, 180, 0.15);
+            border-radius: 8px;
+        }
+        body.dark .entry-item.closed-day {
+            background: rgba(80, 120, 80, 0.2);
+        }
+        .entry-info {
+            flex: 1;
+            min-width: 140px;
+        }
+        .entry-info .date {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .entry-info .time {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-left: 8px;
+        }
+        .entry-info .hours {
+            font-size: 14px;
+            font-weight: 600;
+            background: #ede8e2;
+            padding: 2px 12px;
+            border-radius: 40px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+        body.dark .entry-info .hours {
+            background: #3f3a35;
+        }
+        .entry-info .overtime-badge {
+            font-size: 13px;
+            font-weight: 600;
+            color: #b37a4a;
+            margin-left: 8px;
+        }
+        .entry-info .closed-badge {
+            font-size: 12px;
+            background: #4a7a5a;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 40px;
+            margin-left: 8px;
+        }
+        body.dark .entry-info .closed-badge {
+            background: #3a6a4a;
+        }
+        .entry-actions {
+            display: flex;
+            gap: 6px;
+            margin-left: auto;
+        }
+        .entry-actions button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            padding: 4px 6px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.15s;
+            background: rgba(0,0,0,0.03);
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        body.dark .entry-actions button {
+            background: rgba(255,255,255,0.05);
+        }
+        .entry-actions button:active {
+            background: rgba(0,0,0,0.08);
+        }
+        .entry-actions .del-btn {
+            color: #b35e5e;
+        }
+        .entry-actions .edit-btn {
+            color: #5e7fb3;
+        }
+        .entry-actions .day-deduct-btn {
+            color: #b37a4a;
+            font-size: 16px;
+        }
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 16px 0 14px;
+        }
+        .action-bar button {
+            flex: 1 0 auto;
+            background: #e3dbd2;
+            border: none;
+            padding: 12px 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #2d2a24;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+        body.dark .action-bar button {
+            background: #3f3a35;
+            color: #e8e0d8;
+        }
+        .action-bar button:active {
+            transform: scale(0.96);
+        }
+        .action-bar .danger {
+            background: #e8d0cc;
+            color: #8f4a4a;
+        }
+        body.dark .action-bar .danger {
+            background: #4f3535;
+            color: #e0b0b0;
+        }
+        .action-bar .backup {
+            background: #d0dce8;
+            color: #2a4a6a;
+        }
+        body.dark .action-bar .backup {
+            background: #2a3a4a;
+            color: #b0cce0;
+        }
+        .file-input-hidden {
+            display: none;
+        }
+        .month-selector {
+            display: flex;
+            gap: 8px;
+            margin: 8px 0 12px;
+            flex-wrap: wrap;
+        }
+        .month-selector button {
+            background: #e8e2da;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.15s;
+            flex: 1 0 auto;
+        }
+        body.dark .month-selector button {
+            background: #3f3a35;
+            color: #e8e0d8;
+        }
+        .month-selector button.active {
+            background: #d0c0b0;
+            font-weight: 700;
+        }
+        body.dark .month-selector button.active {
+            background: #5f4f42;
+        }
+        .footer-note {
+            margin-top: 24px;
+            font-size: 12px;
+            opacity: 0.5;
+            text-align: center;
+        }
+        .debt-sidebar {
+            background: white;
+            border-radius: 24px;
+            padding: 20px 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            transition: background 0.3s;
+        }
+        body.dark .debt-sidebar {
+            background: #2b2824;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .debt-sidebar h3 {
+            font-size: 18px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .debt-sidebar .debt-total {
+            font-size: 24px;
+            font-weight: 700;
+            color: #b37a4a;
+            text-align: right;
+            padding: 12px 0 8px;
+            border-top: 2px solid #e8e2da;
+            margin-top: 8px;
+        }
+        body.dark .debt-sidebar .debt-total {
+            border-top-color: #3f3a35;
+        }
+        .debt-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0ebe5;
+            gap: 12px;
+            font-size: 14px;
+        }
+        body.dark .debt-item {
+            border-bottom-color: #3f3a35;
+        }
+        .debt-item:last-child {
+            border-bottom: none;
+        }
+        .debt-item .debt-comment {
+            flex: 1;
+            word-break: break-word;
+        }
+        .debt-item .debt-amount {
+            font-weight: 600;
+            color: #b37a4a;
+            white-space: nowrap;
+            margin-left: 8px;
+        }
+        .debt-item .debt-del {
+            background: none;
+            border: none;
+            color: #b35e5e;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 4px;
+            opacity: 0.5;
+            transition: 0.2s;
+        }
+        .debt-item .debt-del:hover {
+            opacity: 1;
+        }
+        .debt-input-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .debt-input-row input[type="text"] {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 14px;
+            border-radius: 40px;
+            border: 1px solid #ddd;
+            background: #f9f6f2;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        body.dark .debt-input-row input[type="text"] {
+            background: #3a3530;
+            border-color: #4f4842;
+            color: #e8e0d8;
+        }
+        .debt-input-row input[type="number"] {
+            width: 80px;
+            padding: 10px 12px;
+            border-radius: 40px;
+            border: 1px solid #ddd;
+            background: #f9f6f2;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        body.dark .debt-input-row input[type="number"] {
+            background: #3a3530;
+            border-color: #4f4842;
+            color: #e8e0d8;
+        }
+        .debt-input-row button {
+            background: #d8cdc0;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        body.dark .debt-input-row button {
+            background: #4f4842;
+            color: #e8e0d8;
+        }
+        .debt-input-row button:active {
+            transform: scale(0.96);
+        }
+        .debt-empty {
+            opacity: 0.5;
+            font-size: 14px;
+            text-align: center;
+            padding: 12px 0;
+        }
+        .debt-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .debt-actions button {
+            flex: 1;
+            background: #e8e2da;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        body.dark .debt-actions button {
+            background: #3f3a35;
+            color: #e8e0d8;
+        }
+        .debt-actions button:active {
+            transform: scale(0.96);
+        }
+        .debt-actions .debt-clear {
+            background: #e8d0cc;
+            color: #8f4a4a;
+        }
+        body.dark .debt-actions .debt-clear {
+            background: #4f3535;
+            color: #e0b0b0;
+        }
+        .debt-actions .debt-export {
+            background: #d0dce8;
+            color: #2a4a6a;
+        }
+        body.dark .debt-actions .debt-export {
+            background: #2a3a4a;
+            color: #b0cce0;
+        }
+        .debt-source-label {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 4px;
+            padding-left: 4px;
+        }
+        .debt-remain-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0 4px;
+            border-bottom: 1px dashed #e0d8d0;
+            font-size: 14px;
+        }
+        body.dark .debt-remain-row {
+            border-bottom-color: #3f3a35;
+        }
+        .debt-remain-row .label {
+            opacity: 0.7;
+        }
+        .debt-remain-row .value {
+            font-weight: 600;
+        }
+        .debt-manual-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #f0ebe5;
+        }
+        body.dark .debt-manual-row {
+            border-bottom-color: #3f3a35;
+        }
+        .debt-manual-row .label {
+            opacity: 0.7;
+        }
+        .debt-manual-row .value {
+            font-weight: 600;
+            color: #b37a4a;
+        }
+        /* Firebase статус */
+        .firebase-status {
+            background: #e8e2da;
+            padding: 8px 14px;
+            border-radius: 40px;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        body.dark .firebase-status {
+            background: #3f3a35;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4a7a5a;
+            transition: 0.3s;
+        }
+        .status-dot.saving {
+            background: #b37a4a;
+            animation: pulse 0.5s ease-in-out 2;
+        }
+        .status-dot.error {
+            background: #b35e5e;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.4); }
+        }
+    </style>
+</head>
+<body>
+<div class="main-layout">
+    <div class="main-content">
+        <div class="container">
+            <div class="cat-header">
+                <span class="cat-emoji">🐱</span>
+                <div>
+                    <h1 id="appTitle">Кот-учёт времени</h1>
+                    <div class="sub" id="appSub">план · факт · переработка</div>
+                </div>
+                <div class="header-controls">
+                    <select class="lang-select" id="langSelect">
+                        <option value="ru">🇷🇺 RU</option>
+                        <option value="he">🇮🇱 HE</option>
+                        <option value="ar">🇸🇦 AR</option>
+                        <option value="am">🇪🇹 AM</option>
+                    </select>
+                    <button class="theme-toggle" id="themeToggle">🌙</button>
+                </div>
+            </div>
+
+            <!-- Статус Firebase -->
+            <div class="firebase-status" id="firebaseStatus">
+                <span>🔥</span>
+                <span id="firebaseStatusText">Подключение к Firebase...</span>
+                <span class="status-dot" id="statusDot"></span>
+            </div>
+
+            <!-- Статистика -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="label" id="statWorkedLabel">⏳ Отработано</div>
+                    <div class="value" id="totalHours">0:00</div>
+                    <div class="subval" id="statWorkedSub">за выбранный месяц</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label" id="statOvertimeLabel">🔥 Переработка (накоплено)</div>
+                    <div class="value overtime-positive" id="overtimeAccumulated">0:00</div>
+                    <div class="subval" id="statOvertimeSub">сумма переработок</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label" id="statDeductedLabel">💰 Списано за месяц</div>
+                    <div class="value" id="deductedDisplay">0:00</div>
+                    <div class="subval">
+                        <button class="action-btn" id="deductBtn">➖ <span id="deductBtnText">списать общее</span></button>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="label" id="statRemainLabel">📊 Остаток переработки</div>
+                    <div class="value overtime-positive" id="overtimeRemain">0:00</div>
+                    <div class="subval" id="statRemainSub">накоплено − списано</div>
+                </div>
+            </div>
+
+            <!-- Добавление смены -->
+            <div class="date-picker">
+                <input type="date" id="dateInput" />
+                <div class="time-row">
+                    <label><span id="planLabel">📅 План</span>: <input type="time" id="planStart" value="09:00" step="60" /></label>
+                    <label>➡️ <input type="time" id="planEnd" value="18:00" step="60" /></label>
+                </div>
+                <div class="time-row">
+                    <label><span id="factLabel">📌 Факт (конец)</span>: <input type="time" id="factEnd" step="60" /></label>
+                    <button id="addEntryBtn">➕ <span id="addBtnText">Добавить</span></button>
+                </div>
+                <div style="font-size:12px;opacity:0.6;width:100%;" id="factHint">Если факт не указан — считается по плану</div>
+            </div>
+
+            <!-- Месяца -->
+            <div class="month-selector" id="monthSelector"></div>
+
+            <!-- Список записей -->
+            <div class="entries-list" id="entriesList">
+                <div style="padding:20px;text-align:center;opacity:0.5;" id="noEntriesMsg">Нет записей за этот месяц</div>
+            </div>
+
+            <!-- Действия -->
+            <div class="action-bar">
+                <button id="clearMonthBtn" class="danger">🧹 <span id="clearBtnText">Очистить месяц</span></button>
+                <button id="exportBtn">📄 <span id="exportBtnText">Экспорт CSV</span></button>
+                <button id="backupBtn" class="backup">💾 <span id="backupBtnText">Резервная копия</span></button>
+                <button id="restoreBtn" class="backup">📂 <span id="restoreBtnText">Восстановить</span></button>
+                <input type="file" id="restoreFileInput" class="file-input-hidden" accept=".json" />
+            </div>
+
+            <div class="footer-note" id="footerNote">🐾 данные в облаке · переработка накапливается при работе сверх плана</div>
+        </div>
+    </div>
+
+    <!-- Блок задолженности -->
+    <div class="debt-sidebar" id="debtSidebar">
+        <h3>📋 <span id="debtTitle">Задолженность работодателя</span></h3>
+        
+        <div class="debt-remain-row">
+            <span class="label" id="debtRemainLabel">📊 Остаток переработки</span>
+            <span class="value overtime-positive" id="debtRemainValue">0:00</span>
+        </div>
+        
+        <div id="manualHoursList">
+            <div class="debt-manual-row" style="border-bottom: none; opacity:0.5; font-size:13px; padding:4px 0;" id="manualEmptyLabel">Нет ручных часов</div>
+        </div>
+        
+        <div class="debt-total" id="debtTotal">
+            <span style="font-size:16px; opacity:0.7; font-weight:400;" id="debtTotalLabel">Общая задолженность</span><br>
+            <span id="debtTotalValue">0:00</span>
+        </div>
+        
+        <div style="margin-top:12px; padding-top:12px; border-top: 2px solid #e8e2da;">
+            <div style="font-size:13px; opacity:0.7; margin-bottom:6px;" id="manualAddLabel">➕ Добавить ручные часы</div>
+            <div class="debt-input-row">
+                <input type="text" id="manualComment" placeholder="📝 Описание..." />
+                <input type="number" id="manualAmount" placeholder="мин" min="1" />
+                <button id="manualAddBtn">➕</button>
+            </div>
+        </div>
+
+        <div class="debt-actions">
+            <button id="debtExportBtn" class="debt-export">📄 <span id="debtExportText">Экспорт</span></button>
+            <button id="debtClearBtn" class="debt-clear">🗑 <span id="debtClearText">Очистить всё</span></button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ===== FIREBASE КОНФИГУРАЦИЯ (ваши данные) =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+            authDomain: "taxi-ai-app-69628.firebaseapp.com",
+            projectId: "taxi-ai-app-69628",
+            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+            messagingSenderId: "952357992434",
+            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+            measurementId: "G-Z9NJFSSXH6"
+        };
+
+        // Инициализация Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ===== ЯЗЫКИ (ваши переводы) =====
+        const LANGUAGES = {
+            ru: {
+                title: 'Кот-учёт времени',
+                sub: 'план · факт · переработка',
+                worked: '⏳ Отработано',
+                workedSub: 'за выбранный месяц',
+                overtime: '🔥 Переработка (накоплено)',
+                overtimeSub: 'сумма переработок',
+                deducted: '💰 Списано за месяц',
+                deductBtn: 'списать общее',
+                remain: '📊 Остаток переработки',
+                remainSub: 'накоплено − списано',
+                plan: '📅 План',
+                fact: '📌 Факт (конец)',
+                add: 'Добавить',
+                factHint: 'Если факт не указан — считается по плану',
+                clear: 'Очистить месяц',
+                export: 'Экспорт CSV',
+                backup: 'Резервная копия',
+                restore: 'Восстановить',
+                footer: '🐾 данные в облаке · переработка накапливается при работе сверх плана',
+                noEntries: 'Нет записей за этот месяц',
+                closed: 'закрыт',
+                deductDay: 'Списать переработку за этот день',
+                edit: 'Редактировать',
+                delete: 'Удалить',
+                deleteConfirm: 'Удалить запись?',
+                clearConfirm: 'Удалить все записи за {month}?',
+                noOvertimeDay: 'За этот день нет доступной переработки для списания.',
+                noOvertimeGeneral: 'Нет доступной переработки для списания.',
+                deductPrompt: 'Сколько минут списать за этот день? (доступно {available})',
+                deductGeneralPrompt: 'Сколько минут списать? (доступно {available})',
+                invalidNumber: 'Введите положительное число минут или время в формате ЧЧ:ММ.',
+                invalidFormat: 'Неверный формат. Используйте ЧЧ:ММ (например 17:30)',
+                restoreSuccess: 'Восстановление выполнено!',
+                restoreError: 'Ошибка при восстановлении: {error}',
+                fillDate: 'Выберите дату',
+                fillTime: 'Укажите плановое время',
+                noEntriesMonth: 'Нет записей за этот месяц.',
+                deductAvailable: 'доступно {available}',
+                debtTitle: 'Задолженность работодателя',
+                debtRemainLabel: '📊 Остаток переработки',
+                manualEmpty: 'Нет ручных часов',
+                manualAdd: '➕ Добавить ручные часы',
+                manualPlaceholder: '📝 Описание...',
+                debtExport: 'Экспорт',
+                debtClear: 'Очистить всё',
+                debtClearConfirm: 'Удалить все ручные часы?',
+                debtDeleteConfirm: 'Удалить этот пункт?',
+                debtAddEmpty: 'Введите описание и сумму',
+                debtTotalLabel: 'Общая задолженность',
+                debtExportTitle: 'Задолженность работодателя',
+                debtExportRemain: 'Остаток переработки',
+                debtExportManual: 'Ручные часы',
+                debtExportTotal: 'Общая сумма',
+                firebaseConnecting: 'Подключение к Firebase...',
+                firebaseConnected: '☁️ Данные в облаке',
+                firebaseError: '❌ Ошибка подключения'
+            },
+            he: {
+                title: '🐱 חתול-מעקב זמן',
+                sub: 'תכנון · ביצוע · שעות נוספות',
+                worked: '⏳ שעות עבודה',
+                workedSub: 'בחודש הנבחר',
+                overtime: '🔥 שעות נוספות (צבורות)',
+                overtimeSub: 'סך השעות הנוספות',
+                deducted: '💰 נוכו בחודש',
+                deductBtn: 'לנכות כללי',
+                remain: '📊 יתרת שעות נוספות',
+                remainSub: 'צבורות − נוכו',
+                plan: '📅 תכנון',
+                fact: '📌 בפועל (סיום)',
+                add: 'הוסף',
+                factHint: 'אם לא צוין בפועל — מחושב לפי תכנון',
+                clear: 'נקה חודש',
+                export: 'ייצוא CSV',
+                backup: 'גיבוי',
+                restore: 'שחזור',
+                footer: '🐾 נתונים בענן · שעות נוספות מצטברות בעבודה מעבר לתכנון',
+                noEntries: 'אין רשומות לחודש זה',
+                closed: 'סגור',
+                deductDay: 'נכה שעות נוספות ליום זה',
+                edit: 'ערוך',
+                delete: 'מחק',
+                deleteConfirm: 'למחוק רשומה?',
+                clearConfirm: 'למחוק כל הרשומות לחודש {month}?',
+                noOvertimeDay: 'אין שעות נוספות זמינות לניכוי ליום זה.',
+                noOvertimeGeneral: 'אין שעות נוספות זמינות לניכוי.',
+                deductPrompt: 'כמה דקות לנכות ליום זה? (זמין {available})',
+                deductGeneralPrompt: 'כמה דקות לנכות? (זמין {available})',
+                invalidNumber: 'הזן מספר חיובי של דקות או זמן בפורמט HH:MM.',
+                invalidFormat: 'פורמט לא תקין. השתמש ב-HH:MM (למשל 17:30)',
+                restoreSuccess: 'השחזור הושלם!',
+                restoreError: 'שגיאה בשחזור: {error}',
+                fillDate: 'בחר תאריך',
+                fillTime: 'ציין זמן מתוכנן',
+                noEntriesMonth: 'אין רשומות לחודש זה.',
+                deductAvailable: 'זמין {available}',
+                debtTitle: 'חוב המעסיק',
+                debtRemainLabel: '📊 יתרת שעות נוספות',
+                manualEmpty: 'אין שעות ידניות',
+                manualAdd: '➕ הוסף שעות ידניות',
+                manualPlaceholder: '📝 תיאור...',
+                debtExport: 'ייצוא',
+                debtClear: 'נקה הכל',
+                debtClearConfirm: 'למחוק כל השעות הידניות?',
+                debtDeleteConfirm: 'למחוק פריט זה?',
+                debtAddEmpty: 'הזן תיאור וסכום',
+                debtTotalLabel: 'סך החוב',
+                debtExportTitle: 'חוב המעסיק',
+                debtExportRemain: 'יתרת שעות נוספות',
+                debtExportManual: 'שעות ידניות',
+                debtExportTotal: 'סך הכל',
+                firebaseConnecting: 'מתחבר ל-Firebase...',
+                firebaseConnected: '☁️ נתונים בענן',
+                firebaseError: '❌ שגיאת חיבור'
+            },
+            ar: {
+                title: '🐱 قط-تتبع الوقت',
+                sub: 'خطة · واقع · ساعات إضافية',
+                worked: '⏳ ساعات العمل',
+                workedSub: 'للشهر المحدد',
+                overtime: '🔥 الساعات الإضافية (المتراكمة)',
+                overtimeSub: 'مجموع الساعات الإضافية',
+                deducted: '💰 تم الخصم هذا الشهر',
+                deductBtn: 'خصم عام',
+                remain: '📊 رصيد الساعات الإضافية',
+                remainSub: 'المتراكم − المخصوم',
+                plan: '📅 الخطة',
+                fact: '📌 الواقع (النهاية)',
+                add: 'إضافة',
+                factHint: 'إذا لم يتم تحديد الواقع — يحسب حسب الخطة',
+                clear: 'مسح الشهر',
+                export: 'تصدير CSV',
+                backup: 'نسخة احتياطية',
+                restore: 'استعادة',
+                footer: '🐾 بيانات في السحابة · تتراكم الساعات الإضافية عند العمل فوق الخطة',
+                noEntries: 'لا توجد سجلات لهذا الشهر',
+                closed: 'مغلق',
+                deductDay: 'خصم الساعات الإضافية لهذا اليوم',
+                edit: 'تعديل',
+                delete: 'حذف',
+                deleteConfirm: 'حذف السجل؟',
+                clearConfirm: 'حذف جميع السجلات لشهر {month}؟',
+                noOvertimeDay: 'لا توجد ساعات إضافية متاحة للخصم لهذا اليوم.',
+                noOvertimeGeneral: 'لا توجد ساعات إضافية متاحة للخصم.',
+                deductPrompt: 'كم دقيقة تريد خصمها لهذا اليوم؟ (متاح {available})',
+                deductGeneralPrompt: 'كم دقيقة تريد خصمها؟ (متاح {available})',
+                invalidNumber: 'أدخل عددًا موجبًا من الدقائق أو الوقت بصيغة HH:MM.',
+                invalidFormat: 'صيغة غير صحيحة. استخدم HH:MM (مثال 17:30)',
+                restoreSuccess: 'تمت الاستعادة بنجاح!',
+                restoreError: 'خطأ في الاستعادة: {error}',
+                fillDate: 'اختر تاريخًا',
+                fillTime: 'حدد الوقت المخطط',
+                noEntriesMonth: 'لا توجد سجلات لهذا الشهر.',
+                deductAvailable: 'متاح {available}',
+                debtTitle: 'ديون صاحب العمل',
+                debtRemainLabel: '📊 رصيد الساعات الإضافية',
+                manualEmpty: 'لا توجد ساعات يدوية',
+                manualAdd: '➕ أضف ساعات يدوية',
+                manualPlaceholder: '📝 وصف...',
+                debtExport: 'تصدير',
+                debtClear: 'مسح الكل',
+                debtClearConfirm: 'حذف جميع الساعات اليدوية؟',
+                debtDeleteConfirm: 'حذف هذا العنصر؟',
+                debtAddEmpty: 'أدخل وصفًا ومبلغًا',
+                debtTotalLabel: 'إجمالي الديون',
+                debtExportTitle: 'ديون صاحب العمل',
+                debtExportRemain: 'رصيد الساعات الإضافية',
+                debtExportManual: 'ساعات يدوية',
+                debtExportTotal: 'المجموع',
+                firebaseConnecting: 'جاري الاتصال بـ Firebase...',
+                firebaseConnected: '☁️ البيانات في السحابة',
+                firebaseError: '❌ خطأ في الاتصال'
+            },
+            am: {
+                title: '🐱 የጊዜ ክትትል ድመት',
+                sub: 'እቅድ · ተጨባጭ · ተጨማሪ ሰዓት',
+                worked: '⏳ የስራ ሰዓት',
+                workedSub: 'ለተመረጠው ወር',
+                overtime: '🔥 ተጨማሪ ሰዓት (የተከማቸ)',
+                overtimeSub: 'አጠቃላይ ተጨማሪ ሰዓት',
+                deducted: '💰 በዚህ ወር የተቀነሰ',
+                deductBtn: 'አጠቃላይ መቀነስ',
+                remain: '📊 ቀሪ ተጨማሪ ሰዓት',
+                remainSub: 'የተከማቸ − የተቀነሰ',
+                plan: '📅 እቅድ',
+                fact: '📌 ተጨባጭ (መጨረሻ)',
+                add: 'ጨምር',
+                factHint: 'ተጨባጭ ካልተገለጸ — በእቅድ ይሰላል',
+                clear: 'ወር አጽዳ',
+                export: 'CSV ወደ ውጭ',
+                backup: 'ምትኬ',
+                restore: 'መልስ',
+                footer: '🐾 መረጃ በደመና · ከእቅድ በላይ ሲሰሩ ተጨማሪ ሰዓት ይከማቻል',
+                noEntries: 'ለዚህ ወር ምንም መዝገቦች የሉም',
+                closed: 'ተዘግቷል',
+                deductDay: 'ለዚህ ቀን ተጨማሪ ሰዓት ቀንስ',
+                edit: 'አርትዕ',
+                delete: 'ሰርዝ',
+                deleteConfirm: 'መዝገቡን መሰረዝ?',
+                clearConfirm: 'ሁሉንም መዝገቦች ለ{month} መሰረዝ?',
+                noOvertimeDay: 'ለዚህ ቀን ለመቀነስ ምንም ተጨማሪ ሰዓት የለም.',
+                noOvertimeGeneral: 'ለመቀነስ ምንም ተጨማሪ ሰዓት የለም.',
+                deductPrompt: 'ለዚህ ቀን ስንት ደቂቃ መቀነስ ይፈልጋሉ? (የሚገኘው {available})',
+                deductGeneralPrompt: 'ስንት ደቂቃ መቀነስ ይፈልጋሉ? (የሚገኘው {available})',
+                invalidNumber: 'አዎንታዊ የደቂቃ ቁጥር ወይም ሰዓት በHH:MM ቅርጸት ያስገቡ።',
+                invalidFormat: 'የተሳሳተ ቅርጸት። HH:MM ይጠቀሙ (ለምሳሌ 17:30)',
+                restoreSuccess: 'መልሶ ማስገባት ተሳካ!',
+                restoreError: 'መልሶ በማስገባት ላይ ስህተት: {error}',
+                fillDate: 'ቀን ይምረጡ',
+                fillTime: 'የታቀደ ሰዓት ይምረጡ',
+                noEntriesMonth: 'ለዚህ ወር ምንም መዝገቦች የሉም።',
+                deductAvailable: 'የሚገኘው {available}',
+                debtTitle: 'የአሰሪው ዕዳ',
+                debtRemainLabel: '📊 ቀሪ ተጨማሪ ሰዓት',
+                manualEmpty: 'ምንም በእጅ የገቡ ሰዓቶች የሉም',
+                manualAdd: '➕ በእጅ የገቡ ሰዓቶች ጨምር',
+                manualPlaceholder: '📝 መግለጫ...',
+                debtExport: 'ወደ ውጭ',
+                debtClear: 'ሁሉንም አጽዳ',
+                debtClearConfirm: 'ሁሉንም በእጅ የገቡ ሰዓቶች መሰረዝ?',
+                debtDeleteConfirm: 'ይህን ንጥል መሰረዝ?',
+                debtAddEmpty: 'መግለጫ እና መጠን ያስገቡ',
+                debtTotalLabel: 'ጠቅላላ ዕዳ',
+                debtExportTitle: 'የአሰሪው ዕዳ',
+                debtExportRemain: 'ቀሪ ተጨማሪ ሰዓት',
+                debtExportManual: 'በእጅ የገቡ ሰዓቶች',
+                debtExportTotal: 'ጠቅላላ',
+                firebaseConnecting: 'ወደ Firebase በመገናኘት ላይ...',
+                firebaseConnected: '☁️ መረጃ በደመና',
+                firebaseError: '❌ የግንኙነት ስህተት'
+            }
+        };
+
+        // ===== ОСНОВНАЯ ЛОГИКА =====
+        let currentLang = 'ru';
+        let entries = [];
+        let currentMonth = '';
+        let deductedMinutes = 0;
+        let manualHours = [];
+        let isSaving = false;
+        let userId = 'default';
+
+        // DOM элементы
+        const dateInput = document.getElementById('dateInput');
+        const planStart = document.getElementById('planStart');
+        const planEnd = document.getElementById('planEnd');
+        const factEnd = document.getElementById('factEnd');
+        const addBtn = document.getElementById('addEntryBtn');
+        const entriesList = document.getElementById('entriesList');
+        const monthSelector = document.getElementById('monthSelector');
+        const langSelect = document.getElementById('langSelect');
+        const totalHoursEl = document.getElementById('totalHours');
+        const overtimeAccumulatedEl = document.getElementById('overtimeAccumulated');
+        const deductedDisplayEl = document.getElementById('deductedDisplay');
+        const overtimeRemainEl = document.getElementById('overtimeRemain');
+        const deductBtn = document.getElementById('deductBtn');
+        const clearMonthBtn = document.getElementById('clearMonthBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const backupBtn = document.getElementById('backupBtn');
+        const restoreBtn = document.getElementById('restoreBtn');
+        const restoreFileInput = document.getElementById('restoreFileInput');
+        const themeToggle = document.getElementById('themeToggle');
+        const debtRemainValue = document.getElementById('debtRemainValue');
+        const debtTotalValue = document.getElementById('debtTotalValue');
+        const manualHoursList = document.getElementById('manualHoursList');
+        const manualComment = document.getElementById('manualComment');
+        const manualAmount = document.getElementById('manualAmount');
+        const manualAddBtn = document.getElementById('manualAddBtn');
+        const debtExportBtn = document.getElementById('debtExportBtn');
+        const debtClearBtn = document.getElementById('debtClearBtn');
+        const firebaseStatusText = document.getElementById('firebaseStatusText');
+        const statusDot = document.getElementById('statusDot');
+
+        // ===== ФУНКЦИИ ПЕРЕВОДА =====
+        function t(key, params = {}) {
+            let text = LANGUAGES[currentLang]?.[key] || LANGUAGES.ru[key] || key;
+            for (const [k, v] of Object.entries(params)) {
+                text = text.replace(`{${k}}`, v);
+            }
+            return text;
+        }
+
+        function applyLanguage() {
+            document.getElementById('appTitle').textContent = t('title');
+            document.getElementById('appSub').textContent = t('sub');
+            document.getElementById('statWorkedLabel').textContent = t('worked');
+            document.getElementById('statWorkedSub').textContent = t('workedSub');
+            document.getElementById('statOvertimeLabel').textContent = t('overtime');
+            document.getElementById('statOvertimeSub').textContent = t('overtimeSub');
+            document.getElementById('statDeductedLabel').textContent = t('deducted');
+            document.getElementById('deductBtnText').textContent = t('deductBtn');
+            document.getElementById('statRemainLabel').textContent = t('remain');
+            document.getElementById('statRemainSub').textContent = t('remainSub');
+            document.getElementById('planLabel').textContent = t('plan');
+            document.getElementById('factLabel').textContent = t('fact');
+            document.getElementById('addBtnText').textContent = t('add');
+            document.getElementById('factHint').textContent = t('factHint');
+            document.getElementById('clearBtnText').textContent = t('clear');
+            document.getElementById('exportBtnText').textContent = t('export');
+            document.getElementById('backupBtnText').textContent = t('backup');
+            document.getElementById('restoreBtnText').textContent = t('restore');
+            document.getElementById('footerNote').textContent = t('footer');
+            document.getElementById('debtTitle').textContent = t('debtTitle');
+            document.getElementById('debtRemainLabel').textContent = t('debtRemainLabel');
+            document.getElementById('debtExportText').textContent = t('debtExport');
+            document.getElementById('debtClearText').textContent = t('debtClear');
+            document.getElementById('manualAddLabel').textContent = t('manualAdd');
+            document.getElementById('debtTotalLabel').textContent = t('debtTotalLabel');
+            manualComment.placeholder = t('manualPlaceholder');
+            updateFirebaseStatus();
+            renderDebts();
+        }
+
+        // ===== FIREBASE ФУНКЦИИ =====
+        function updateFirebaseStatus(status = 'connecting') {
+            if (status === 'connected') {
+                firebaseStatusText.textContent = t('firebaseConnected');
+                statusDot.className = 'status-dot';
+                statusDot.style.background = '#4a7a5a';
+            } else if (status === 'error') {
+                firebaseStatusText.textContent = t('firebaseError');
+                statusDot.className = 'status-dot error';
+            } else {
+                firebaseStatusText.textContent = t('firebaseConnecting');
+                statusDot.className = 'status-dot saving';
+            }
+        }
+
+        function setSavingStatus(saving) {
+            isSaving = saving;
+            if (saving) {
+                statusDot.className = 'status-dot saving';
+            } else {
+                statusDot.className = 'status-dot';
+                statusDot.style.background = '#4a7a5a';
+            }
+        }
+
+        // Загрузка данных из Firebase
+        async function loadFromFirebase() {
+            try {
+                updateFirebaseStatus('connecting');
+                
+                const snapshot = await database.ref(`users/${userId}`).once('value');
+                const data = snapshot.val();
+                
+                if (data) {
+                    entries = data.entries || [];
+                    deductedMinutes = data.deducted || 0;
+                    manualHours = data.manual || [];
+                    
+                    // Загружаем настройки
+                    if (data.settings) {
+                        if (data.settings.theme) {
+                            localStorage.setItem('catTheme', data.settings.theme);
+                        }
+                        if (data.settings.lang) {
+                            currentLang = data.settings.lang;
+                            langSelect.value = data.settings.lang;
+                        }
+                    }
+                } else {
+                    // Первый запуск — создаем пустые данные
+                    entries = [];
+                    deductedMinutes = 0;
+                    manualHours = [];
+                }
+                
+                updateFirebaseStatus('connected');
+                applyTheme();
+                applyLanguage();
+                renderEntries();
+                updateStats();
+                return true;
+            } catch (error) {
+                console.error('Ошибка загрузки из Firebase:', error);
+                updateFirebaseStatus('error');
+                alert('❌ Ошибка подключения к Firebase. Проверьте интернет.');
+                return false;
+            }
+        }
+
+        // Сохранение данных в Firebase
+        async function saveToFirebase() {
+            if (isSaving) return;
+            
+            try {
+                setSavingStatus(true);
+                
+                const data = {
+                    entries: entries,
+                    deducted: deductedMinutes,
+                    manual: manualHours,
+                    settings: {
+                        theme: document.body.classList.contains('dark') ? 'dark' : 'light',
+                        lang: currentLang
+                    },
+                    updatedAt: new Date().toISOString()
+                };
+                
+                await database.ref(`users/${userId}`).set(data);
+                
+                setSavingStatus(false);
+                return true;
+            } catch (error) {
+                console.error('Ошибка сохранения в Firebase:', error);
+                setSavingStatus(false);
+                alert('❌ Ошибка сохранения. Проверьте интернет.');
+                return false;
+            }
+        }
+
+        // ===== ОСНОВНАЯ ЛОГИКА (ваши функции) =====
+        function getMonthKey(dateStr) {
+            return dateStr.substring(0, 7);
+        }
+
+        function parseTimeToMinutes(timeStr) {
+            if (!timeStr) return 0;
+            const parts = timeStr.split(':');
+            if (parts.length < 2) return 0;
+            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+
+        function formatMinutesToHM(minutes) {
+            const sign = minutes < 0 ? '-' : '';
+            const abs = Math.abs(minutes);
+            const h = Math.floor(abs / 60);
+            const m = Math.round(abs % 60);
+            return sign + String(h).padStart(1,'0') + ':' + String(m).padStart(2,'0');
+        }
+
+        function calcShiftMinutes(startTime, endTime) {
+            if (!endTime) return 0;
+            let diff = endTime - startTime;
+            if (diff < 0) diff += 1440;
+            return diff;
+        }
+
+        function getEntriesForMonth(monthKey) {
+            return entries.filter(e => getMonthKey(e.date) === monthKey);
+        }
+
+        function calcEntryTimes(entry) {
+            const planStartMin = parseTimeToMinutes(entry.planStart);
+            const planEndMin = parseTimeToMinutes(entry.planEnd);
+            const planDuration = calcShiftMinutes(planStartMin, planEndMin);
+
+            let factDuration = planDuration;
+            let overtime = 0;
+            let hasFact = false;
+
+            if (entry.factEnd && entry.factEnd.trim() !== '') {
+                hasFact = true;
+                const factEndMin = parseTimeToMinutes(entry.factEnd);
+                factDuration = calcShiftMinutes(planStartMin, factEndMin);
+                overtime = Math.max(0, factDuration - planDuration);
+            }
+
+            return {
+                planDuration,
+                factDuration: hasFact ? factDuration : planDuration,
+                overtime: overtime,
+                hasFact
+            };
+        }
+
+        function getAvailableDayOvertime(entry) {
+            const times = calcEntryTimes(entry);
+            return times.overtime - (entry.deductedMinutes || 0);
+        }
+
+        function getTotalMinutesForMonth(monthKey) {
+            const monthEntries = getEntriesForMonth(monthKey);
+            let total = 0;
+            for (const e of monthEntries) {
+                const times = calcEntryTimes(e);
+                total += times.factDuration;
+            }
+            return total;
+        }
+
+        function getOvertimeAccumulatedForMonth(monthKey) {
+            const monthEntries = getEntriesForMonth(monthKey);
+            let total = 0;
+            for (const e of monthEntries) {
+                const times = calcEntryTimes(e);
+                total += times.overtime;
+            }
+            return total;
+        }
+
+        function getOvertimeRemainForMonth(monthKey) {
+            const overtimeAccum = getOvertimeAccumulatedForMonth(monthKey);
+            const monthEntries = getEntriesForMonth(monthKey);
+            let dayDeductedSum = 0;
+            for (const e of monthEntries) {
+                dayDeductedSum += (e.deductedMinutes || 0);
+            }
+            return overtimeAccum - deductedMinutes - dayDeductedSum;
+        }
+
+        // ===== ОТРИСОВКА =====
+        function renderEntries() {
+            const monthEntries = getEntriesForMonth(currentMonth);
+            if (monthEntries.length === 0) {
+                entriesList.innerHTML = `<div style="padding:20px;text-align:center;opacity:0.5;">${t('noEntries')}</div>`;
+                return;
+            }
+            const sorted = [...monthEntries].sort((a,b) => {
+                if (a.date < b.date) return -1;
+                if (a.date > b.date) return 1;
+                return (a.planStart || '00:00').localeCompare(b.planStart || '00:00');
+            });
+
+            let html = '';
+            for (const entry of sorted) {
+                const times = calcEntryTimes(entry);
+                const available = getAvailableDayOvertime(entry);
+                const isClosed = available <= 0 && times.overtime > 0;
+                const dateObj = new Date(entry.date + 'T00:00:00');
+                const dateStr = dateObj.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit' });
+                const planStr = `${entry.planStart} → ${entry.planEnd}`;
+                const factStr = entry.factEnd ? `→ ${entry.factEnd}` : '(по плану)';
+                const durationStr = formatMinutesToHM(times.factDuration);
+                let overtimeStr = '';
+                if (times.overtime > 0) {
+                    overtimeStr = `🔥 +${formatMinutesToHM(times.overtime)}`;
+                    const deductedStr = entry.deductedMinutes ? ` (списано ${formatMinutesToHM(entry.deductedMinutes)})` : '';
+                    const remainStr = available > 0 ? ` остаток ${formatMinutesToHM(available)}` : ' ✅ ' + t('closed');
+                    overtimeStr += `${deductedStr}${remainStr}`;
+                }
+                const closedClass = isClosed ? 'closed-day' : '';
+                html += `
+                    <div class="entry-item ${closedClass}" data-id="${entry.id}">
+                        <div class="entry-info">
+                            <span class="date">${dateStr}</span>
+                            <span class="time">${planStr} ${factStr}</span>
+                            <div>
+                                <span class="hours">${durationStr}</span>
+                                ${overtimeStr ? `<span class="overtime-badge">${overtimeStr}</span>` : ''}
+                                ${isClosed ? `<span class="closed-badge">✅ ${t('closed')}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="entry-actions">
+                            ${times.overtime > 0 && available > 0 ? `<button class="day-deduct-btn" data-id="${entry.id}" title="${t('deductDay')}">📅</button>` : ''}
+                            <button class="edit-btn" data-id="${entry.id}" title="${t('edit')}">✏️</button>
+                            <button class="del-btn" data-id="${entry.id}" title="${t('delete')}">🗑</button>
+                        </div>
+                    </div>
+                `;
+            }
+            entriesList.innerHTML = html;
+
+            document.querySelectorAll('.del-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    if (confirm(t('deleteConfirm'))) {
+                        deleteEntry(id);
+                    }
+                });
+            });
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    editEntry(id);
+                });
+            });
+            document.querySelectorAll('.day-deduct-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    deductDayOvertime(id);
+                });
+            });
+        }
+
+        function renderMonthSelector() {
+            const months = [];
+            const now = new Date();
+            for (let i = 0; i < 3; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2,'0');
+                months.push(key);
+            }
+            let html = '';
+            for (const m of months) {
+                const active = m === currentMonth ? 'active' : '';
+                const parts = m.split('-');
+                const label = parts[1] + '/' + parts[0];
+                html += `<button class="${active}" data-month="${m}">${label}</button>`;
+            }
+            monthSelector.innerHTML = html;
+            document.querySelectorAll('.month-selector button').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentMonth = this.dataset.month;
+                    renderMonthSelector();
+                    renderEntries();
+                    updateStats();
+                });
+            });
+        }
+
+        function updateStats() {
+            const totalMin = getTotalMinutesForMonth(currentMonth);
+            totalHoursEl.textContent = formatMinutesToHM(totalMin);
+
+            const overtimeAccum = getOvertimeAccumulatedForMonth(currentMonth);
+            overtimeAccumulatedEl.textContent = formatMinutesToHM(overtimeAccum);
+            overtimeAccumulatedEl.style.color = overtimeAccum > 0 ? '#b37a4a' : '#4a7a5a';
+
+            const monthEntries = getEntriesForMonth(currentMonth);
+            let dayDeductedSum = 0;
+            for (const e of monthEntries) {
+                dayDeductedSum += (e.deductedMinutes || 0);
+            }
+            const totalDeducted = deductedMinutes + dayDeductedSum;
+            deductedDisplayEl.textContent = formatMinutesToHM(totalDeducted);
+
+            const remain = overtimeAccum - totalDeducted;
+            overtimeRemainEl.textContent = formatMinutesToHM(remain);
+            overtimeRemainEl.style.color = remain > 0 ? '#b37a4a' : (remain === 0 ? '#4a7a5a' : '#b35e5e');
+
+            renderDebts();
+        }
+
+        // ===== ДЕЙСТВИЯ С ДАННЫМИ =====
+        async function addEntry(dateStr, planStartStr, planEndStr, factEndStr) {
+            if (!dateStr || !planStartStr || !planEndStr) {
+                alert(t('fillDate') + ' / ' + t('fillTime'));
+                return;
+            }
+            const id = Date.now() + '_' + Math.random().toString(36).substr(2,4);
+            const entry = {
+                id: id,
+                date: dateStr,
+                planStart: planStartStr,
+                planEnd: planEndStr,
+                factEnd: factEndStr && factEndStr.trim() !== '' ? factEndStr.trim() : null,
+                deductedMinutes: 0
+            };
+            entries.push(entry);
+            await saveToFirebase();
+            renderEntries();
+            updateStats();
+        }
+
+        async function deleteEntry(id) {
+            entries = entries.filter(e => e.id !== id);
+            await saveToFirebase();
+            renderEntries();
+            updateStats();
+        }
+
+        async function editEntry(id) {
+            const entry = entries.find(e => e.id === id);
+            if (!entry) return;
+            const newFactEnd = prompt(
+                'Введите фактическое время окончания (ЧЧ:ММ)\n' +
+                'или оставьте пустым для расчёта по плану:',
+                entry.factEnd || ''
+            );
+            if (newFactEnd === null) return;
+            if (newFactEnd.trim() === '') {
+                entry.factEnd = null;
+            } else {
+                if (/^\d{1,2}:\d{2}$/.test(newFactEnd.trim())) {
+                    entry.factEnd = newFactEnd.trim();
+                } else {
+                    alert(t('invalidFormat'));
+                    return;
+                }
+            }
+            await saveToFirebase();
+            renderEntries();
+            updateStats();
+        }
+
+        async function deductDayOvertime(id) {
+            const entry = entries.find(e => e.id === id);
+            if (!entry) return;
+            const available = getAvailableDayOvertime(entry);
+            if (available <= 0) {
+                alert(t('noOvertimeDay'));
+                return;
+            }
+            const msg = t('deductPrompt', { available: formatMinutesToHM(available) });
+            const minutes = prompt(msg, formatMinutesToHM(available));
+            if (minutes === null) return;
+            
+            let val;
+            if (minutes.includes(':')) {
+                const parts = minutes.split(':');
+                val = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+            } else {
+                val = parseInt(minutes);
+            }
+            
+            if (isNaN(val) || val <= 0) {
+                alert(t('invalidNumber'));
+                return;
+            }
+            const toDeduct = Math.min(val, available);
+            entry.deductedMinutes = (entry.deductedMinutes || 0) + toDeduct;
+            await saveToFirebase();
+            renderEntries();
+            updateStats();
+        }
+
+        async function clearMonth() {
+            const monthLabel = currentMonth;
+            if (!confirm(t('clearConfirm', { month: monthLabel }))) return;
+            entries = entries.filter(e => getMonthKey(e.date) !== currentMonth);
+            deductedMinutes = 0;
+            await saveToFirebase();
+            renderEntries();
+            updateStats();
+        }
+
+        async function deductOvertimeGeneral() {
+            const overtimeAccum = getOvertimeAccumulatedForMonth(currentMonth);
+            const monthEntries = getEntriesForMonth(currentMonth);
+            let dayDeductedSum = 0;
+            for (const e of monthEntries) {
+                dayDeductedSum += (e.deductedMinutes || 0);
+            }
+            const available = overtimeAccum - deductedMinutes - dayDeductedSum;
+            if (available <= 0) {
+                alert(t('noOvertimeGeneral'));
+                return;
+            }
+            const msg = t('deductGeneralPrompt', { available: formatMinutesToHM(available) });
+            const minutes = prompt(msg, '30');
+            if (minutes === null) return;
+            const val = parseInt(minutes);
+            if (isNaN(val) || val <= 0) {
+                alert(t('invalidNumber'));
+                return;
+            }
+            const toDeduct = Math.min(val, available);
+            deductedMinutes += toDeduct;
+            await saveToFirebase();
+            updateStats();
+        }
+
+        function exportCSV() {
+            const monthEntries = getEntriesForMonth(currentMonth);
+            if (monthEntries.length === 0) {
+                alert(t('noEntriesMonth'));
+                return;
+            }
+            let csv = 'Дата,План начало,План конец,Факт конец,Длительность(мин),Длительность(чч:мм),Переработка(мин),Переработка(чч:мм),Списано(мин),Списано(чч:мм),Остаток(мин),Остаток(чч:мм)\n';
+            for (const e of monthEntries) {
+                const times = calcEntryTimes(e);
+                const available = getAvailableDayOvertime(e);
+                const deducted = e.deductedMinutes || 0;
+                csv += `${e.date},${e.planStart},${e.planEnd},${e.factEnd || ''},${times.factDuration},${formatMinutesToHM(times.factDuration)},${times.overtime},${formatMinutesToHM(times.overtime)},${deducted},${formatMinutesToHM(deducted)},${available},${formatMinutesToHM(available)}\n`;
+            }
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `timesheet_${currentMonth}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        function backupData() {
+            const data = { entries, deductedMinutes, manualHours, exportedAt: new Date().toISOString() };
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `cat_backup_${new Date().toISOString().slice(0,10)}.json`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        async function restoreData(file) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.entries && Array.isArray(data.entries)) {
+                        entries = data.entries;
+                    }
+                    if (data.deductedMinutes !== undefined) deductedMinutes = data.deductedMinutes;
+                    if (data.manualHours) manualHours = data.manualHours;
+                    await saveToFirebase();
+                    renderEntries();
+                    updateStats();
+                    alert(t('restoreSuccess'));
+                } catch(err) {
+                    alert(t('restoreError', { error: err.message }));
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function applyTheme() {
+            const dark = localStorage.getItem('catTheme') === 'dark';
+            document.body.classList.toggle('dark', dark);
+            themeToggle.textContent = dark ? '☀️' : '🌙';
+        }
+
+        function toggleTheme() {
+            const dark = document.body.classList.toggle('dark');
+            localStorage.setItem('catTheme', dark ? 'dark' : 'light');
+            themeToggle.textContent = dark ? '☀️' : '🌙';
+            saveToFirebase();
+        }
+
+        // ===== ЗАДОЛЖЕННОСТЬ =====
+        function renderDebts() {
+            const remain = getOvertimeRemainForMonth(currentMonth);
+            debtRemainValue.textContent = formatMinutesToHM(remain);
+            debtRemainValue.style.color = remain > 0 ? '#b37a4a' : (remain === 0 ? '#4a7a5a' : '#b35e5e');
+
+            let manualTotal = 0;
+            if (manualHours.length === 0) {
+                manualHoursList.innerHTML = `<div class="debt-manual-row" style="border-bottom: none; opacity:0.5; font-size:13px; padding:4px 0;">${t('manualEmpty')}</div>`;
+            } else {
+                let html = '';
+                for (let i = 0; i < manualHours.length; i++) {
+                    const m = manualHours[i];
+                    manualTotal += m.amount;
+                    html += `
+                        <div class="debt-manual-row">
+                            <span class="label">${m.comment}</span>
+                            <span class="value">${formatMinutesToHM(m.amount)} <button class="debt-del" data-index="${i}" title="${t('delete')}">✕</button></span>
+                        </div>
+                    `;
+                }
+                manualHoursList.innerHTML = html;
+                document.querySelectorAll('#manualHoursList .debt-del').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const idx = parseInt(this.dataset.index);
+                        if (confirm(t('debtDeleteConfirm'))) {
+                            manualHours.splice(idx, 1);
+                            saveToFirebase();
+                            renderDebts();
+                        }
+                    });
+                });
+            }
+
+            const totalDebt = remain + manualTotal;
+            debtTotalValue.textContent = formatMinutesToHM(totalDebt);
+            debtTotalValue.style.color = totalDebt > 0 ? '#b37a4a' : '#4a7a5a';
+        }
+
+        async function addManualHour() {
+            const comment = manualComment.value.trim();
+            const amount = parseInt(manualAmount.value);
+            if (!comment || isNaN(amount) || amount <= 0) {
+                alert(t('debtAddEmpty'));
+                return;
+            }
+            manualHours.push({ comment, amount });
+            manualComment.value = '';
+            manualAmount.value = '';
+            await saveToFirebase();
+            renderDebts();
+        }
+
+        async function clearManualHours() {
+            if (manualHours.length === 0) return;
+            if (confirm(t('debtClearConfirm'))) {
+                manualHours = [];
+                await saveToFirebase();
+                renderDebts();
+            }
+        }
+
+        function exportDebts() {
+            const remain = getOvertimeRemainForMonth(currentMonth);
+            let manualTotal = 0;
+            let text = `=== ${t('debtExportTitle')} ===\n\n`;
+            text += `${t('debtExportRemain')}: ${formatMinutesToHM(remain)}\n\n`;
+            
+            if (manualHours.length > 0) {
+                text += `--- ${t('debtExportManual')} ---\n`;
+                for (const m of manualHours) {
+                    text += `• ${m.comment}: ${formatMinutesToHM(m.amount)}\n`;
+                    manualTotal += m.amount;
+                }
+                text += `\n`;
+            }
+            
+            const total = remain + manualTotal;
+            text += `${t('debtExportTotal')}: ${formatMinutesToHM(total)}`;
+            
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `debts_${new Date().toISOString().slice(0,10)}.txt`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        // ===== ИНИЦИАЛИЗАЦИЯ =====
+        async function init() {
+            // Получаем или создаем ID пользователя
+            userId = localStorage.getItem('catUserId');
+            if (!userId) {
+                userId = 'user_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('catUserId', userId);
+            }
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            currentMonth = `${year}-${month}`;
+            dateInput.value = now.toISOString().split('T')[0];
+            if (!planStart.value) planStart.value = '09:00';
+            if (!planEnd.value) planEnd.value = '18:00';
+
+            const savedLang = localStorage.getItem('catLang');
+            if (savedLang && LANGUAGES[savedLang]) {
+                currentLang = savedLang;
+                langSelect.value = savedLang;
+            }
+
+            applyTheme();
+            applyLanguage();
+            renderMonthSelector();
+            
+            // Загружаем данные из Firebase
+            await loadFromFirebase();
+            
+            renderEntries();
+            updateStats();
+        }
+
+        // ===== ОБРАБОТЧИКИ =====
+        addBtn.addEventListener('click', function() {
+            const date = dateInput.value;
+            const start = planStart.value;
+            const end = planEnd.value;
+            const fact = factEnd.value;
+            if (!date) { alert(t('fillDate')); return; }
+            if (!start || !end) { alert(t('fillTime')); return; }
+            addEntry(date, start, end, fact);
+            factEnd.value = '';
+        });
+
+        clearMonthBtn.addEventListener('click', clearMonth);
+        deductBtn.addEventListener('click', deductOvertimeGeneral);
+        exportBtn.addEventListener('click', exportCSV);
+        backupBtn.addEventListener('click', backupData);
+        restoreBtn.addEventListener('click', function() {
+            restoreFileInput.click();
+        });
+        restoreFileInput.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                restoreData(this.files[0]);
+                this.value = '';
+            }
+        });
+        themeToggle.addEventListener('click', toggleTheme);
+
+        langSelect.addEventListener('change', function() {
+            currentLang = this.value;
+            localStorage.setItem('catLang', currentLang);
+            applyLanguage();
+            renderEntries();
+            updateStats();
+            saveToFirebase();
+        });
+
+        manualAddBtn.addEventListener('click', addManualHour);
+        manualComment.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') addManualHour();
+        });
+        manualAmount.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') addManualHour();
+        });
+        debtClearBtn.addEventListener('click', clearManualHours);
+        debtExportBtn.addEventListener('click', exportDebts);
+
+        // Запускаем
+        init();
+    })();
+</script>
+</body>
+</html>
