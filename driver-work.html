@@ -529,7 +529,7 @@
 
         <!-- ===== HEADER ===== -->
         <div class="header">
-            <button class="back-btn" id="backBtn">←</button>
+            <button class="back-btn" id="backBtn" title="Выйти из режима работы">←</button>
             <div class="header-title">🚖 <span>Работа</span></div>
             <span class="status-badge online" id="statusBadge">🟢 Онлайн</span>
         </div>
@@ -1636,13 +1636,18 @@
         });
 
         el.backBtn.addEventListener('click', () => {
+            // При выходе — перенаправляем в кабинет (или на вход, если кабинет не нужен)
+            // Если у вас в cabinet.html нет автоматического редиректа, то можно оставить cabinet.html.
+            // Если есть редирект, замените 'cabinet.html' на 'index.html'
             if (activeOrder && !confirm('У вас активный заказ. Выйти?')) return;
             if (watchId) navigator.geolocation.clearWatch(watchId);
             if (unsubOrders) unsubOrders();
             if (unsubUser) unsubUser();
             clearOffer();
             stopTracking();
-            window.location.href = 'cabinet.html';
+            // ПЕРЕНАПРАВЛЕНИЕ НА КАБИНЕТ ИЛИ НА ВХОД
+            window.location.href = 'cabinet.html'; // если кабинет есть и работает
+            // window.location.href = 'index.html'; // если хотите выходить на страницу входа
         });
 
         // ============================================================
@@ -1682,6 +1687,7 @@
 
         console.log('✅ WHEEL — Работа водителя (финальная) загружена');
         console.log('📌 Команды: diagnostic(), forceAI()');
+        console.log('📌 Кнопка "Назад" ведёт на cabinet.html. Если нужно на вход — замените в коде.');
     </script>
 
 </body>
