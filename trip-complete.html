@@ -13,7 +13,7 @@
     </script>
 
     <style>
-        /* ===== Стили (без изменений) ===== */
+        /* ===== Стили (те же, что были + добавлен новый класс) ===== */
         * {
             margin: 0;
             padding: 0;
@@ -87,6 +87,7 @@
         .trip-info .row {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 6px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
         }
@@ -126,6 +127,50 @@
         .trip-info .row.final .value {
             font-size: 20px;
             color: #ffb000;
+        }
+        .trip-info .row.manual-row {
+            border-top: 2px solid rgba(255, 180, 0, 0.15);
+            padding-top: 8px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .trip-info .row.manual-row .label {
+            flex: 1;
+        }
+        .trip-info .row.manual-row .input-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .trip-info .row.manual-row input {
+            width: 110px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            text-align: right;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .trip-info .row.manual-row input:focus {
+            border-color: #ffb000;
+            outline: none;
+        }
+        .trip-info .row.manual-row .btn-sm {
+            padding: 4px 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            background: rgba(255, 180, 0, 0.15);
+            color: #ffb000;
+        }
+        .trip-info .row.manual-row .btn-sm:hover {
+            background: rgba(255, 180, 0, 0.25);
         }
 
         .payment-section {
@@ -261,6 +306,10 @@
             .trip-info .row .value {
                 font-size: 13px;
             }
+            .trip-info .row.manual-row input {
+                width: 90px;
+                font-size: 13px;
+            }
         }
     </style>
 </head>
@@ -283,9 +332,19 @@
             <div class="row"><span class="label">📍 Откуда</span><span class="value" id="pickupAddress">—</span></div>
             <div class="row"><span class="label">🏁 Куда</span><span class="value" id="destinationAddress">—</span></div>
             <div class="row"><span class="label">📏 Плановое расстояние</span><span class="value blue" id="plannedDistance">—</span></div>
-            <div class="row"><span class="label">📏 Реальное расстояние</span><span class="value blue" id="realDistance">—</span></div>
+            <div class="row"><span class="label">📏 Реальное расстояние (GPS)</span><span class="value blue" id="realDistance">—</span></div>
             <div class="row"><span class="label">💵 Предварительная цена</span><span class="value gold" id="plannedPrice">—</span></div>
             <div class="row final"><span class="label">💰 Итоговая стоимость</span><span class="value gold" id="finalPrice">—</span></div>
+
+            <!-- ===== НОВЫЙ БЛОК: РУЧНАЯ КОРРЕКЦИЯ ===== -->
+            <div class="row manual-row">
+                <span class="label">✏️ Скорректировать сумму</span>
+                <div class="input-group">
+                    <input type="number" id="manualPrice" step="0.5" min="0" placeholder="Факт">
+                    <button class="btn-sm" id="applyManualBtn">Применить</button>
+                </div>
+            </div>
+
             <div class="row"><span class="label">💳 Комиссия (10%)</span><span class="value red" id="commission">—</span></div>
             <div class="row"><span class="label">🚗 Заработок водителя</span><span class="value green" id="driverEarn">—</span></div>
             <div class="row"><span class="label">👤 Клиент</span><span class="value" id="clientName">—</span></div>
@@ -340,6 +399,7 @@
         let orderData = null,
             orderId = null,
             selectedMethod = 'wallet';
+        let currentFinalPrice = 0; // актуальная итоговая цена (может быть скорректирована)
 
         const $ = id => document.getElementById(id);
 
@@ -358,6 +418,21 @@
             msg.style.display = 'block';
             clearTimeout(msg._timeout);
             msg._timeout = setTimeout(() => msg.style.display = 'none', 5000);
+        }
+
+        // ============================================================
+        // ОБНОВЛЕНИЕ ИТОГОВЫХ СУММ
+        // ============================================================
+        function updateTotals(finalPrice) {
+            const commission = finalPrice * 0.10;
+            const driverEarn = finalPrice - commission;
+            $('finalPrice').textContent = formatPrice(finalPrice);
+            $('commission').textContent = formatPrice(commission);
+            $('driverEarn').textContent = formatPrice(driverEarn);
+            currentFinalPrice = finalPrice;
+            // Сохраняем в глобальную переменную для использования при оплате
+            window._orderData = window._orderData || {};
+            window._orderData.finalPrice = finalPrice;
         }
 
         // ============================================================
@@ -398,23 +473,36 @@
                     $('plannedDistance').textContent = formatDistance(orderData.distance);
                     $('realDistance').textContent = formatDistance(realDist);
                     $('plannedPrice').textContent = formatPrice(orderData.price);
-                    $('finalPrice').textContent = formatPrice(finalPrice);
-
-                    const commission = finalPrice * 0.10;
-                    $('commission').textContent = formatPrice(commission);
-                    $('driverEarn').textContent = formatPrice(finalPrice - commission);
 
                     $('clientName').textContent = orderData.clientName || 'Клиент';
                     $('driverName').textContent = orderData.driverName || 'Водитель';
 
-                    // Сохраняем данные для оплаты
+                    // Устанавливаем итоговую цену
+                    updateTotals(finalPrice);
                     window._orderData = { ...orderData, realDistance: realDist, finalPrice };
+
+                    // Очищаем поле ручной коррекции
+                    $('manualPrice').value = '';
                 })
                 .catch(err => {
                     showMessage('❌ Ошибка загрузки заказа: ' + err.message, 'error');
                     console.error(err);
                 });
         }
+
+        // ============================================================
+        // РУЧНАЯ КОРРЕКЦИЯ СУММЫ
+        // ============================================================
+        $('applyManualBtn').addEventListener('click', function() {
+            const manual = parseFloat($('manualPrice').value);
+            if (!manual || manual <= 0) {
+                showMessage('⚠️ Введите корректную сумму (больше 0)', 'warning');
+                return;
+            }
+            // Обновляем итоговую цену
+            updateTotals(manual);
+            showMessage(`✅ Сумма скорректирована: ${formatPrice(manual)}`, 'success');
+        });
 
         // ============================================================
         // ВЫБОР СПОСОБА ОПЛАТЫ
@@ -439,8 +527,9 @@
             this.disabled = true;
             this.textContent = '⏳ Обработка...';
 
-            // Берём финальную цену из загруженных данных
-            const finalPrice = window._orderData?.finalPrice || orderData.finalPrice || orderData.price || 0;
+            // Берём финальную цену (скорректированную или расчётную)
+            const finalPrice = window._orderData?.finalPrice || currentFinalPrice || orderData.finalPrice || orderData
+                .price || 0;
             const commission = finalPrice * 0.10;
             const driverEarn = finalPrice - commission;
 
@@ -480,7 +569,8 @@
                 .then(() => db.collection('orders').doc(orderId).update({
                     paymentMethod: selectedMethod,
                     paymentCompleted: true,
-                    paidAt: firebase.firestore.FieldValue.serverTimestamp()
+                    paidAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    finalPrice: finalPrice // сохраняем скорректированную сумму
                 }))
                 .then(() => {
                     showMessage('✅ Оплата подтверждена!', 'success');
@@ -510,7 +600,7 @@
             loadOrder();
         });
 
-        console.log('✅ trip-complete.html (исправленный) загружен');
+        console.log('✅ trip-complete.html (с корректировкой) загружен');
     </script>
 
 </body>
