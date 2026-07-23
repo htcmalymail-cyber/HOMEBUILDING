@@ -4,324 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Завершение поездки — WHEEL</title>
-
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js">
-    </script>
-
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
-        /* ===== Стили (те же, что были + добавлен новый класс) ===== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0c10;
-            min-height: 100vh;
-            padding: 12px;
-            color: #fff;
-        }
-        .container {
-            max-width: 480px;
-            margin: 0 auto;
-        }
-        .header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            background: rgba(18, 22, 28, 0.85);
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            margin-bottom: 12px;
-        }
-        .header-title {
-            font-size: 20px;
-            font-weight: 700;
-        }
-        .back-btn {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #8899aa;
-            font-size: 16px;
-            cursor: pointer;
-            font-family: inherit;
-        }
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
-            color: #fff;
-        }
+        /* ===== Стили (полностью из рабочей версии) ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0c10; min-height: 100vh; padding: 12px; color: #fff; }
+        .container { max-width: 480px; margin: 0 auto; }
+        .header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(18,22,28,0.85); border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 12px; }
+        .header-title { font-size: 20px; font-weight: 700; }
+        .back-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.05); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #8899aa; font-size: 16px; cursor: pointer; font-family: inherit; }
+        .back-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
-        .status-icon {
-            text-align: center;
-            margin: 8px 0 16px;
-        }
-        .status-icon .icon {
-            font-size: 56px;
-            display: block;
-        }
-        .status-icon .label {
-            font-size: 14px;
-            color: #4ade80;
-            font-weight: 600;
-        }
+        .status-icon { text-align: center; margin: 8px 0 16px; }
+        .status-icon .icon { font-size: 56px; display: block; }
+        .status-icon .label { font-size: 14px; color: #4ade80; font-weight: 600; }
 
-        .trip-info {
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 16px;
-            padding: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            margin-bottom: 16px;
-        }
-        .trip-info .row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-        }
-        .trip-info .row:last-child {
-            border-bottom: none;
-        }
-        .trip-info .row .label {
-            font-size: 13px;
-            color: #8899aa;
-        }
-        .trip-info .row .value {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e0e8f0;
-            text-align: right;
-        }
-        .trip-info .row .value.gold {
-            color: #ffb000;
-        }
-        .trip-info .row .value.green {
-            color: #4ade80;
-        }
-        .trip-info .row .value.blue {
-            color: #60a5fa;
-        }
-        .trip-info .row .value.red {
-            color: #ff6b6b;
-        }
-        .trip-info .row.final {
-            border-bottom: 2px solid rgba(255, 180, 0, 0.15);
-            padding-bottom: 8px;
-        }
-        .trip-info .row.final .label {
-            font-weight: 600;
-            color: #e0e8f0;
-        }
-        .trip-info .row.final .value {
-            font-size: 20px;
-            color: #ffb000;
-        }
-        .trip-info .row.manual-row {
-            border-top: 2px solid rgba(255, 180, 0, 0.15);
-            padding-top: 8px;
-            margin-top: 4px;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-        .trip-info .row.manual-row .label {
-            flex: 1;
-        }
-        .trip-info .row.manual-row .input-group {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
-        .trip-info .row.manual-row input {
-            width: 110px;
-            padding: 4px 8px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            text-align: right;
-            font-size: 14px;
-            font-family: inherit;
-        }
-        .trip-info .row.manual-row input:focus {
-            border-color: #ffb000;
-            outline: none;
-        }
-        .trip-info .row.manual-row .btn-sm {
-            padding: 4px 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: inherit;
-            background: rgba(255, 180, 0, 0.15);
-            color: #ffb000;
-        }
-        .trip-info .row.manual-row .btn-sm:hover {
-            background: rgba(255, 180, 0, 0.25);
-        }
+        .trip-info { background: rgba(255,255,255,0.02); border-radius: 16px; padding: 16px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 16px; }
+        .trip-info .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .trip-info .row:last-child { border-bottom: none; }
+        .trip-info .row .label { font-size: 13px; color: #8899aa; }
+        .trip-info .row .value { font-size: 14px; font-weight: 600; color: #e0e8f0; text-align: right; }
+        .trip-info .row .value.gold { color: #ffb000; }
+        .trip-info .row .value.green { color: #4ade80; }
+        .trip-info .row .value.blue { color: #60a5fa; }
+        .trip-info .row .value.red { color: #ff6b6b; }
+        .trip-info .row.final { border-bottom: 2px solid rgba(255,180,0,0.15); padding-bottom: 8px; }
+        .trip-info .row.final .label { font-weight: 600; color: #e0e8f0; }
+        .trip-info .row.final .value { font-size: 20px; color: #ffb000; }
+        .trip-info .row.manual-row { border-top: 2px solid rgba(255,180,0,0.15); padding-top: 8px; margin-top: 4px; flex-wrap: wrap; gap: 6px; }
+        .trip-info .row.manual-row .label { flex: 1; }
+        .trip-info .row.manual-row .input-group { display: flex; gap: 6px; align-items: center; }
+        .trip-info .row.manual-row input { width: 110px; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; text-align: right; font-size: 14px; font-family: inherit; }
+        .trip-info .row.manual-row input:focus { border-color: #ffb000; outline: none; }
+        .trip-info .row.manual-row .btn-sm { padding: 4px 12px; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; background: rgba(255,180,0,0.15); color: #ffb000; }
+        .trip-info .row.manual-row .btn-sm:hover { background: rgba(255,180,0,0.25); }
 
-        .payment-section {
-            margin-bottom: 16px;
-        }
-        .payment-section .title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e0e8f0;
-            margin-bottom: 10px;
-        }
-        .payment-options {
-            display: flex;
-            gap: 10px;
-        }
-        .payment-option {
-            flex: 1;
-            padding: 12px;
-            border-radius: 14px;
-            border: 1.5px solid rgba(255, 255, 255, 0.06);
-            background: rgba(255, 255, 255, 0.02);
-            text-align: center;
-            cursor: pointer;
-            font-family: inherit;
-            color: #8899aa;
-            transition: all 0.3s;
-        }
-        .payment-option .icon {
-            font-size: 28px;
-            display: block;
-        }
-        .payment-option .name {
-            font-size: 13px;
-            font-weight: 500;
-        }
-        .payment-option:hover {
-            background: rgba(255, 255, 255, 0.04);
-            border-color: rgba(255, 255, 255, 0.1);
-        }
-        .payment-option.active {
-            border-color: #ffb000;
-            background: rgba(255, 180, 0, 0.06);
-            color: #ffb000;
-        }
+        .payment-section { margin-bottom: 16px; }
+        .payment-section .title { font-size: 14px; font-weight: 600; color: #e0e8f0; margin-bottom: 10px; }
+        .payment-options { display: flex; gap: 10px; }
+        .payment-option { flex: 1; padding: 12px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); text-align: center; cursor: pointer; font-family: inherit; color: #8899aa; transition: all 0.3s; }
+        .payment-option .icon { font-size: 28px; display: block; }
+        .payment-option .name { font-size: 13px; font-weight: 500; }
+        .payment-option:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); }
+        .payment-option.active { border-color: #ffb000; background: rgba(255,180,0,0.06); color: #ffb000; }
 
-        .btn-group {
-            display: flex;
-            gap: 10px;
-        }
-        .btn {
-            flex: 1;
-            padding: 14px;
-            border: none;
-            border-radius: 14px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.3s;
-        }
-        .btn:active {
-            transform: scale(0.97);
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .btn-success {
-            background: linear-gradient(135deg, #4ade80, #22c55e);
-            color: #0a0c10;
-        }
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: #8899aa;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-        }
+        .btn-group { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 14px; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.3s; }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-success { background: linear-gradient(135deg, #4ade80, #22c55e); color: #0a0c10; }
+        .btn-secondary { background: rgba(255,255,255,0.05); color: #8899aa; border: 1px solid rgba(255,255,255,0.06); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.08); color: #fff; }
 
-        .message {
-            margin-top: 12px;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 500;
-            display: none;
-            text-align: center;
-        }
-        .message.error {
-            background: rgba(239, 68, 68, 0.08);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.12);
-            display: block;
-        }
-        .message.success {
-            background: rgba(74, 222, 128, 0.08);
-            color: #4ade80;
-            border: 1px solid rgba(74, 222, 128, 0.12);
-            display: block;
-        }
+        .message { margin-top: 12px; padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 500; display: none; text-align: center; }
+        .message.error { background: rgba(239,68,68,0.08); color: #ef4444; border: 1px solid rgba(239,68,68,0.12); display: block; }
+        .message.success { background: rgba(74,222,128,0.08); color: #4ade80; border: 1px solid rgba(74,222,128,0.12); display: block; }
 
-        .home-indicator {
-            margin-top: 16px;
-            width: 100px;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.06);
-            border-radius: 20px;
-            margin: 16px auto 0;
-        }
+        .home-indicator { margin-top: 16px; width: 100px; height: 3px; background: rgba(255,255,255,0.06); border-radius: 20px; margin: 16px auto 0; }
 
         @media (max-width: 420px) {
-            .header-title {
-                font-size: 18px;
-            }
-            .status-icon .icon {
-                font-size: 44px;
-            }
-            .payment-option {
-                padding: 10px;
-            }
-            .payment-option .icon {
-                font-size: 22px;
-            }
-            .btn {
-                font-size: 14px;
-                padding: 12px;
-            }
-            .trip-info .row .label {
-                font-size: 12px;
-            }
-            .trip-info .row .value {
-                font-size: 13px;
-            }
-            .trip-info .row.manual-row input {
-                width: 90px;
-                font-size: 13px;
-            }
+            .header-title { font-size: 18px; }
+            .status-icon .icon { font-size: 44px; }
+            .payment-option { padding: 10px; }
+            .payment-option .icon { font-size: 22px; }
+            .btn { font-size: 14px; padding: 12px; }
+            .trip-info .row .label { font-size: 12px; }
+            .trip-info .row .value { font-size: 13px; }
+            .trip-info .row.manual-row input { width: 90px; font-size: 13px; }
         }
     </style>
 </head>
 <body>
-
     <div class="container">
-
         <div class="header">
             <button class="back-btn" id="backBtn">←</button>
             <span class="header-title">💳 Завершение поездки</span>
         </div>
-
         <div class="status-icon">
             <span class="icon">✅</span>
             <span class="label">Поездка завершена!</span>
@@ -336,7 +96,7 @@
             <div class="row"><span class="label">💵 Предварительная цена</span><span class="value gold" id="plannedPrice">—</span></div>
             <div class="row final"><span class="label">💰 Итоговая стоимость</span><span class="value gold" id="finalPrice">—</span></div>
 
-            <!-- ===== НОВЫЙ БЛОК: РУЧНАЯ КОРРЕКЦИЯ ===== -->
+            <!-- ===== БЛОК РУЧНОЙ КОРРЕКЦИИ ===== -->
             <div class="row manual-row">
                 <span class="label">✏️ Скорректировать сумму</span>
                 <div class="input-group">
@@ -372,13 +132,10 @@
 
         <div class="message" id="message"></div>
         <div class="home-indicator"></div>
-
     </div>
 
     <script>
-        // ============================================================
-        // FIREBASE КОНФИГ
-        // ============================================================
+        // ===== FIREBASE CONFIG =====
         const firebaseConfig = {
             apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
             authDomain: "taxi-ai-app-69628.firebaseapp.com",
@@ -388,29 +145,22 @@
             appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
             measurementId: "G-Z9NJFSSXH6"
         };
-
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // ============================================================
-        // STATE
-        // ============================================================
-        let orderData = null,
-            orderId = null,
-            selectedMethod = 'wallet';
-        let currentFinalPrice = 0; // актуальная итоговая цена (может быть скорректирована)
+        // ===== STATE =====
+        let orderData = null, orderId = null, selectedMethod = 'wallet';
+        let currentFinalPrice = 0;
 
         const $ = id => document.getElementById(id);
 
         function formatPrice(p) { return (p || 0).toFixed(2) + ' ₪'; }
-
         function formatDistance(km) {
             if (!km) return '—';
             if (km < 1) return (km * 1000).toFixed(0) + ' м';
             return km.toFixed(2) + ' км';
         }
-
         function showMessage(text, type = 'info') {
             const msg = $('message');
             msg.className = 'message ' + type;
@@ -420,9 +170,7 @@
             msg._timeout = setTimeout(() => msg.style.display = 'none', 5000);
         }
 
-        // ============================================================
-        // ОБНОВЛЕНИЕ ИТОГОВЫХ СУММ
-        // ============================================================
+        // ===== UPDATE TOTALS =====
         function updateTotals(finalPrice) {
             const commission = finalPrice * 0.10;
             const driverEarn = finalPrice - commission;
@@ -430,18 +178,14 @@
             $('commission').textContent = formatPrice(commission);
             $('driverEarn').textContent = formatPrice(driverEarn);
             currentFinalPrice = finalPrice;
-            // Сохраняем в глобальную переменную для использования при оплате
             window._orderData = window._orderData || {};
             window._orderData.finalPrice = finalPrice;
         }
 
-        // ============================================================
-        // ЗАГРУЗКА ЗАКАЗА
-        // ============================================================
+        // ===== LOAD ORDER =====
         function loadOrder() {
             const params = new URLSearchParams(window.location.search);
             orderId = params.get('orderId');
-
             if (!orderId) {
                 showMessage('❌ Не указан заказ', 'error');
                 return;
@@ -455,9 +199,7 @@
                     }
                     orderData = doc.data();
 
-                    // Если realDistance нет, используем плановое расстояние
                     const realDist = orderData.realDistance || orderData.distance || 0;
-                    // Если finalPrice нет, пересчитываем по плановой цене и реальному расстоянию
                     let finalPrice = orderData.finalPrice;
                     if (!finalPrice && orderData.price && orderData.distance) {
                         const factor = realDist / orderData.distance;
@@ -466,22 +208,17 @@
                         finalPrice = orderData.price || 0;
                     }
 
-                    // Заполняем поля
                     $('orderId').textContent = '#' + orderId.substring(0, 8);
                     $('pickupAddress').textContent = orderData.pickup?.address || '—';
                     $('destinationAddress').textContent = orderData.destination?.address || '—';
                     $('plannedDistance').textContent = formatDistance(orderData.distance);
                     $('realDistance').textContent = formatDistance(realDist);
                     $('plannedPrice').textContent = formatPrice(orderData.price);
-
                     $('clientName').textContent = orderData.clientName || 'Клиент';
                     $('driverName').textContent = orderData.driverName || 'Водитель';
 
-                    // Устанавливаем итоговую цену
                     updateTotals(finalPrice);
                     window._orderData = { ...orderData, realDistance: realDist, finalPrice };
-
-                    // Очищаем поле ручной коррекции
                     $('manualPrice').value = '';
                 })
                 .catch(err => {
@@ -490,23 +227,18 @@
                 });
         }
 
-        // ============================================================
-        // РУЧНАЯ КОРРЕКЦИЯ СУММЫ
-        // ============================================================
+        // ===== MANUAL CORRECTION =====
         $('applyManualBtn').addEventListener('click', function() {
             const manual = parseFloat($('manualPrice').value);
             if (!manual || manual <= 0) {
                 showMessage('⚠️ Введите корректную сумму (больше 0)', 'warning');
                 return;
             }
-            // Обновляем итоговую цену
             updateTotals(manual);
             showMessage(`✅ Сумма скорректирована: ${formatPrice(manual)}`, 'success');
         });
 
-        // ============================================================
-        // ВЫБОР СПОСОБА ОПЛАТЫ
-        // ============================================================
+        // ===== PAYMENT METHOD =====
         document.querySelectorAll('.payment-option').forEach(el => {
             el.addEventListener('click', function() {
                 document.querySelectorAll('.payment-option').forEach(e => e.classList.remove('active'));
@@ -515,26 +247,20 @@
             });
         });
 
-        // ============================================================
-        // ПОДТВЕРЖДЕНИЕ ОПЛАТЫ
-        // ============================================================
+        // ===== CONFIRM PAYMENT =====
         $('confirmBtn').addEventListener('click', function() {
             if (!orderData || !orderId) {
                 showMessage('❌ Нет данных о заказе', 'error');
                 return;
             }
-
             this.disabled = true;
             this.textContent = '⏳ Обработка...';
 
-            // Берём финальную цену (скорректированную или расчётную)
-            const finalPrice = window._orderData?.finalPrice || currentFinalPrice || orderData.finalPrice || orderData
-                .price || 0;
+            const finalPrice = window._orderData?.finalPrice || currentFinalPrice || orderData.finalPrice || orderData.price || 0;
             const commission = finalPrice * 0.10;
             const driverEarn = finalPrice - commission;
 
             const ops = [];
-
             ops.push(db.collection('transactions').add({
                 userId: orderData.clientId,
                 orderId: orderId,
@@ -543,7 +269,6 @@
                 description: `Оплата поездки #${orderId.substring(0,8)} (${selectedMethod === 'wallet' ? 'кошелёк' : 'наличные'})`,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }));
-
             ops.push(db.collection('transactions').add({
                 userId: orderData.driverId,
                 orderId: orderId,
@@ -552,12 +277,10 @@
                 description: `Заработок #${orderId.substring(0,8)} (90%)`,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }));
-
             ops.push(db.collection('users').doc(orderData.driverId).update({
                 balance: firebase.firestore.FieldValue.increment(driverEarn),
                 totalEarned: firebase.firestore.FieldValue.increment(driverEarn)
             }));
-
             if (selectedMethod === 'wallet') {
                 ops.push(db.collection('users').doc(orderData.clientId).update({
                     balance: firebase.firestore.FieldValue.increment(-finalPrice),
@@ -570,7 +293,7 @@
                     paymentMethod: selectedMethod,
                     paymentCompleted: true,
                     paidAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    finalPrice: finalPrice // сохраняем скорректированную сумму
+                    finalPrice: finalPrice
                 }))
                 .then(() => {
                     showMessage('✅ Оплата подтверждена!', 'success');
@@ -586,22 +309,16 @@
                 });
         });
 
-        // ============================================================
-        // НАЗАД
-        // ============================================================
+        // ===== BACK =====
         $('backBtn').addEventListener('click', () => window.location.href = 'driver-work.html');
         $('cancelBtn').addEventListener('click', () => window.location.href = 'driver-work.html');
 
-        // ============================================================
-        // INIT
-        // ============================================================
+        // ===== INIT =====
         auth.onAuthStateChanged(user => {
             if (!user) { window.location.href = 'index.html'; return; }
             loadOrder();
         });
-
-        console.log('✅ trip-complete.html (с корректировкой) загружен');
+        console.log('✅ trip-complete.html (финальная версия) загружен');
     </script>
-
 </body>
 </html>
