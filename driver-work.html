@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        /* ===== Стили (полностью из предыдущей рабочей версии) ===== */
+        /* ===== Все стили без изменений (как в предыдущей версии) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0c10; min-height: 100vh; padding: 10px; color: #fff; }
         .container { max-width: 480px; margin: 0 auto; }
@@ -152,10 +152,12 @@
         let watchId, offerTimer, penaltyTimer;
         let unsubOrders = null, unsubUser = null;
         let routePoints = [], routeLine = null, isTracking = false;
-        let isArrivedToClient = false;
+        let isArrivedToClient = false; // флаг, что водитель подтвердил прибытие к клиенту
 
         const AI_RADIUS_KM = 2.5, OFFER_TIMEOUT = 30, PENALTY_SECONDS = 120;
         const GPS_INTERVAL = 15000, GPS_MIN_DIST = 0.02;
+        const PENALTY_AMOUNT = 7; // штраф за отказ после прибытия к клиенту
+
         const $ = id => document.getElementById(id);
 
         // ===== UTILITY =====
@@ -300,7 +302,7 @@
                             updateOrderMarkers();
                             if (activeOrder.status === 'in_progress' && !isTracking) {
                                 startTracking();
-                                isArrivedToClient = true;
+                                isArrivedToClient = true; // если поездка уже началась, считаем что клиент в машине
                             }
                             if (activeOrder.status === 'assigned') isArrivedToClient = false;
                             $('statusBadge').className = 'status-badge busy';
@@ -503,7 +505,7 @@
             currentOffer = null;
         }
 
-        // ===== PENALTY =====
+        // ===== PENALTY (для отказов) =====
         function startPenalty(seconds) {
             if (isPenaltyActive) return;
             isPenaltyActive = true;
@@ -541,7 +543,7 @@
             }).catch(() => {});
         }
 
-        // ===== ACTIVE ORDER (with real distance) =====
+        // ===== ACTIVE ORDER (с реальным расстоянием и возможностью завершить в любой точке) =====
         function renderActiveOrder(order) {
             const dist = order.distance ? order.distance.toFixed(1) + ' км' : '—';
             let buttons = '', statusDetail = '', steps = '';
@@ -571,7 +573,7 @@
                 }
             } else if (order.status === 'in_progress') {
                 buttons = `
-                    <button class="btn-icon btn-success" id="arriveDestBtn"><span class="icon">✅</span><span class="label">Прибыл к назначению</span></button>
+                    <button class="btn-icon btn-success" id="arriveDestBtn"><span class="icon">✅</span><span class="label">Завершить поездку</span></button>
                     <button class="btn-icon btn-primary" id="navigateDestBtn"><span class="icon">📍</span><span class="label">К назначению</span></button>
                     <button class="btn-icon btn-danger" id="cancelBtn"><span class="icon">✖</span><span class="label">Отменить</span></button>
                 `;
@@ -610,7 +612,11 @@
         function arriveToClient(order) {
             if (!driverLocation || !order.pickup?.lat) { showToast('⚠️ Нет данных о местоположении', 'warning'); return; }
             const dist = haversineDistance(driverLocation.lat, driverLocation.lng, order.pickup.lat, order.pickup.lng);
-            if (dist > 0.2) { showToast(`⚠️ Вы далеко от клиента (${(dist*1000).toFixed(0)} м)`, 'warning'); return; }
+            // Проверка на близость к клиенту (200 м) – для подтверждения, что водитель действительно приехал
+            if (dist > 0.2) {
+                showToast(`⚠️ Вы далеко от клиента (${(dist*1000).toFixed(0)} м). Подойдите ближе.`, 'warning');
+                return;
+            }
             isArrivedToClient = true;
             showToast('✅ Вы прибыли к клиенту! Нажмите "Начать поездку"', 'success');
             renderActiveOrder(order);
@@ -625,25 +631,34 @@
                 showToast('🚗 Поездка началась!', 'success');
                 startTracking();
                 openWaze(order.destination?.lat, order.destination?.lng, 'назначению');
-                isArrivedToClient = false;
+                isArrivedToClient = false; // сбрасываем, чтобы не мешало
             }).catch(err => showToast('❌ Ошибка: ' + err.message, 'error'));
         }
 
+        // ===== ЗАВЕРШЕНИЕ ПОЕЗДКИ (БЕЗ ПРОВЕРКИ РАССТОЯНИЯ) =====
         function arriveToDestination(order) {
-            if (!driverLocation || !order.destination?.lat) { showToast('⚠️ Нет данных о местоположении', 'warning'); return; }
-            const dist = haversineDistance(driverLocation.lat, driverLocation.lng, order.destination.lat, order.destination.lng);
-            if (dist > 0.2) { showToast(`⚠️ Вы далеко от назначения (${(dist*1000).toFixed(0)} м)`, 'warning'); return; }
+            if (!driverLocation) {
+                showToast('⚠️ Нет данных о местоположении', 'warning');
+                return;
+            }
+
+            // Останавливаем трекинг
             stopTracking();
 
+            // Реальное расстояние из трека
             const realDist = calculateRealDistance(routePoints);
-            const factor = realDist / (order.distance || 1);
+            // Если трек пустой или слишком короткий – используем плановое расстояние
+            const finalRealDist = (realDist > 0.1) ? realDist : (order.distance || 0);
+
+            // Пересчитываем цену по реальному расстоянию
+            const factor = finalRealDist / (order.distance || 1);
             const finalPrice = (order.price || 0) * factor;
 
-            // СОХРАНЯЕМ ДАННЫЕ И ЖДЁМ ЗАВЕРШЕНИЯ ПЕРЕД ПЕРЕХОДОМ
+            // Сохраняем в Firebase и переходим на отчёт
             db.collection('orders').doc(order.id).update({
                 status: 'completed',
                 completedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                realDistance: realDist,
+                realDistance: finalRealDist,
                 finalPrice: finalPrice,
                 routePoints: routePoints
             }).then(() => {
@@ -655,16 +670,20 @@
             });
         }
 
+        // ===== ОТМЕНА ЗАКАЗА (с проверкой штрафа, если был подтверждён прибытие к клиенту) =====
         function cancelDriverOrder(order) {
             if (!confirm('⚠️ Отменить поездку?')) return;
             const reason = prompt('Причина отмены:');
             if (reason === null) return;
+
+            // Штраф, если водитель уже подтвердил прибытие к клиенту (isArrivedToClient === true)
+            // или если статус заказа уже in_progress (поездка началась)
             let penalty = 0;
-            if (order.status === 'in_progress') penalty = 7;
-            else if (order.assignedAt) {
-                const t = order.assignedAt.toDate ? order.assignedAt.toDate() : new Date(order.assignedAt);
-                if ((Date.now() - t.getTime()) / 60000 > 2) penalty = 7;
+            if (isArrivedToClient || order.status === 'in_progress') {
+                penalty = PENALTY_AMOUNT;
+                showToast(`⚠️ Будет применён штраф ${formatPrice(penalty)} за отмену после прибытия к клиенту`, 'warning');
             }
+
             db.collection('orders').doc(order.id).update({
                 status: 'cancelled',
                 cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -672,7 +691,13 @@
                 penaltyApplied: penalty,
                 cancelledBy: 'driver'
             }).then(() => {
-                if (penalty > 0) db.collection('users').doc(currentUser.uid).update({ balance: firebase.firestore.FieldValue.increment(-penalty) });
+                if (penalty > 0) {
+                    db.collection('users').doc(currentUser.uid).update({
+                        balance: firebase.firestore.FieldValue.increment(-penalty)
+                    }).then(() => {
+                        showToast(`💰 Штраф ${formatPrice(penalty)} списан`, 'warning');
+                    }).catch(err => console.error('Ошибка списания штрафа:', err));
+                }
                 showToast('❌ Поездка отменена', 'error');
                 stopTracking();
                 isArrivedToClient = false;
@@ -841,9 +866,10 @@
             console.log('Подписка:', unsubOrders ? '✅' : '❌');
             console.log('Трекинг:', isTracking);
             console.log('Точек маршрута:', routePoints.length);
+            console.log('Прибыл к клиенту:', isArrivedToClient);
         };
 
-        console.log('✅ driver-work.html (финальная версия) загружен');
+        console.log('✅ driver-work.html (финальная с гибким завершением) загружен');
         console.log('📌 diagnostic() — состояние');
     </script>
 </body>
