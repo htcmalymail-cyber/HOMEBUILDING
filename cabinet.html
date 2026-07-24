@@ -2,107 +2,355 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Личный кабинет — WHEEL</title>
-    <link rel="stylesheet" href="styles/main.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Кабинет — WHEEL</title>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0c10;
+            min-height: 100vh;
+            padding: 12px;
+            color: #fff;
+        }
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(18, 22, 28, 0.85);
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 12px;
+        }
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .header-title span {
+            color: #ffb000;
+        }
+        .logout-btn {
+            background: rgba(255, 70, 70, 0.08);
+            border: 1px solid rgba(255, 70, 70, 0.15);
+            border-radius: 30px;
+            padding: 6px 16px;
+            color: #ff6b6b;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .logout-btn:hover {
+            background: rgba(255, 70, 70, 0.15);
+        }
+
+        .card {
+            background: rgba(18, 22, 28, 0.85);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 12px;
+        }
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #8899aa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 14px;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-row .label {
+            color: #8899aa;
+        }
+        .info-row .value {
+            font-weight: 600;
+        }
+        .info-row .value.gold {
+            color: #ffb000;
+        }
+        .info-row .value.green {
+            color: #4ade80;
+        }
+        .info-row .value.blue {
+            color: #60a5fa;
+        }
+        .info-row .value.pink {
+            color: #f472b6;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #ffb000, #ff6a00);
+            color: #0a0c10;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #8899aa;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        .flex {
+            display: flex;
+            gap: 8px;
+        }
+        .flex .btn {
+            flex: 1;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-muted {
+            color: #667788;
+            font-size: 12px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(18, 22, 28, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 12px 24px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 9999;
+            max-width: 90%;
+            text-align: center;
+            display: none;
+        }
+        .toast.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .role-badge.driver {
+            background: rgba(255, 180, 0, 0.12);
+            color: #ffb000;
+        }
+        .role-badge.client {
+            background: rgba(96, 165, 250, 0.12);
+            color: #60a5fa;
+        }
+    </style>
 </head>
 <body>
-    <div id="app">
+    <div class="container">
         <div class="header">
-            <div>
-                <h2 id="userName">Загрузка...</h2>
-                <span id="userEmail">email@domain.com</span>
-                <small id="userUid">UID: ...</small>
+            <span class="header-title">🚖 <span>Кабинет</span></span>
+            <button class="logout-btn" id="logoutBtn">🚪 Выйти</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">👤 Профиль</div>
+            <div class="info-row">
+                <span class="label">Имя</span>
+                <span class="value" id="userName">—</span>
             </div>
-            <button id="logoutBtn">🚪 Выйти</button>
+            <div class="info-row">
+                <span class="label">Email</span>
+                <span class="value" id="userEmail">—</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Роль</span>
+                <span class="value" id="userRole">—</span>
+            </div>
+            <div class="info-row">
+                <span class="label">💰 Баланс</span>
+                <span class="value gold" id="userBalance">0 ₪</span>
+            </div>
+            <div class="info-row">
+                <span class="label">⭐ Рейтинг</span>
+                <span class="value blue" id="userRating">0</span>
+            </div>
+            <div class="info-row">
+                <span class="label">🎁 Бонусы (накоплено)</span>
+                <span class="value pink" id="userBonus">0 ₪</span>
+            </div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card"><span>💰 Баланс</span><span id="balance">0 ₽</span></div>
-            <div class="stat-card"><span>⭐ Рейтинг</span><span id="rating">0.0</span></div>
-            <div class="stat-card"><span>🎁 Бонусы</span><span id="bonus">0</span></div>
-            <div class="stat-card"><span>📊 Потрачено</span><span id="totalSpent">0 ₽</span></div>
+        <div id="driverActions" style="display:none;">
+            <button class="btn btn-primary" id="goToWorkBtn">🚗 Перейти к работе</button>
         </div>
 
-        <button id="orderBtn">📍 Заказать такси</button>
+        <div id="clientActions" style="display:none;">
+            <button class="btn btn-primary" id="goToOrderBtn">📍 Заказать такси</button>
+        </div>
 
-        <h3>📋 История операций</h3>
-        <div id="historyList">Загрузка...</div>
+        <button class="btn btn-secondary mt-8" id="refreshBtn">🔄 Обновить данные</button>
     </div>
 
-    <script type="module">
-        import { onAuthChange, logout, getCurrentUser } from './auth.js';
-        import { getUser, subscribeToTransactions } from './db.js';
+    <div class="toast" id="toast">
+        <span id="toastMessage">Сообщение</span>
+    </div>
 
-        // === ЭЛЕМЕНТЫ ===
-        const userNameEl = document.getElementById('userName');
-        const userEmailEl = document.getElementById('userEmail');
-        const userUidEl = document.getElementById('userUid');
-        const balanceEl = document.getElementById('balance');
-        const ratingEl = document.getElementById('rating');
-        const bonusEl = document.getElementById('bonus');
-        const totalSpentEl = document.getElementById('totalSpent');
-        const historyList = document.getElementById('historyList');
+    <script>
+        // ===== FIREBASE CONFIG =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
+            authDomain: "taxi-ai-app-69628.firebaseapp.com",
+            projectId: "taxi-ai-app-69628",
+            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
+            messagingSenderId: "952357992434",
+            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
+            measurementId: "G-Z9NJFSSXH6"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-        let unsubTx = null;
+        // ===== STATE =====
+        let currentUser = null;
+        let userData = null;
 
-        function updateUI(data) {
-            balanceEl.textContent = (data.balance || 0).toFixed(2) + ' ₽';
-            ratingEl.textContent = (data.rating || 0).toFixed(1);
-            bonusEl.textContent = data.bonus || 0;
-            totalSpentEl.textContent = (data.totalSpent || 0).toFixed(2) + ' ₽';
+        const $ = id => document.getElementById(id);
+        const toast = $('toast');
+        const toastMessage = $('toastMessage');
+
+        function showToast(text, type = 'info') {
+            toast.className = 'toast show';
+            toastMessage.textContent = text;
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => toast.className = 'toast', 3000);
         }
 
-        function renderTransactions(transactions) {
-            if (!transactions || transactions.length === 0) {
-                historyList.innerHTML = 'Нет операций';
-                return;
-            }
-            historyList.innerHTML = transactions.map(tx => `
-                <div>
-                    <span>${tx.description || 'Операция'}</span>
-                    <span>${tx.amount >= 0 ? '+' : ''}${tx.amount.toFixed(2)} ₽</span>
-                </div>
-            `).join('');
+        function formatPrice(p) { return (p || 0).toFixed(2) + ' ₪'; }
+
+        // ===== LOAD PROFILE =====
+        function loadProfile() {
+            if (!currentUser) return;
+
+            db.collection('users').doc(currentUser.uid).get()
+                .then(doc => {
+                    if (!doc.exists) {
+                        showToast('❌ Профиль не найден', 'error');
+                        return;
+                    }
+                    userData = doc.data();
+
+                    $('userName').textContent = userData.displayName || '—';
+                    $('userEmail').textContent = currentUser.email || '—';
+                    $('userBalance').textContent = formatPrice(userData.balance || 0);
+                    $('userRating').textContent = userData.rating || 0;
+                    $('userBonus').textContent = formatPrice(userData.bonus || 0);
+
+                    const role = userData.role || 'client';
+                    const roleEl = $('userRole');
+                    roleEl.textContent = role === 'driver' ? '🚗 Водитель' : '👤 Клиент';
+                    roleEl.className = 'value ' + (role === 'driver' ? 'gold' : 'blue');
+
+                    if (role === 'driver') {
+                        $('driverActions').style.display = 'block';
+                        $('clientActions').style.display = 'none';
+                    } else {
+                        $('driverActions').style.display = 'none';
+                        $('clientActions').style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    showToast('❌ Ошибка загрузки профиля', 'error');
+                    console.error(err);
+                });
         }
 
-        // === ПРОВЕРКА АВТОРИЗАЦИИ ===
-        onAuthChange(async (user) => {
+        // ===== BUTTONS =====
+        $('goToWorkBtn').addEventListener('click', () => {
+            window.location.href = 'driver-work.html';
+        });
+
+        $('goToOrderBtn').addEventListener('click', () => {
+            window.location.href = 'order.html';
+        });
+
+        $('refreshBtn').addEventListener('click', () => {
+            showToast('🔄 Данные обновлены', 'info');
+            loadProfile();
+        });
+
+        // ===== LOGOUT =====
+        $('logoutBtn').addEventListener('click', () => {
+            auth.signOut().then(() => {
+                window.location.href = 'index.html';
+            });
+        });
+
+        // ===== INIT =====
+        auth.onAuthStateChanged(user => {
             if (!user) {
                 window.location.href = 'index.html';
                 return;
             }
-
-            userUidEl.textContent = 'UID: ' + user.uid;
-            const userData = await getUser(user.uid);
-
-            if (!userData) {
-                // Если нет документа — редирект на главную (пусть создадут заново)
-                alert('Профиль не найден. Пожалуйста, зарегистрируйтесь.');
-                window.location.href = 'index.html';
-                return;
-            }
-
-            // === ОБНОВЛЯЕМ UI ===
-            userNameEl.textContent = userData.displayName || 'Пользователь';
-            userEmailEl.textContent = user.email || '';
-            updateUI(userData);
-
-            // === ПОДПИСКА НА ТРАНЗАКЦИИ ===
-            if (unsubTx) unsubTx();
-            unsubTx = subscribeToTransactions(user.uid, renderTransactions);
+            currentUser = user;
+            loadProfile();
         });
 
-        // === ВЫХОД ===
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            if (unsubTx) unsubTx();
-            await logout();
-            window.location.href = 'index.html';
-        });
-
-        // === ЗАКАЗАТЬ ===
-        document.getElementById('orderBtn').addEventListener('click', () => {
-            window.location.href = 'order.html';
-        });
+        console.log('✅ cabinet.html загружен');
     </script>
 </body>
 </html>
