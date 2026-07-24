@@ -1,5 +1,6 @@
+
 <!DOCTYPE html>
-<html lang="ru" id="htmlRoot">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -64,99 +65,7 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* ===== ВЕРХНЯЯ ПАНЕЛЬ С ЯЗЫКОМ (ДОБАВЛЕНО) ===== */
-        .top-bar {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            padding: 4px 0;
-            margin-bottom: 4px;
-            height: 36px;
-            background: transparent;
-            position: relative;
-            z-index: 2;
-        }
-
-        .lang-switcher {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            position: relative;
-        }
-        .lang-btn {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 30px;
-            padding: 2px 12px;
-            color: #8899aa;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            height: 28px;
-        }
-        .lang-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
-            color: #ffffff;
-        }
-        .lang-btn .globe {
-            font-size: 16px;
-        }
-        .lang-dropdown {
-            position: absolute;
-            top: 32px;
-            right: 0;
-            background: rgba(18, 22, 28, 0.96);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 14px;
-            padding: 6px 0;
-            min-width: 130px;
-            display: none;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            z-index: 100;
-        }
-        .lang-dropdown.open {
-            display: block;
-        }
-        .lang-dropdown .item {
-            padding: 8px 16px;
-            color: #e0e8f0;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-        }
-        .lang-dropdown .item:last-child {
-            border-bottom: none;
-        }
-        .lang-dropdown .item:hover {
-            background: rgba(255, 180, 0, 0.08);
-            color: #ffb000;
-        }
-        .lang-dropdown .item .flag {
-            font-size: 20px;
-        }
-
-        body[dir="rtl"] .top-bar {
-            direction: rtl;
-        }
-        body[dir="rtl"] .lang-dropdown {
-            right: auto;
-            left: 0;
-        }
-        body[dir="rtl"] .container {
-            direction: rtl;
-        }
-
-        /* ===== ШАПКА (БЕЗ ИЗМЕНЕНИЙ) ===== */
+        /* ===== ШАПКА ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -272,7 +181,7 @@
             color: #ffffff;
         }
 
-        /* ===== СТАТИСТИКА (БЕЗ ИЗМЕНЕНИЙ) ===== */
+        /* ===== СТАТИСТИКА ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -568,107 +477,78 @@
                 font-size: 15px;
                 padding: 14px;
             }
-            .top-bar {
-                height: 32px;
-            }
-            .lang-btn {
-                font-size: 11px;
-                padding: 2px 10px;
-                height: 24px;
-            }
         }
     </style>
 </head>
-<body id="bodyRoot">
-    <div class="container">
+<body>
 
-        <!-- ===== ВЕРХНЯЯ ПАНЕЛЬ С ЯЗЫКОМ ===== -->
-        <div class="top-bar">
-            <div class="lang-switcher">
-                <button class="lang-btn" id="langToggle">
-                    <span class="globe">🌐</span>
-                    <span id="currentLangLabel">RU</span>
-                    <span style="font-size:12px;">▾</span>
-                </button>
-                <div class="lang-dropdown" id="langDropdown">
-                    <div class="item" data-lang="ru">
-                        <span class="flag">🇷🇺</span> Русский
-                    </div>
-                    <div class="item" data-lang="en">
-                        <span class="flag">🇬🇧</span> English
-                    </div>
-                    <div class="item" data-lang="he">
-                        <span class="flag">🇮🇱</span> עברית
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="container">
 
         <!-- ===== ШАПКА ===== -->
         <div class="header">
             <div class="user-info">
-                <div class="user-name" id="driverName" data-i18n="loading">Загрузка...</div>
+                <div class="user-name" id="driverName">Загрузка...</div>
                 <div class="user-email" id="driverEmail">email@domain.com</div>
                 <div class="user-uid" id="driverUid">UID: ---</div>
                 <div id="statusContainer" style="margin-top:4px;">
-                    <span class="status-badge offline" id="statusBadge" data-i18n="loading_status">⏳ Загрузка...</span>
+                    <span class="status-badge offline" id="statusBadge">⏳ Загрузка...</span>
                     <div class="status-toggle" id="statusToggle">
-                        <button class="btn-status active-online" data-status="online" id="statusOnlineBtn" data-i18n="btn_online">🟢 Онлайн</button>
-                        <button class="btn-status" data-status="offline" id="statusOfflineBtn" data-i18n="btn_offline">⚪ Офлайн</button>
+                        <button class="btn-status active-online" data-status="online" id="statusOnlineBtn">🟢 Онлайн</button>
+                        <button class="btn-status" data-status="offline" id="statusOfflineBtn">⚪ Офлайн</button>
                     </div>
                 </div>
             </div>
-            <button class="logout-btn" id="logoutBtn" data-i18n="logout">🚪 Выйти</button>
+            <button class="logout-btn" id="logoutBtn">🚪 Выйти</button>
         </div>
 
         <!-- ===== СТАТИСТИКА ===== -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="icon">💰</div>
-                <div class="label" data-i18n="stat_balance">Баланс</div>
+                <div class="label">Баланс</div>
                 <div class="value gold" id="balance">0 ₪</div>
             </div>
             <div class="stat-card">
                 <div class="icon">📊</div>
-                <div class="label" data-i18n="stat_earned">Заработано</div>
+                <div class="label">Заработано</div>
                 <div class="value green" id="totalEarned">0 ₪</div>
             </div>
             <div class="stat-card">
                 <div class="icon">⚠️</div>
-                <div class="label" data-i18n="stat_penalty">Штрафы</div>
+                <div class="label">Штрафы</div>
                 <div class="value red" id="totalPenalty">0 ₪</div>
             </div>
             <div class="stat-card">
                 <div class="icon">🎁</div>
-                <div class="label" data-i18n="stat_bonus">Бонусы</div>
+                <div class="label">Бонусы</div>
                 <div class="value gold" id="totalBonus">0</div>
             </div>
         </div>
 
         <!-- ===== КНОПКА "РАБОТАТЬ" ===== -->
-        <button class="btn-work" onclick="window.location.href='driver-work.html'" data-i18n="btn_work">
+        <button class="btn-work" onclick="window.location.href='driver-work.html'">
             🚗 Работать
         </button>
 
         <!-- ===== ЗАКАЗЫ ===== -->
         <div class="section">
             <div class="section-title">
-                <span data-i18n="orders_title">📋 Мои заказы</span>
+                📋 Мои заказы
                 <span class="badge" id="ordersCount">(0)</span>
             </div>
             <div class="order-list" id="ordersList">
-                <div class="loading-text" data-i18n="loading">⏳ Загрузка...</div>
+                <div class="loading-text">⏳ Загрузка...</div>
             </div>
         </div>
 
         <!-- ===== ТРАНЗАКЦИИ ===== -->
         <div class="section">
             <div class="section-title">
-                <span data-i18n="transactions_title">💳 История операций</span>
+                💳 История операций
                 <span class="badge" id="transactionsCount">(0)</span>
             </div>
             <div class="order-list" id="transactionsList" style="max-height:180px;">
-                <div class="loading-text" data-i18n="loading">⏳ Загрузка...</div>
+                <div class="loading-text">⏳ Загрузка...</div>
             </div>
         </div>
 
@@ -676,158 +556,11 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- JAVASCRIPT (ПОЛНАЯ ВЕРСИЯ С ЯЗЫКОВОЙ ЛОГИКОЙ) -->
+    <!-- JAVASCRIPT (ПОЛНАЯ ВЕРСИЯ) -->
     <!-- ============================================================ -->
     <script>
         // ============================================================
-        // ЯЗЫКОВАЯ ЛОГИКА (ДОБАВЛЕНА)
-        // ============================================================
-        const translations = {
-            ru: {
-                loading: 'Загрузка...',
-                loading_status: '⏳ Загрузка...',
-                btn_online: '🟢 Онлайн',
-                btn_offline: '⚪ Офлайн',
-                logout: '🚪 Выйти',
-                stat_balance: 'Баланс',
-                stat_earned: 'Заработано',
-                stat_penalty: 'Штрафы',
-                stat_bonus: 'Бонусы',
-                btn_work: '🚗 Работать',
-                orders_title: '📋 Мои заказы',
-                transactions_title: '💳 История операций',
-                // статусы заказов
-                status_new: 'Новый',
-                status_searching: 'Поиск',
-                status_assigned: 'Назначен',
-                status_in_progress: 'В пути',
-                status_completed: 'Завершён',
-                status_cancelled: 'Отменён',
-                // для статуса водителя
-                status_online: '🟢 Онлайн',
-                status_offline: '⚪ Офлайн',
-                status_busy: '🟡 Занят',
-                // пустые состояния
-                no_orders: 'Нет заказов',
-                no_transactions: 'Нет операций',
-                penalty: 'Штраф'
-            },
-            en: {
-                loading: 'Loading...',
-                loading_status: '⏳ Loading...',
-                btn_online: '🟢 Online',
-                btn_offline: '⚪ Offline',
-                logout: '🚪 Logout',
-                stat_balance: 'Balance',
-                stat_earned: 'Earned',
-                stat_penalty: 'Penalties',
-                stat_bonus: 'Bonuses',
-                btn_work: '🚗 Work',
-                orders_title: '📋 My orders',
-                transactions_title: '💳 Transaction history',
-                status_new: 'New',
-                status_searching: 'Searching',
-                status_assigned: 'Assigned',
-                status_in_progress: 'In progress',
-                status_completed: 'Completed',
-                status_cancelled: 'Cancelled',
-                status_online: '🟢 Online',
-                status_offline: '⚪ Offline',
-                status_busy: '🟡 Busy',
-                no_orders: 'No orders',
-                no_transactions: 'No transactions',
-                penalty: 'Penalty'
-            },
-            he: {
-                loading: 'טוען...',
-                loading_status: '⏳ טוען...',
-                btn_online: '🟢 מקוון',
-                btn_offline: '⚪ לא מקוון',
-                logout: '🚪 יציאה',
-                stat_balance: 'יתרה',
-                stat_earned: 'הרווחת',
-                stat_penalty: 'קנסות',
-                stat_bonus: 'בונוסים',
-                btn_work: '🚗 עבודה',
-                orders_title: '📋 ההזמנות שלי',
-                transactions_title: '💳 היסטוריית עסקאות',
-                status_new: 'חדש',
-                status_searching: 'בחיפוש',
-                status_assigned: 'הוקצה',
-                status_in_progress: 'בדרך',
-                status_completed: 'הושלם',
-                status_cancelled: 'בוטל',
-                status_online: '🟢 מקוון',
-                status_offline: '⚪ לא מקוון',
-                status_busy: '🟡 עסוק',
-                no_orders: 'אין הזמנות',
-                no_transactions: 'אין עסקאות',
-                penalty: 'קנס'
-            }
-        };
-
-        let currentLang = 'ru';
-
-        function applyLanguage(lang) {
-            currentLang = lang;
-            const t = translations[lang];
-
-            document.getElementById('htmlRoot').lang = lang;
-            const body = document.getElementById('bodyRoot');
-            if (lang === 'he') {
-                body.dir = 'rtl';
-            } else {
-                body.dir = 'ltr';
-            }
-
-            // Обновляем все элементы с data-i18n
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key] !== undefined) {
-                    el.textContent = t[key];
-                }
-            });
-
-            document.getElementById('currentLangLabel').textContent = lang.toUpperCase();
-            document.getElementById('langDropdown').classList.remove('open');
-            localStorage.setItem('wheel_lang', lang);
-
-            // Перерисовываем заказы и транзакции, чтобы обновить статусы
-            renderOrders();
-            renderTransactions();
-            // Обновляем статус-бейдж водителя
-            if (userData) {
-                const status = userData.driverData?.isAvailable ? 'online' : 'offline';
-                updateStatusUI(status);
-            }
-        }
-
-        // Переключатель языка
-        document.getElementById('langToggle').addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.getElementById('langDropdown').classList.toggle('open');
-        });
-
-        document.querySelectorAll('.lang-dropdown .item').forEach(item => {
-            item.addEventListener('click', () => {
-                const lang = item.getAttribute('data-lang');
-                applyLanguage(lang);
-            });
-        });
-
-        document.addEventListener('click', () => {
-            document.getElementById('langDropdown').classList.remove('open');
-        });
-
-        const savedLang = localStorage.getItem('wheel_lang');
-        if (savedLang && translations[savedLang]) {
-            applyLanguage(savedLang);
-        } else {
-            applyLanguage('ru');
-        }
-
-        // ============================================================
-        // FIREBASE КОНФИГ (БЕЗ ИЗМЕНЕНИЙ)
+        // FIREBASE КОНФИГ
         // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
@@ -846,7 +579,7 @@
         console.log('🔥 Firebase готов');
 
         // ============================================================
-        // ПЕРЕМЕННЫЕ (БЕЗ ИЗМЕНЕНИЙ)
+        // ПЕРЕМЕННЫЕ
         // ============================================================
         let currentUser = null;
         let userData = null;
@@ -876,7 +609,7 @@
         };
 
         // ============================================================
-        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (БЕЗ ИЗМЕНЕНИЙ, КРОМЕ СТАТУСОВ)
+        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
         // ============================================================
         function formatPrice(p) {
             return (p || 0).toFixed(2) + ' ₪';
@@ -892,21 +625,15 @@
             }
         }
 
-        // Функция получения переведённого статуса заказа
-        function getStatusLabel(status) {
-            const t = translations[currentLang];
-            const map = {
-                'new': t.status_new,
-                'searching': t.status_searching,
-                'assigned': t.status_assigned,
-                'in_progress': t.status_in_progress,
-                'completed': t.status_completed,
-                'cancelled': t.status_cancelled
-            };
-            return map[status] || status;
-        }
+        const statusLabels = {
+            new: 'Новый',
+            searching: 'Поиск',
+            assigned: 'Назначен',
+            in_progress: 'В пути',
+            completed: 'Завершён',
+            cancelled: 'Отменён'
+        };
 
-        // Классы для статусов (без изменений)
         const statusClasses = {
             new: 'assigned',
             searching: 'assigned',
@@ -917,34 +644,31 @@
         };
 
         // ============================================================
-        // ОБНОВЛЕНИЕ СТАТУСА (с учётом перевода)
+        // ОБНОВЛЕНИЕ СТАТУСА
         // ============================================================
         function updateStatusUI(status) {
-            const t = translations[currentLang];
             const badge = el.statusBadge;
             badge.className = 'status-badge ' + status;
-            if (status === 'online') badge.textContent = t.status_online;
-            else if (status === 'busy') badge.textContent = t.status_busy;
-            else badge.textContent = t.status_offline;
+            badge.textContent = status === 'online' ? '🟢 Онлайн' :
+                status === 'busy' ? '🟡 Занят' : '⚪ Офлайн';
 
             el.statusOnlineBtn.className = 'btn-status' + (status === 'online' ? ' active-online' : '');
             el.statusOfflineBtn.className = 'btn-status' + (status === 'offline' ? ' active-offline' : '');
         }
 
         // ============================================================
-        // РЕНДЕРИНГ ЗАКАЗОВ (с учётом перевода статусов)
+        // РЕНДЕРИНГ ЗАКАЗОВ
         // ============================================================
         function renderOrders() {
-            const t = translations[currentLang];
             if (!driverOrders || driverOrders.length === 0) {
-                el.ordersList.innerHTML = `<div class="empty-state">${t.no_orders}</div>`;
+                el.ordersList.innerHTML = '<div class="empty-state">Нет заказов</div>';
                 el.ordersCount.textContent = '(0)';
                 return;
             }
 
             let html = '';
             driverOrders.forEach(order => {
-                const label = getStatusLabel(order.status);
+                const label = statusLabels[order.status] || order.status;
                 const cls = statusClasses[order.status] || '';
                 const amount = order.price || 0;
                 const sign = order.status === 'cancelled' ? '-' : '+';
@@ -959,7 +683,7 @@
                                 <div class="meta">
                                     #${order.id.substring(0, 8)} • ${formatDate(order.createdAt)}
                                     <span class="status ${cls}">${label}</span>
-                                    ${order.penaltyApplied ? ` • ⚠️ ${t.penalty}: ${formatPrice(order.penaltyApplied)}` : ''}
+                                    ${order.penaltyApplied ? ` • ⚠️ Штраф: ${formatPrice(order.penaltyApplied)}` : ''}
                                 </div>
                             </div>
                             <div class="order-amount ${amtClass}">${sign}${formatPrice(amount)}</div>
@@ -972,12 +696,11 @@
         }
 
         // ============================================================
-        // РЕНДЕРИНГ ТРАНЗАКЦИЙ (БЕЗ ИЗМЕНЕНИЙ)
+        // РЕНДЕРИНГ ТРАНЗАКЦИЙ
         // ============================================================
         function renderTransactions() {
-            const t = translations[currentLang];
             if (!driverTransactions || driverTransactions.length === 0) {
-                el.transactionsList.innerHTML = `<div class="empty-state">${t.no_transactions}</div>`;
+                el.transactionsList.innerHTML = '<div class="empty-state">Нет операций</div>';
                 el.transactionsCount.textContent = '(0)';
                 return;
             }
@@ -1021,7 +744,7 @@
         }
 
         // ============================================================
-        // ПОДПИСКА НА ДАННЫЕ ВОДИТЕЛЯ (БЕЗ ИЗМЕНЕНИЙ)
+        // ПОДПИСКА НА ДАННЫЕ ВОДИТЕЛЯ
         // ============================================================
         function subscribeToDriverData(uid) {
             // === ПОДПИСКА НА ПОЛЬЗОВАТЕЛЯ ===
@@ -1075,7 +798,7 @@
         }
 
         // ============================================================
-        // ОБНОВЛЕНИЕ СТАТУСА ВОДИТЕЛЯ (БЕЗ ИЗМЕНЕНИЙ)
+        // ОБНОВЛЕНИЕ СТАТУСА ВОДИТЕЛЯ
         // ============================================================
         function setDriverStatus(status) {
             if (!currentUser) return;
@@ -1092,7 +815,7 @@
         }
 
         // ============================================================
-        // ОБРАБОТЧИКИ СТАТУСА (БЕЗ ИЗМЕНЕНИЙ)
+        // ОБРАБОТЧИКИ СТАТУСА
         // ============================================================
         el.statusOnlineBtn.addEventListener('click', function() {
             if (this.classList.contains('active-online')) return;
@@ -1105,7 +828,7 @@
         });
 
         // ============================================================
-        // ВЫХОД (БЕЗ ИЗМЕНЕНИЙ)
+        // ВЫХОД
         // ============================================================
         el.logoutBtn.addEventListener('click', function() {
             if (unsubUser) { unsubUser();
@@ -1120,7 +843,7 @@
         });
 
         // ============================================================
-        // АВТОРИЗАЦИЯ (БЕЗ ИЗМЕНЕНИЙ)
+        // АВТОРИЗАЦИЯ
         // ============================================================
         auth.onAuthStateChanged(user => {
             if (!user) {
@@ -1152,9 +875,8 @@
                 });
         });
 
-        console.log('✅ Кабинет водителя с переводом загружен');
+        console.log('✅ Кабинет водителя готов');
         console.log('📌 Информация:');
-        console.log('  🌐 Переключение языков: RU / EN / HE');
         console.log('  👤 Имя и email водителя');
         console.log('  💰 Баланс, заработок, штрафы, бонусы');
         console.log('  📋 Список заказов с суммами');
@@ -1162,5 +884,6 @@
         console.log('  🟢 Переключение статуса Онлайн/Офлайн');
         console.log('  🚗 Кнопка "Работать" → driver-work.html');
     </script>
+
 </body>
 </html>
