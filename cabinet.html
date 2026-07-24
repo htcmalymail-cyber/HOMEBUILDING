@@ -1,602 +1,108 @@
 <!DOCTYPE html>
-<html lang="ru" id="htmlRoot">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Кабинет — WHEEL</title>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0c10;
-            min-height: 100vh;
-            padding: 12px;
-            color: #fff;
-        }
-        .container {
-            max-width: 480px;
-            margin: 0 auto;
-        }
-
-        /* ===== ВЕРХНЯЯ ПАНЕЛЬ С ЯЗЫКОМ ===== */
-        .top-bar {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            padding: 4px 0;
-            margin-bottom: 4px;
-            height: 36px;
-            background: transparent;
-        }
-
-        .lang-switcher {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            position: relative;
-        }
-        .lang-btn {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 30px;
-            padding: 2px 12px;
-            color: #8899aa;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            height: 28px;
-        }
-        .lang-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
-            color: #ffffff;
-        }
-        .lang-btn .globe {
-            font-size: 16px;
-        }
-        .lang-dropdown {
-            position: absolute;
-            top: 32px;
-            right: 0;
-            background: rgba(18, 22, 28, 0.96);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 14px;
-            padding: 6px 0;
-            min-width: 130px;
-            display: none;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            z-index: 100;
-        }
-        .lang-dropdown.open {
-            display: block;
-        }
-        .lang-dropdown .item {
-            padding: 8px 16px;
-            color: #e0e8f0;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-        }
-        .lang-dropdown .item:last-child {
-            border-bottom: none;
-        }
-        .lang-dropdown .item:hover {
-            background: rgba(255, 180, 0, 0.08);
-            color: #ffb000;
-        }
-        .lang-dropdown .item .flag {
-            font-size: 20px;
-        }
-
-        body[dir="rtl"] .top-bar {
-            direction: rtl;
-        }
-        body[dir="rtl"] .lang-dropdown {
-            right: auto;
-            left: 0;
-        }
-        body[dir="rtl"] .container {
-            direction: rtl;
-        }
-
-        /* ===== ОСТАЛЬНЫЕ СТИЛИ (без изменений) ===== */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            background: rgba(18, 22, 28, 0.85);
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            margin-bottom: 12px;
-        }
-        .header-title {
-            font-size: 20px;
-            font-weight: 700;
-        }
-        .header-title span {
-            color: #ffb000;
-        }
-        .logout-btn {
-            background: rgba(255, 70, 70, 0.08);
-            border: 1px solid rgba(255, 70, 70, 0.15);
-            border-radius: 30px;
-            padding: 6px 16px;
-            color: #ff6b6b;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: inherit;
-        }
-        .logout-btn:hover {
-            background: rgba(255, 70, 70, 0.15);
-        }
-
-        .card {
-            background: rgba(18, 22, 28, 0.85);
-            border-radius: 16px;
-            padding: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            margin-bottom: 12px;
-        }
-        .card-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #8899aa;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            font-size: 14px;
-        }
-        .info-row:last-child {
-            border-bottom: none;
-        }
-        .info-row .label {
-            color: #8899aa;
-        }
-        .info-row .value {
-            font-weight: 600;
-        }
-        .info-row .value.gold {
-            color: #ffb000;
-        }
-        .info-row .value.green {
-            color: #4ade80;
-        }
-        .info-row .value.blue {
-            color: #60a5fa;
-        }
-        .info-row .value.pink {
-            color: #f472b6;
-        }
-
-        .btn {
-            padding: 12px;
-            border: none;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: inherit;
-            width: 100%;
-            transition: all 0.3s;
-        }
-        .btn:active {
-            transform: scale(0.97);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #ffb000, #ff6a00);
-            color: #0a0c10;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-        }
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.06);
-            color: #8899aa;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.12);
-            color: #fff;
-        }
-
-        .flex {
-            display: flex;
-            gap: 8px;
-        }
-        .flex .btn {
-            flex: 1;
-        }
-        .mt-8 {
-            margin-top: 8px;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .text-muted {
-            color: #667788;
-            font-size: 12px;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(18, 22, 28, 0.95);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 14px;
-            padding: 12px 24px;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 9999;
-            max-width: 90%;
-            text-align: center;
-            display: none;
-        }
-        .toast.show {
-            display: block;
-            animation: slideUp 0.3s ease;
-        }
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
-        }
-
-        .role-badge {
-            display: inline-block;
-            padding: 4px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .role-badge.driver {
-            background: rgba(255, 180, 0, 0.12);
-            color: #ffb000;
-        }
-        .role-badge.client {
-            background: rgba(96, 165, 250, 0.12);
-            color: #60a5fa;
-        }
-
-        @media (max-width: 420px) {
-            .top-bar {
-                height: 32px;
-            }
-            .lang-btn {
-                font-size: 11px;
-                padding: 2px 10px;
-                height: 24px;
-            }
-        }
-    </style>
+    <title>Личный кабинет — WHEEL</title>
+    <link rel="stylesheet" href="styles/main.css">
 </head>
-<body id="bodyRoot">
-    <div class="container">
-
-        <!-- ===== ВЕРХНЯЯ ПАНЕЛЬ С ЯЗЫКОМ ===== -->
-        <div class="top-bar">
-            <div class="lang-switcher">
-                <button class="lang-btn" id="langToggle">
-                    <span class="globe">🌐</span>
-                    <span id="currentLangLabel">RU</span>
-                    <span style="font-size:12px;">▾</span>
-                </button>
-                <div class="lang-dropdown" id="langDropdown">
-                    <div class="item" data-lang="ru">
-                        <span class="flag">🇷🇺</span> Русский
-                    </div>
-                    <div class="item" data-lang="en">
-                        <span class="flag">🇬🇧</span> English
-                    </div>
-                    <div class="item" data-lang="he">
-                        <span class="flag">🇮🇱</span> עברית
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== ОСНОВНОЙ ЗАГОЛОВОК ===== -->
+<body>
+    <div id="app">
         <div class="header">
-            <span class="header-title">🚖 <span data-i18n="cabinet_title">Кабинет</span></span>
-            <button class="logout-btn" id="logoutBtn" data-i18n="logout">🚪 Выйти</button>
+            <div>
+                <h2 id="userName">Загрузка...</h2>
+                <span id="userEmail">email@domain.com</span>
+                <small id="userUid">UID: ...</small>
+            </div>
+            <button id="logoutBtn">🚪 Выйти</button>
         </div>
 
-        <div class="card">
-            <div class="card-title" data-i18n="profile_title">👤 Профиль</div>
-            <div class="info-row">
-                <span class="label" data-i18n="name_label">Имя</span>
-                <span class="value" id="userName">—</span>
-            </div>
-            <div class="info-row">
-                <span class="label" data-i18n="email_label">Email</span>
-                <span class="value" id="userEmail">—</span>
-            </div>
-            <div class="info-row">
-                <span class="label" data-i18n="role_label">Роль</span>
-                <span class="value" id="userRole">—</span>
-            </div>
-            <div class="info-row">
-                <span class="label" data-i18n="balance_label">💰 Баланс</span>
-                <span class="value gold" id="userBalance">0 ₪</span>
-            </div>
-            <div class="info-row">
-                <span class="label" data-i18n="rating_label">⭐ Рейтинг</span>
-                <span class="value blue" id="userRating">0</span>
-            </div>
-            <div class="info-row">
-                <span class="label" data-i18n="bonus_label">🎁 Бонусы (накоплено)</span>
-                <span class="value pink" id="userBonus">0 ₪</span>
-            </div>
+        <div class="stats-grid">
+            <div class="stat-card"><span>💰 Баланс</span><span id="balance">0 ₽</span></div>
+            <div class="stat-card"><span>⭐ Рейтинг</span><span id="rating">0.0</span></div>
+            <div class="stat-card"><span>🎁 Бонусы</span><span id="bonus">0</span></div>
+            <div class="stat-card"><span>📊 Потрачено</span><span id="totalSpent">0 ₽</span></div>
         </div>
 
-        <div id="driverActions" style="display:none;">
-            <button class="btn btn-primary" id="goToWorkBtn" data-i18n="go_to_work">🚗 Перейти к работе</button>
-        </div>
+        <button id="orderBtn">📍 Заказать такси</button>
 
-        <div id="clientActions" style="display:none;">
-            <button class="btn btn-primary" id="goToOrderBtn" data-i18n="order_taxi">📍 Заказать такси</button>
-        </div>
-
-        <button class="btn btn-secondary mt-8" id="refreshBtn" data-i18n="refresh">🔄 Обновить данные</button>
+        <h3>📋 История операций</h3>
+        <div id="historyList">Загрузка...</div>
     </div>
 
-    <div class="toast" id="toast">
-        <span id="toastMessage">Сообщение</span>
-    </div>
+    <script type="module">
+        import { onAuthChange, logout, getCurrentUser } from './auth.js';
+        import { getUser, subscribeToTransactions } from './db.js';
 
-    <script>
-        // ===== FIREBASE CONFIG =====
-        const firebaseConfig = {
-            apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
-            authDomain: "taxi-ai-app-69628.firebaseapp.com",
-            projectId: "taxi-ai-app-69628",
-            storageBucket: "taxi-ai-app-69628.firebasestorage.app",
-            messagingSenderId: "952357992434",
-            appId: "1:952357992434:web:ec905a7016c3d4f1049d6b",
-            measurementId: "G-Z9NJFSSXH6"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        // === ЭЛЕМЕНТЫ ===
+        const userNameEl = document.getElementById('userName');
+        const userEmailEl = document.getElementById('userEmail');
+        const userUidEl = document.getElementById('userUid');
+        const balanceEl = document.getElementById('balance');
+        const ratingEl = document.getElementById('rating');
+        const bonusEl = document.getElementById('bonus');
+        const totalSpentEl = document.getElementById('totalSpent');
+        const historyList = document.getElementById('historyList');
 
-        // ===== STATE =====
-        let currentUser = null;
-        let userData = null;
+        let unsubTx = null;
 
-        const $ = id => document.getElementById(id);
-        const toast = $('toast');
-        const toastMessage = $('toastMessage');
-
-        function showToast(text, type = 'info') {
-            toast.className = 'toast show';
-            toastMessage.textContent = text;
-            clearTimeout(toast._timeout);
-            toast._timeout = setTimeout(() => toast.className = 'toast', 3000);
+        function updateUI(data) {
+            balanceEl.textContent = (data.balance || 0).toFixed(2) + ' ₽';
+            ratingEl.textContent = (data.rating || 0).toFixed(1);
+            bonusEl.textContent = data.bonus || 0;
+            totalSpentEl.textContent = (data.totalSpent || 0).toFixed(2) + ' ₽';
         }
 
-        function formatPrice(p) { return (p || 0).toFixed(2) + ' ₪'; }
-
-        // ===== ЯЗЫКОВАЯ ЛОГИКА =====
-        const translations = {
-            ru: {
-                cabinet_title: 'Кабинет',
-                logout: '🚪 Выйти',
-                profile_title: '👤 Профиль',
-                name_label: 'Имя',
-                email_label: 'Email',
-                role_label: 'Роль',
-                balance_label: '💰 Баланс',
-                rating_label: '⭐ Рейтинг',
-                bonus_label: '🎁 Бонусы (накоплено)',
-                go_to_work: '🚗 Перейти к работе',
-                order_taxi: '📍 Заказать такси',
-                refresh: '🔄 Обновить данные',
-                profile_not_found: '❌ Профиль не найден',
-                load_error: '❌ Ошибка загрузки профиля',
-                updated: '🔄 Данные обновлены',
-                driver: '🚗 Водитель',
-                client: '👤 Клиент'
-            },
-            en: {
-                cabinet_title: 'Cabinet',
-                logout: '🚪 Logout',
-                profile_title: '👤 Profile',
-                name_label: 'Name',
-                email_label: 'Email',
-                role_label: 'Role',
-                balance_label: '💰 Balance',
-                rating_label: '⭐ Rating',
-                bonus_label: '🎁 Bonuses (accumulated)',
-                go_to_work: '🚗 Go to work',
-                order_taxi: '📍 Order taxi',
-                refresh: '🔄 Refresh data',
-                profile_not_found: '❌ Profile not found',
-                load_error: '❌ Profile load error',
-                updated: '🔄 Data updated',
-                driver: '🚗 Driver',
-                client: '👤 Client'
-            },
-            he: {
-                cabinet_title: 'חשבון',
-                logout: '🚪 יציאה',
-                profile_title: '👤 פרופיל',
-                name_label: 'שם',
-                email_label: 'אימייל',
-                role_label: 'תפקיד',
-                balance_label: '💰 יתרה',
-                rating_label: '⭐ דירוג',
-                bonus_label: '🎁 בונוסים (נצבר)',
-                go_to_work: '🚗 עבודה',
-                order_taxi: '📍 הזמנת מונית',
-                refresh: '🔄 רענן נתונים',
-                profile_not_found: '❌ פרופיל לא נמצא',
-                load_error: '❌ שגיאת טעינת פרופיל',
-                updated: '🔄 הנתונים עודכנו',
-                driver: '🚗 נהג',
-                client: '👤 לקוח'
+        function renderTransactions(transactions) {
+            if (!transactions || transactions.length === 0) {
+                historyList.innerHTML = 'Нет операций';
+                return;
             }
-        };
-
-        let currentLang = 'ru';
-
-        function applyLanguage(lang) {
-            currentLang = lang;
-            const t = translations[lang];
-
-            document.getElementById('htmlRoot').lang = lang;
-            const body = document.getElementById('bodyRoot');
-            if (lang === 'he') {
-                body.dir = 'rtl';
-            } else {
-                body.dir = 'ltr';
-            }
-
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key] !== undefined) {
-                    el.textContent = t[key];
-                }
-            });
-
-            document.getElementById('currentLangLabel').textContent = lang.toUpperCase();
-            document.getElementById('langDropdown').classList.remove('open');
-            localStorage.setItem('wheel_lang', lang);
+            historyList.innerHTML = transactions.map(tx => `
+                <div>
+                    <span>${tx.description || 'Операция'}</span>
+                    <span>${tx.amount >= 0 ? '+' : ''}${tx.amount.toFixed(2)} ₽</span>
+                </div>
+            `).join('');
         }
 
-        // Переключатель языка
-        document.getElementById('langToggle').addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.getElementById('langDropdown').classList.toggle('open');
-        });
-
-        document.querySelectorAll('.lang-dropdown .item').forEach(item => {
-            item.addEventListener('click', () => {
-                const lang = item.getAttribute('data-lang');
-                applyLanguage(lang);
-            });
-        });
-
-        document.addEventListener('click', () => {
-            document.getElementById('langDropdown').classList.remove('open');
-        });
-
-        const savedLang = localStorage.getItem('wheel_lang');
-        if (savedLang && translations[savedLang]) {
-            applyLanguage(savedLang);
-        } else {
-            applyLanguage('ru');
-        }
-
-        // ===== LOAD PROFILE =====
-        function loadProfile() {
-            if (!currentUser) return;
-
-            const t = translations[currentLang];
-
-            db.collection('users').doc(currentUser.uid).get()
-                .then(doc => {
-                    if (!doc.exists) {
-                        showToast(t.profile_not_found, 'error');
-                        return;
-                    }
-                    userData = doc.data();
-
-                    $('userName').textContent = userData.displayName || '—';
-                    $('userEmail').textContent = currentUser.email || '—';
-                    $('userBalance').textContent = formatPrice(userData.balance || 0);
-                    $('userRating').textContent = userData.rating || 0;
-                    $('userBonus').textContent = formatPrice(userData.bonus || 0);
-
-                    const role = userData.role || 'client';
-                    const roleEl = $('userRole');
-                    if (role === 'driver') {
-                        roleEl.textContent = t.driver;
-                        roleEl.className = 'value gold';
-                    } else {
-                        roleEl.textContent = t.client;
-                        roleEl.className = 'value blue';
-                    }
-
-                    if (role === 'driver') {
-                        $('driverActions').style.display = 'block';
-                        $('clientActions').style.display = 'none';
-                    } else {
-                        $('driverActions').style.display = 'none';
-                        $('clientActions').style.display = 'block';
-                    }
-                })
-                .catch(err => {
-                    showToast(t.load_error, 'error');
-                    console.error(err);
-                });
-        }
-
-        // ===== BUTTONS =====
-        $('goToWorkBtn').addEventListener('click', () => {
-            window.location.href = 'driver-work.html';
-        });
-
-        $('goToOrderBtn').addEventListener('click', () => {
-            window.location.href = 'order.html';
-        });
-
-        $('refreshBtn').addEventListener('click', () => {
-            const t = translations[currentLang];
-            showToast(t.updated, 'info');
-            loadProfile();
-        });
-
-        // ===== LOGOUT =====
-        $('logoutBtn').addEventListener('click', () => {
-            auth.signOut().then(() => {
-                window.location.href = 'index.html';
-            });
-        });
-
-        // ===== INIT =====
-        auth.onAuthStateChanged(user => {
+        // === ПРОВЕРКА АВТОРИЗАЦИИ ===
+        onAuthChange(async (user) => {
             if (!user) {
                 window.location.href = 'index.html';
                 return;
             }
-            currentUser = user;
-            loadProfile();
+
+            userUidEl.textContent = 'UID: ' + user.uid;
+            const userData = await getUser(user.uid);
+
+            if (!userData) {
+                // Если нет документа — редирект на главную (пусть создадут заново)
+                alert('Профиль не найден. Пожалуйста, зарегистрируйтесь.');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // === ОБНОВЛЯЕМ UI ===
+            userNameEl.textContent = userData.displayName || 'Пользователь';
+            userEmailEl.textContent = user.email || '';
+            updateUI(userData);
+
+            // === ПОДПИСКА НА ТРАНЗАКЦИИ ===
+            if (unsubTx) unsubTx();
+            unsubTx = subscribeToTransactions(user.uid, renderTransactions);
         });
 
-        console.log('✅ cabinet.html загружен (с верхней панелью языка)');
+        // === ВЫХОД ===
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            if (unsubTx) unsubTx();
+            await logout();
+            window.location.href = 'index.html';
+        });
+
+        // === ЗАКАЗАТЬ ===
+        document.getElementById('orderBtn').addEventListener('click', () => {
+            window.location.href = 'order.html';
+        });
     </script>
 </body>
 </html>
