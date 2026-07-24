@@ -23,26 +23,32 @@
         .container {
             max-width: 480px;
             margin: 0 auto;
-            position: relative;
         }
 
-        /* ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== */
+        /* ===== ВЕРХНЯЯ ПАНЕЛЬ С ЯЗЫКОМ ===== */
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 4px 0;
+            margin-bottom: 4px;
+            height: 36px;
+            background: transparent;
+        }
+
         .lang-switcher {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            z-index: 10;
             display: flex;
             align-items: center;
             gap: 4px;
+            position: relative;
         }
         .lang-btn {
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 30px;
-            padding: 4px 12px;
+            padding: 2px 12px;
             color: #8899aa;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -50,17 +56,18 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            height: 28px;
         }
         .lang-btn:hover {
             background: rgba(255, 255, 255, 0.12);
             color: #ffffff;
         }
         .lang-btn .globe {
-            font-size: 18px;
+            font-size: 16px;
         }
         .lang-dropdown {
             position: absolute;
-            top: 36px;
+            top: 32px;
             right: 0;
             background: rgba(18, 22, 28, 0.96);
             backdrop-filter: blur(20px);
@@ -70,6 +77,7 @@
             min-width: 130px;
             display: none;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 100;
         }
         .lang-dropdown.open {
             display: block;
@@ -96,9 +104,8 @@
             font-size: 20px;
         }
 
-        body[dir="rtl"] .lang-switcher {
-            right: auto;
-            left: 4px;
+        body[dir="rtl"] .top-bar {
+            direction: rtl;
         }
         body[dir="rtl"] .lang-dropdown {
             right: auto;
@@ -107,10 +114,8 @@
         body[dir="rtl"] .container {
             direction: rtl;
         }
-        body[dir="rtl"] .info-row .label {
-            text-align: right;
-        }
 
+        /* ===== ОСТАЛЬНЫЕ СТИЛИ (без изменений) ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -120,7 +125,6 @@
             border-radius: 18px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             margin-bottom: 12px;
-            margin-top: 8px;
         }
         .header-title {
             font-size: 20px;
@@ -288,16 +292,13 @@
         }
 
         @media (max-width: 420px) {
-            .lang-switcher {
-                top: 0;
-                right: 0;
+            .top-bar {
+                height: 32px;
             }
-            body[dir="rtl"] .lang-switcher {
-                right: auto;
-                left: 0;
-            }
-            .header {
-                margin-top: 4px;
+            .lang-btn {
+                font-size: 11px;
+                padding: 2px 10px;
+                height: 24px;
             }
         }
     </style>
@@ -305,26 +306,29 @@
 <body id="bodyRoot">
     <div class="container">
 
-        <!-- ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== -->
-        <div class="lang-switcher">
-            <button class="lang-btn" id="langToggle">
-                <span class="globe">🌐</span>
-                <span id="currentLangLabel">RU</span>
-                <span style="font-size:12px;">▾</span>
-            </button>
-            <div class="lang-dropdown" id="langDropdown">
-                <div class="item" data-lang="ru">
-                    <span class="flag">🇷🇺</span> Русский
-                </div>
-                <div class="item" data-lang="en">
-                    <span class="flag">🇬🇧</span> English
-                </div>
-                <div class="item" data-lang="he">
-                    <span class="flag">🇮🇱</span> עברית
+        <!-- ===== ВЕРХНЯЯ ПАНЕЛЬ С ЯЗЫКОМ ===== -->
+        <div class="top-bar">
+            <div class="lang-switcher">
+                <button class="lang-btn" id="langToggle">
+                    <span class="globe">🌐</span>
+                    <span id="currentLangLabel">RU</span>
+                    <span style="font-size:12px;">▾</span>
+                </button>
+                <div class="lang-dropdown" id="langDropdown">
+                    <div class="item" data-lang="ru">
+                        <span class="flag">🇷🇺</span> Русский
+                    </div>
+                    <div class="item" data-lang="en">
+                        <span class="flag">🇬🇧</span> English
+                    </div>
+                    <div class="item" data-lang="he">
+                        <span class="flag">🇮🇱</span> עברית
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- ===== ОСНОВНОЙ ЗАГОЛОВОК ===== -->
         <div class="header">
             <span class="header-title">🚖 <span data-i18n="cabinet_title">Кабинет</span></span>
             <button class="logout-btn" id="logoutBtn" data-i18n="logout">🚪 Выйти</button>
@@ -420,7 +424,6 @@
                 go_to_work: '🚗 Перейти к работе',
                 order_taxi: '📍 Заказать такси',
                 refresh: '🔄 Обновить данные',
-                // сообщения
                 profile_not_found: '❌ Профиль не найден',
                 load_error: '❌ Ошибка загрузки профиля',
                 updated: '🔄 Данные обновлены',
@@ -593,7 +596,7 @@
             loadProfile();
         });
 
-        console.log('✅ cabinet.html загружен (с языковой поддержкой)');
+        console.log('✅ cabinet.html загружен (с верхней панелью языка)');
     </script>
 </body>
 </html>
