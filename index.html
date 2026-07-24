@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" id="htmlRoot">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -43,8 +43,89 @@
             padding: 30px 24px;
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.06);
+            position: relative;
         }
 
+        /* ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== */
+        .lang-switcher {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 4px 12px;
+            color: #8899aa;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .lang-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+        }
+
+        .lang-btn .globe {
+            font-size: 18px;
+        }
+
+        .lang-dropdown {
+            position: absolute;
+            top: 48px;
+            right: 0;
+            background: rgba(18, 22, 28, 0.96);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 6px 0;
+            min-width: 130px;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .lang-dropdown.open {
+            display: block;
+        }
+
+        .lang-dropdown .item {
+            padding: 8px 16px;
+            color: #e0e8f0;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .lang-dropdown .item:last-child {
+            border-bottom: none;
+        }
+
+        .lang-dropdown .item:hover {
+            background: rgba(255, 180, 0, 0.08);
+            color: #ffb000;
+        }
+
+        .lang-dropdown .item .flag {
+            font-size: 20px;
+        }
+
+        /* ===== ОСТАЛЬНЫЕ СТИЛИ (без изменений) ===== */
         .logo {
             text-align: center;
             margin-bottom: 24px;
@@ -63,6 +144,7 @@
             color: #8899aa;
             font-size: 14px;
             margin-top: 4px;
+            transition: all 0.3s;
         }
 
         .tabs {
@@ -286,6 +368,29 @@
             margin: 16px auto 0;
         }
 
+        /* ===== АДАПТИВ ДЛЯ RTL (иврит) ===== */
+        body[dir="rtl"] .lang-switcher {
+            right: auto;
+            left: 16px;
+        }
+
+        body[dir="rtl"] .lang-dropdown {
+            right: auto;
+            left: 0;
+        }
+
+        body[dir="rtl"] .container {
+            direction: rtl;
+        }
+
+        body[dir="rtl"] .input-group label {
+            text-align: right;
+        }
+
+        body[dir="rtl"] .switch-link {
+            direction: rtl;
+        }
+
         @media (max-width: 420px) {
             .container {
                 border-radius: 0;
@@ -297,86 +402,114 @@
             .logo h1 {
                 font-size: 28px;
             }
+            .lang-switcher {
+                top: 12px;
+                right: 12px;
+            }
+            body[dir="rtl"] .lang-switcher {
+                right: auto;
+                left: 12px;
+            }
         }
     </style>
 </head>
-<body>
+<body id="bodyRoot">
 
     <div class="container">
 
+        <!-- ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== -->
+        <div class="lang-switcher">
+            <button class="lang-btn" id="langToggle">
+                <span class="globe">🌐</span>
+                <span id="currentLangLabel">RU</span>
+                <span style="font-size:12px;">▾</span>
+            </button>
+            <div class="lang-dropdown" id="langDropdown">
+                <div class="item" data-lang="ru">
+                    <span class="flag">🇷🇺</span> Русский
+                </div>
+                <div class="item" data-lang="en">
+                    <span class="flag">🇬🇧</span> English
+                </div>
+                <div class="item" data-lang="he">
+                    <span class="flag">🇮🇱</span> עברית
+                </div>
+            </div>
+        </div>
+
         <div class="logo">
             <h1>🚖 WHEEL</h1>
-            <p>Такси в один клик</p>
+            <p data-i18n="subtitle">Такси в один клик</p>
         </div>
 
         <div class="tabs" id="tabs">
-            <button class="tab active" data-form="login">Вход</button>
-            <button class="tab" data-form="register">Регистрация</button>
+            <button class="tab active" data-form="login" data-i18n="tab_login">Вход</button>
+            <button class="tab" data-form="register" data-i18n="tab_register">Регистрация</button>
         </div>
 
         <!-- ===== ФОРМА ВХОДА ===== -->
         <div class="form active" id="loginForm">
-            <div class="form-title">🔐 Добро пожаловать</div>
+            <div class="form-title" data-i18n="login_title">🔐 Добро пожаловать</div>
             <div class="input-group">
-                <label>Email</label>
+                <label data-i18n="email">Email</label>
                 <input type="email" id="loginEmail" placeholder="example@mail.com">
             </div>
             <div class="input-group">
-                <label>Пароль</label>
+                <label data-i18n="password">Пароль</label>
                 <input type="password" id="loginPassword" placeholder="••••••••">
             </div>
-            <button class="btn-submit" id="loginBtn">Войти</button>
+            <button class="btn-submit" id="loginBtn" data-i18n="login_btn">Войти</button>
             <div class="message" id="loginMessage"></div>
             <div class="switch-link">
-                Нет аккаунта? <a id="switchToRegister">Зарегистрироваться</a>
+                <span data-i18n="no_account">Нет аккаунта?</span> <a id="switchToRegister" data-i18n="register_link">Зарегистрироваться</a>
             </div>
         </div>
 
         <!-- ===== ФОРМА РЕГИСТРАЦИИ ===== -->
         <div class="form" id="registerForm">
-            <div class="form-title">📝 Создать аккаунт</div>
+            <div class="form-title" data-i18n="register_title">📝 Создать аккаунт</div>
             <div class="input-group">
-                <label>Имя</label>
+                <label data-i18n="name">Имя</label>
                 <input type="text" id="regName" placeholder="Иван">
             </div>
             <div class="input-group">
-                <label>Email</label>
+                <label data-i18n="email">Email</label>
                 <input type="email" id="regEmail" placeholder="example@mail.com">
             </div>
             <div class="input-group">
-                <label>Пароль (мин. 6 символов)</label>
+                <label data-i18n="password">Пароль (мин. 6 символов)</label>
                 <input type="password" id="regPassword" placeholder="••••••••" minlength="6">
             </div>
             <div class="input-group">
-                <label>Роль</label>
+                <label data-i18n="role">Роль</label>
                 <select id="regRole">
-                    <option value="client">👤 Клиент</option>
-                    <option value="driver">🚗 Водитель</option>
-                    <option value="admin">👑 Администратор</option>
+                    <option value="client" data-i18n="role_client">👤 Клиент</option>
+                    <option value="driver" data-i18n="role_driver">🚗 Водитель</option>
+                    <option value="admin" data-i18n="role_admin">👑 Администратор</option>
                 </select>
             </div>
-            <button class="btn-submit" id="registerBtn">Зарегистрироваться</button>
+            <button class="btn-submit" id="registerBtn" data-i18n="register_btn">Зарегистрироваться</button>
             <div class="message" id="registerMessage"></div>
             <div class="switch-link">
-                Уже есть аккаунт? <a id="switchToLogin">Войти</a>
+                <span data-i18n="have_account">Уже есть аккаунт?</span> <a id="switchToLogin" data-i18n="login_link">Войти</a>
             </div>
         </div>
 
         <div class="features">
             <div class="feature">
                 <div class="icon">⚡</div>
-                <div class="title">Мгновенно</div>
-                <div class="desc">Подача за 2 мин</div>
+                <div class="title" data-i18n="feature1_title">Мгновенно</div>
+                <div class="desc" data-i18n="feature1_desc">Подача за 2 мин</div>
             </div>
             <div class="feature">
                 <div class="icon">🛡️</div>
-                <div class="title">Надёжно</div>
-                <div class="desc">Проверенные</div>
+                <div class="title" data-i18n="feature2_title">Надёжно</div>
+                <div class="desc" data-i18n="feature2_desc">Проверенные</div>
             </div>
             <div class="feature">
                 <div class="icon">💎</div>
-                <div class="title">Честно</div>
-                <div class="desc">Цена без скрытого</div>
+                <div class="title" data-i18n="feature3_title">Честно</div>
+                <div class="desc" data-i18n="feature3_desc">Цена без скрытого</div>
             </div>
         </div>
 
@@ -440,19 +573,209 @@
         }
 
         // ============================================================
-        // ВХОД
+        // ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ
+        // ============================================================
+        const translations = {
+            ru: {
+                subtitle: 'Такси в один клик',
+                tab_login: 'Вход',
+                tab_register: 'Регистрация',
+                login_title: '🔐 Добро пожаловать',
+                login_btn: 'Войти',
+                register_title: '📝 Создать аккаунт',
+                register_btn: 'Зарегистрироваться',
+                email: 'Email',
+                password: 'Пароль',
+                name: 'Имя',
+                role: 'Роль',
+                role_client: '👤 Клиент',
+                role_driver: '🚗 Водитель',
+                role_admin: '👑 Администратор',
+                no_account: 'Нет аккаунта?',
+                register_link: 'Зарегистрироваться',
+                have_account: 'Уже есть аккаунт?',
+                login_link: 'Войти',
+                feature1_title: 'Мгновенно',
+                feature1_desc: 'Подача за 2 мин',
+                feature2_title: 'Надёжно',
+                feature2_desc: 'Проверенные',
+                feature3_title: 'Честно',
+                feature3_desc: 'Цена без скрытого',
+                // сообщения (для динамического использования)
+                fill_fields: '❌ Заполните все поля',
+                password_min: '❌ Пароль должен быть не менее 6 символов',
+                login_success: '✅ Вход выполнен!',
+                login_error: '❌ Неверный email или пароль',
+                user_not_found: '❌ Пользователь не найден',
+                wrong_password: '❌ Неверный пароль',
+                invalid_email: '❌ Неверный формат email',
+                register_success: '✅ Регистрация успешна! Теперь войдите.',
+                email_exists: '⚠️ Этот email уже зарегистрирован. Войдите.',
+                weak_password: '❌ Пароль слишком слабый (минимум 6 символов)',
+                register_error: '❌ Ошибка регистрации',
+                loading: '⏳ ...'
+            },
+            en: {
+                subtitle: 'Taxi in one click',
+                tab_login: 'Login',
+                tab_register: 'Register',
+                login_title: '🔐 Welcome',
+                login_btn: 'Sign in',
+                register_title: '📝 Create account',
+                register_btn: 'Sign up',
+                email: 'Email',
+                password: 'Password',
+                name: 'Name',
+                role: 'Role',
+                role_client: '👤 Client',
+                role_driver: '🚗 Driver',
+                role_admin: '👑 Admin',
+                no_account: "Don't have an account?",
+                register_link: 'Sign up',
+                have_account: 'Already have an account?',
+                login_link: 'Sign in',
+                feature1_title: 'Instant',
+                feature1_desc: 'Arrives in 2 min',
+                feature2_title: 'Reliable',
+                feature2_desc: 'Verified drivers',
+                feature3_title: 'Fair',
+                feature3_desc: 'No hidden fees',
+                fill_fields: '❌ Please fill all fields',
+                password_min: '❌ Password must be at least 6 characters',
+                login_success: '✅ Sign in successful!',
+                login_error: '❌ Invalid email or password',
+                user_not_found: '❌ User not found',
+                wrong_password: '❌ Wrong password',
+                invalid_email: '❌ Invalid email format',
+                register_success: '✅ Registration successful! Please sign in.',
+                email_exists: '⚠️ This email is already registered. Please sign in.',
+                weak_password: '❌ Password is too weak (min 6 characters)',
+                register_error: '❌ Registration error',
+                loading: '⏳ ...'
+            },
+            he: {
+                subtitle: 'מונית בלחיצה אחת',
+                tab_login: 'התחברות',
+                tab_register: 'הרשמה',
+                login_title: '🔐 ברוך הבא',
+                login_btn: 'התחבר',
+                register_title: '📝 צור חשבון',
+                register_btn: 'הירשם',
+                email: 'אימייל',
+                password: 'סיסמה',
+                name: 'שם',
+                role: 'תפקיד',
+                role_client: '👤 לקוח',
+                role_driver: '🚗 נהג',
+                role_admin: '👑 מנהל',
+                no_account: 'אין לך חשבון?',
+                register_link: 'הירשם',
+                have_account: 'כבר יש לך חשבון?',
+                login_link: 'התחבר',
+                feature1_title: 'מיידי',
+                feature1_desc: 'הגעה תוך 2 דקות',
+                feature2_title: 'אמין',
+                feature2_desc: 'נהגים מאומתים',
+                feature3_title: 'הוגן',
+                feature3_desc: 'ללא עלויות נסתרות',
+                fill_fields: '❌ מלא את כל השדות',
+                password_min: '❌ הסיסמה חייבת להיות לפחות 6 תווים',
+                login_success: '✅ ההתחברות בוצעה!',
+                login_error: '❌ אימייל או סיסמה לא תקינים',
+                user_not_found: '❌ המשתמש לא נמצא',
+                wrong_password: '❌ סיסמה שגויה',
+                invalid_email: '❌ פורמט אימייל לא תקין',
+                register_success: '✅ ההרשמה בוצעה! כעת התחבר.',
+                email_exists: '⚠️ אימייל זה כבר רשום. התחבר.',
+                weak_password: '❌ הסיסמה חלשה מדי (מינימום 6 תווים)',
+                register_error: '❌ שגיאת הרשמה',
+                loading: '⏳ ...'
+            }
+        };
+
+        let currentLang = 'ru';
+
+        function applyLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+
+            // Обновляем атрибут lang у html
+            document.getElementById('htmlRoot').lang = lang;
+
+            // Направление текста для иврита
+            const body = document.getElementById('bodyRoot');
+            if (lang === 'he') {
+                body.dir = 'rtl';
+            } else {
+                body.dir = 'ltr';
+            }
+
+            // Обновляем все элементы с data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key] !== undefined) {
+                    el.textContent = t[key];
+                }
+            });
+
+            // Обновляем плейсхолдеры (если есть)
+            // Для полей ввода отдельно (у них нет data-i18n)
+            // Но они уже имеют плейсхолдеры на русском, для простоты оставим как есть,
+            // можно добавить отдельные атрибуты, но сейчас не критично.
+
+            // Обновляем метку текущего языка
+            document.getElementById('currentLangLabel').textContent = lang.toUpperCase();
+
+            // Закрываем дропдаун
+            document.getElementById('langDropdown').classList.remove('open');
+
+            // Сохраняем выбор в localStorage
+            localStorage.setItem('wheel_lang', lang);
+        }
+
+        // Переключатель: открыть/закрыть дропдаун
+        document.getElementById('langToggle').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('langDropdown').classList.toggle('open');
+        });
+
+        // Выбор языка из дропдауна
+        document.querySelectorAll('.lang-dropdown .item').forEach(item => {
+            item.addEventListener('click', () => {
+                const lang = item.getAttribute('data-lang');
+                applyLanguage(lang);
+            });
+        });
+
+        // Закрыть дропдаун при клике вне его
+        document.addEventListener('click', () => {
+            document.getElementById('langDropdown').classList.remove('open');
+        });
+
+        // Восстановить язык из localStorage
+        const savedLang = localStorage.getItem('wheel_lang');
+        if (savedLang && translations[savedLang]) {
+            applyLanguage(savedLang);
+        } else {
+            // По умолчанию русский
+            applyLanguage('ru');
+        }
+
+        // ============================================================
+        // ВХОД (с учетом языка сообщений)
         // ============================================================
         document.getElementById('loginBtn').addEventListener('click', async () => {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
+            const t = translations[currentLang];
 
             if (!email || !password) {
-                showMessage(loginMsg, '❌ Заполните все поля', 'error');
+                showMessage(loginMsg, t.fill_fields, 'error');
                 return;
             }
 
             loginMsg.className = 'message';
-            loginMsg.textContent = '⏳ ...';
+            loginMsg.textContent = t.loading;
             document.getElementById('loginBtn').disabled = true;
 
             try {
@@ -465,7 +788,7 @@
                     role = doc.data().role || 'client';
                 }
 
-                showMessage(loginMsg, '✅ Вход выполнен!', 'success');
+                showMessage(loginMsg, t.login_success, 'success');
 
                 setTimeout(() => {
                     let redirect = 'cabinet.html';
@@ -475,10 +798,10 @@
                 }, 800);
 
             } catch (error) {
-                let msg = '❌ Неверный email или пароль';
-                if (error.code === 'auth/user-not-found') msg = '❌ Пользователь не найден';
-                else if (error.code === 'auth/wrong-password') msg = '❌ Неверный пароль';
-                else if (error.code === 'auth/invalid-email') msg = '❌ Неверный формат email';
+                let msg = t.login_error;
+                if (error.code === 'auth/user-not-found') msg = t.user_not_found;
+                else if (error.code === 'auth/wrong-password') msg = t.wrong_password;
+                else if (error.code === 'auth/invalid-email') msg = t.invalid_email;
                 showMessage(loginMsg, msg, 'error');
             } finally {
                 document.getElementById('loginBtn').disabled = false;
@@ -486,25 +809,26 @@
         });
 
         // ============================================================
-        // РЕГИСТРАЦИЯ
+        // РЕГИСТРАЦИЯ (с учетом языка сообщений)
         // ============================================================
         document.getElementById('registerBtn').addEventListener('click', async () => {
             const name = document.getElementById('regName').value.trim();
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value.trim();
             const role = document.getElementById('regRole').value;
+            const t = translations[currentLang];
 
             if (!name || !email || !password) {
-                showMessage(registerMsg, '❌ Заполните все поля', 'error');
+                showMessage(registerMsg, t.fill_fields, 'error');
                 return;
             }
             if (password.length < 6) {
-                showMessage(registerMsg, '❌ Пароль должен быть не менее 6 символов', 'error');
+                showMessage(registerMsg, t.password_min, 'error');
                 return;
             }
 
             registerMsg.className = 'message';
-            registerMsg.textContent = '⏳ ...';
+            registerMsg.textContent = t.loading;
             document.getElementById('registerBtn').disabled = true;
 
             try {
@@ -527,7 +851,7 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                showMessage(registerMsg, '✅ Регистрация успешна! Теперь войдите.', 'success');
+                showMessage(registerMsg, t.register_success, 'success');
 
                 setTimeout(() => {
                     switchForm('login');
@@ -535,13 +859,13 @@
                 }, 1200);
 
             } catch (error) {
-                let msg = '❌ Ошибка регистрации';
+                let msg = t.register_error;
                 if (error.code === 'auth/email-already-in-use') {
-                    msg = '⚠️ Этот email уже зарегистрирован. Войдите.';
+                    msg = t.email_exists;
                     document.getElementById('loginEmail').value = email;
                     setTimeout(() => switchForm('login'), 800);
                 } else if (error.code === 'auth/weak-password') {
-                    msg = '❌ Пароль слишком слабый (минимум 6 символов)';
+                    msg = t.weak_password;
                 }
                 showMessage(registerMsg, msg, 'error');
             } finally {
