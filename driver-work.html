@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" id="htmlRoot">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -9,83 +9,11 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <style>
-        /* ===== ВСЕ ОРИГИНАЛЬНЫЕ СТИЛИ (без изменений) ===== */
+        /* ===== Все стили без изменений (как в предыдущей версии) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0c10; min-height: 100vh; padding: 10px; color: #fff; }
-        .container { max-width: 480px; margin: 0 auto; position: relative; }
-
-        /* ===== ДОБАВЛЕНА ВЕРХНЯЯ ПАНЕЛЬ С ЯЗЫКОМ ===== */
-        .top-bar {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            padding: 2px 0;
-            margin-bottom: 2px;
-            height: 32px;
-            background: transparent;
-        }
-        .lang-switcher {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            position: relative;
-        }
-        .lang-btn {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 30px;
-            padding: 2px 12px;
-            color: #8899aa;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            height: 26px;
-        }
-        .lang-btn:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
-        .lang-btn .globe { font-size: 16px; }
-        .lang-dropdown {
-            position: absolute;
-            top: 30px;
-            right: 0;
-            background: rgba(18, 22, 28, 0.96);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 14px;
-            padding: 6px 0;
-            min-width: 130px;
-            display: none;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-        }
-        .lang-dropdown.open { display: block; }
-        .lang-dropdown .item {
-            padding: 8px 16px;
-            color: #e0e8f0;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-        }
-        .lang-dropdown .item:last-child { border-bottom: none; }
-        .lang-dropdown .item:hover { background: rgba(255, 180, 0, 0.08); color: #ffb000; }
-        .lang-dropdown .item .flag { font-size: 20px; }
-
-        body[dir="rtl"] .top-bar { direction: rtl; }
-        body[dir="rtl"] .lang-dropdown { right: auto; left: 0; }
-        body[dir="rtl"] .container { direction: rtl; }
-        /* ===== КОНЕЦ ДОБАВЛЕННЫХ СТИЛЕЙ ===== */
-
-        /* ===== ОСТАЛЬНЫЕ СТИЛИ (БЕЗ ИЗМЕНЕНИЙ) ===== */
+        .container { max-width: 480px; margin: 0 auto; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(18,22,28,0.9); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; }
         .header-title { font-size: 18px; font-weight: 700; }
         .header-title span { color: #ffb000; }
@@ -169,207 +97,39 @@
         .toast.show { display: block; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
-        @media (max-width: 420px) { #map { height: 220px; } .header-title { font-size: 16px; } .offer-card .price-big { font-size: 18px; } .offer-actions .btn { font-size: 13px; padding: 8px; } .top-bar { height: 28px; } .lang-btn { font-size: 11px; padding: 2px 10px; height: 22px; } }
+        @media (max-width: 420px) { #map { height: 220px; } .header-title { font-size: 16px; } .offer-card .price-big { font-size: 18px; } .offer-actions .btn { font-size: 13px; padding: 8px; } }
     </style>
 </head>
-<body id="bodyRoot">
+<body>
     <div class="container">
-
-        <!-- ===== ВЕРХНЯЯ ПАНЕЛЬ С ЯЗЫКОМ ===== -->
-        <div class="top-bar">
-            <div class="lang-switcher">
-                <button class="lang-btn" id="langToggle">
-                    <span class="globe">🌐</span>
-                    <span id="currentLangLabel">RU</span>
-                    <span style="font-size:12px;">▾</span>
-                </button>
-                <div class="lang-dropdown" id="langDropdown">
-                    <div class="item" data-lang="ru"><span class="flag">🇷🇺</span> Русский</div>
-                    <div class="item" data-lang="en"><span class="flag">🇬🇧</span> English</div>
-                    <div class="item" data-lang="he"><span class="flag">🇮🇱</span> עברית</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== ОСНОВНОЙ ЗАГОЛОВОК (без изменений) ===== -->
         <div class="header">
             <button class="back-btn" id="backBtn">←</button>
-            <div class="header-title">🚖 <span data-i18n="driver_title">Работа</span></div>
+            <div class="header-title">🚖 <span>Работа</span></div>
             <span class="status-badge online" id="statusBadge">🟢 Онлайн</span>
         </div>
-
         <div id="map"></div>
-
         <div class="info-panel">
-            <div class="info-row">
-                <span class="label" data-i18n="driver_label">👤 Водитель</span>
-                <span class="value" id="driverName">—</span>
-            </div>
-            <div class="info-row">
-                <span class="label" data-i18n="status_label">📊 Статус</span>
-                <span class="value green" id="driverStatus">Ожидание</span>
-            </div>
-            <div class="info-row">
-                <span class="label" data-i18n="update_label">📍 Обновление</span>
-                <span class="value blue" id="locationTime">—</span>
-            </div>
-            <div class="info-row">
-                <span class="label" data-i18n="orders_label">📦 Заказов</span>
-                <span class="value gold" id="ordersCount">0</span>
-            </div>
+            <div class="info-row"><span class="label">👤 Водитель</span><span class="value" id="driverName">—</span></div>
+            <div class="info-row"><span class="label">📊 Статус</span><span class="value green" id="driverStatus">Ожидание</span></div>
+            <div class="info-row"><span class="label">📍 Обновление</span><span class="value blue" id="locationTime">—</span></div>
+            <div class="info-row"><span class="label">📦 Заказов</span><span class="value gold" id="ordersCount">0</span></div>
         </div>
-
-        <div class="penalty-banner" id="penaltyBanner">
-            <span data-i18n="penalty_title">⛔ ШТРАФ ЗА ОТКАЗ!</span><br>
-            <span data-i18n="penalty_text">Новые заказы через:</span> <span class="timer" id="penaltyTimer">2:00</span>
-        </div>
-
+        <div class="penalty-banner" id="penaltyBanner">⛔ ШТРАФ ЗА ОТКАЗ!<br>Новые заказы через: <span class="timer" id="penaltyTimer">2:00</span></div>
         <div id="offerContainer"></div>
-
-        <div class="section-title" data-i18n="available_orders">📋 Доступные заказы</div>
-        <div id="availableOrdersList">
-            <div class="empty-state">
-                <div class="icon">📦</div>
-                <div data-i18n="loading">Загрузка...</div>
-            </div>
-        </div>
-
-        <div class="section-title" id="activeOrderTitle" style="display:none;" data-i18n="active_order">🚗 Активный заказ</div>
+        <div class="section-title">📋 Доступные заказы</div>
+        <div id="availableOrdersList"><div class="empty-state"><div class="icon">📦</div><div>Загрузка...</div></div></div>
+        <div class="section-title" id="activeOrderTitle" style="display:none;">🚗 Активный заказ</div>
         <div id="activeOrderCard"></div>
-
         <div class="btn-group" style="margin-top:4px;">
-            <button class="btn-icon btn-success" id="onlineBtn">
-                <span class="icon">🟢</span>
-                <span class="label" data-i18n="btn_online">Онлайн</span>
-            </button>
-            <button class="btn-icon btn-secondary" id="offlineBtn">
-                <span class="icon">⚪</span>
-                <span class="label" data-i18n="btn_offline">Офлайн</span>
-            </button>
-            <button class="btn-icon btn-primary" id="refreshLocationBtn">
-                <span class="icon">📍</span>
-                <span class="label" data-i18n="btn_gps">GPS</span>
-            </button>
-            <button class="btn-icon btn-secondary" id="refreshBtn">
-                <span class="icon">🔄</span>
-                <span class="label" data-i18n="btn_refresh">Обновить</span>
-            </button>
+            <button class="btn-icon btn-success" id="onlineBtn"><span class="icon">🟢</span><span class="label">Онлайн</span></button>
+            <button class="btn-icon btn-secondary" id="offlineBtn"><span class="icon">⚪</span><span class="label">Офлайн</span></button>
+            <button class="btn-icon btn-primary" id="refreshLocationBtn"><span class="icon">📍</span><span class="label">GPS</span></button>
+            <button class="btn-icon btn-secondary" id="refreshBtn"><span class="icon">🔄</span><span class="label">Обновить</span></button>
         </div>
     </div>
-
     <div class="toast" id="toast"><span id="toastMessage">Сообщение</span></div>
 
     <script>
-        // ===== ОРИГИНАЛЬНЫЙ КОД (БЕЗ ИЗМЕНЕНИЙ) С ДОБАВЛЕНИЕМ ЯЗЫКОВОЙ ЛОГИКИ =====
-        // Весь ваш существующий JavaScript (Firebase, карта, подписки и т.д.)
-        // Я добавлю только блок с переводами и функцию applyLanguage() в самом начале,
-        // чтобы не нарушить работу остального кода.
-
-        // ===== ЯЗЫКОВАЯ ЛОГИКА (добавлена) =====
-        const translations = {
-            ru: {
-                driver_title: 'Работа',
-                driver_label: '👤 Водитель',
-                status_label: '📊 Статус',
-                update_label: '📍 Обновление',
-                orders_label: '📦 Заказов',
-                penalty_title: '⛔ ШТРАФ ЗА ОТКАЗ!',
-                penalty_text: 'Новые заказы через:',
-                available_orders: '📋 Доступные заказы',
-                loading: 'Загрузка...',
-                active_order: '🚗 Активный заказ',
-                btn_online: 'Онлайн',
-                btn_offline: 'Офлайн',
-                btn_gps: 'GPS',
-                btn_refresh: 'Обновить'
-            },
-            en: {
-                driver_title: 'Work',
-                driver_label: '👤 Driver',
-                status_label: '📊 Status',
-                update_label: '📍 Update',
-                orders_label: '📦 Orders',
-                penalty_title: '⛔ PENALTY FOR REFUSAL!',
-                penalty_text: 'New orders in:',
-                available_orders: '📋 Available orders',
-                loading: 'Loading...',
-                active_order: '🚗 Active order',
-                btn_online: 'Online',
-                btn_offline: 'Offline',
-                btn_gps: 'GPS',
-                btn_refresh: 'Refresh'
-            },
-            he: {
-                driver_title: 'עבודה',
-                driver_label: '👤 נהג',
-                status_label: '📊 סטטוס',
-                update_label: '📍 עדכון',
-                orders_label: '📦 הזמנות',
-                penalty_title: '⛔ קנס על סירוב!',
-                penalty_text: 'הזמנות חדשות בעוד:',
-                available_orders: '📋 הזמנות זמינות',
-                loading: 'טוען...',
-                active_order: '🚗 הזמנה פעילה',
-                btn_online: 'מקוון',
-                btn_offline: 'לא מקוון',
-                btn_gps: 'GPS',
-                btn_refresh: 'רענן'
-            }
-        };
-
-        let currentLang = 'ru';
-
-        function applyLanguage(lang) {
-            currentLang = lang;
-            const t = translations[lang];
-
-            document.getElementById('htmlRoot').lang = lang;
-            const body = document.getElementById('bodyRoot');
-            if (lang === 'he') {
-                body.dir = 'rtl';
-            } else {
-                body.dir = 'ltr';
-            }
-
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key] !== undefined) {
-                    el.textContent = t[key];
-                }
-            });
-
-            document.getElementById('currentLangLabel').textContent = lang.toUpperCase();
-            document.getElementById('langDropdown').classList.remove('open');
-            localStorage.setItem('wheel_lang', lang);
-        }
-
-        // Переключатель языка
-        document.getElementById('langToggle').addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.getElementById('langDropdown').classList.toggle('open');
-        });
-
-        document.querySelectorAll('.lang-dropdown .item').forEach(item => {
-            item.addEventListener('click', () => {
-                const lang = item.getAttribute('data-lang');
-                applyLanguage(lang);
-            });
-        });
-
-        document.addEventListener('click', () => {
-            document.getElementById('langDropdown').classList.remove('open');
-        });
-
-        const savedLang = localStorage.getItem('wheel_lang');
-        if (savedLang && translations[savedLang]) {
-            applyLanguage(savedLang);
-        } else {
-            applyLanguage('ru');
-        }
-
-        // ===== ОСТАЛЬНАЯ ЛОГИКА БЕЗ ИЗМЕНЕНИЙ (ваш код) =====
-        // (Весь код с Firebase, картой и т.д. идёт ниже, он не тронут)
-        // ... (остальная часть вашего скрипта)
         // ===== FIREBASE CONFIG =====
         const firebaseConfig = {
             apiKey: "AIzaSyAvBSAWuyLPT2fsSrsDF30LHBqV7cWTvC4",
@@ -1109,7 +869,7 @@
             console.log('Прибыл к клиенту:', isArrivedToClient);
         };
 
-        console.log('✅ driver-work.html (с языковой панелью) загружен');
+        console.log('✅ driver-work.html (финальная с гибким завершением) загружен');
         console.log('📌 diagnostic() — состояние');
     </script>
 </body>
