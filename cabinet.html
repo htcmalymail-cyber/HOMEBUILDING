@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" id="htmlRoot">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -23,7 +23,94 @@
         .container {
             max-width: 480px;
             margin: 0 auto;
+            position: relative;
         }
+
+        /* ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== */
+        .lang-switcher {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 4px 12px;
+            color: #8899aa;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .lang-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+        }
+        .lang-btn .globe {
+            font-size: 18px;
+        }
+        .lang-dropdown {
+            position: absolute;
+            top: 36px;
+            right: 0;
+            background: rgba(18, 22, 28, 0.96);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 6px 0;
+            min-width: 130px;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        .lang-dropdown.open {
+            display: block;
+        }
+        .lang-dropdown .item {
+            padding: 8px 16px;
+            color: #e0e8f0;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+        .lang-dropdown .item:last-child {
+            border-bottom: none;
+        }
+        .lang-dropdown .item:hover {
+            background: rgba(255, 180, 0, 0.08);
+            color: #ffb000;
+        }
+        .lang-dropdown .item .flag {
+            font-size: 20px;
+        }
+
+        body[dir="rtl"] .lang-switcher {
+            right: auto;
+            left: 4px;
+        }
+        body[dir="rtl"] .lang-dropdown {
+            right: auto;
+            left: 0;
+        }
+        body[dir="rtl"] .container {
+            direction: rtl;
+        }
+        body[dir="rtl"] .info-row .label {
+            text-align: right;
+        }
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -33,6 +120,7 @@
             border-radius: 18px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             margin-bottom: 12px;
+            margin-top: 8px;
         }
         .header-title {
             font-size: 20px;
@@ -198,52 +286,87 @@
             background: rgba(96, 165, 250, 0.12);
             color: #60a5fa;
         }
+
+        @media (max-width: 420px) {
+            .lang-switcher {
+                top: 0;
+                right: 0;
+            }
+            body[dir="rtl"] .lang-switcher {
+                right: auto;
+                left: 0;
+            }
+            .header {
+                margin-top: 4px;
+            }
+        }
     </style>
 </head>
-<body>
+<body id="bodyRoot">
     <div class="container">
+
+        <!-- ===== ЯЗЫКОВОЙ ПЕРЕКЛЮЧАТЕЛЬ ===== -->
+        <div class="lang-switcher">
+            <button class="lang-btn" id="langToggle">
+                <span class="globe">🌐</span>
+                <span id="currentLangLabel">RU</span>
+                <span style="font-size:12px;">▾</span>
+            </button>
+            <div class="lang-dropdown" id="langDropdown">
+                <div class="item" data-lang="ru">
+                    <span class="flag">🇷🇺</span> Русский
+                </div>
+                <div class="item" data-lang="en">
+                    <span class="flag">🇬🇧</span> English
+                </div>
+                <div class="item" data-lang="he">
+                    <span class="flag">🇮🇱</span> עברית
+                </div>
+            </div>
+        </div>
+
         <div class="header">
-            <span class="header-title">🚖 <span>Кабинет</span></span>
-            <button class="logout-btn" id="logoutBtn">🚪 Выйти</button>
+            <span class="header-title">🚖 <span data-i18n="cabinet_title">Кабинет</span></span>
+            <button class="logout-btn" id="logoutBtn" data-i18n="logout">🚪 Выйти</button>
         </div>
 
         <div class="card">
-            <div class="card-title">👤 Профиль</div>
+            <div class="card-title" data-i18n="profile_title">👤 Профиль</div>
             <div class="info-row">
-                <span class="label">Имя</span>
+                <span class="label" data-i18n="name_label">Имя</span>
                 <span class="value" id="userName">—</span>
             </div>
             <div class="info-row">
-                <span class="label">Email</span>
+                <span class="label" data-i18n="email_label">Email</span>
                 <span class="value" id="userEmail">—</span>
             </div>
             <div class="info-row">
-                <span class="label">Роль</span>
+                <span class="label" data-i18n="role_label">Роль</span>
                 <span class="value" id="userRole">—</span>
             </div>
             <div class="info-row">
-                <span class="label">💰 Баланс</span>
+                <span class="label" data-i18n="balance_label">💰 Баланс</span>
                 <span class="value gold" id="userBalance">0 ₪</span>
             </div>
             <div class="info-row">
-                <span class="label">⭐ Рейтинг</span>
+                <span class="label" data-i18n="rating_label">⭐ Рейтинг</span>
                 <span class="value blue" id="userRating">0</span>
             </div>
             <div class="info-row">
-                <span class="label">🎁 Бонусы (накоплено)</span>
+                <span class="label" data-i18n="bonus_label">🎁 Бонусы (накоплено)</span>
                 <span class="value pink" id="userBonus">0 ₪</span>
             </div>
         </div>
 
         <div id="driverActions" style="display:none;">
-            <button class="btn btn-primary" id="goToWorkBtn">🚗 Перейти к работе</button>
+            <button class="btn btn-primary" id="goToWorkBtn" data-i18n="go_to_work">🚗 Перейти к работе</button>
         </div>
 
         <div id="clientActions" style="display:none;">
-            <button class="btn btn-primary" id="goToOrderBtn">📍 Заказать такси</button>
+            <button class="btn btn-primary" id="goToOrderBtn" data-i18n="order_taxi">📍 Заказать такси</button>
         </div>
 
-        <button class="btn btn-secondary mt-8" id="refreshBtn">🔄 Обновить данные</button>
+        <button class="btn btn-secondary mt-8" id="refreshBtn" data-i18n="refresh">🔄 Обновить данные</button>
     </div>
 
     <div class="toast" id="toast">
@@ -282,14 +405,128 @@
 
         function formatPrice(p) { return (p || 0).toFixed(2) + ' ₪'; }
 
+        // ===== ЯЗЫКОВАЯ ЛОГИКА =====
+        const translations = {
+            ru: {
+                cabinet_title: 'Кабинет',
+                logout: '🚪 Выйти',
+                profile_title: '👤 Профиль',
+                name_label: 'Имя',
+                email_label: 'Email',
+                role_label: 'Роль',
+                balance_label: '💰 Баланс',
+                rating_label: '⭐ Рейтинг',
+                bonus_label: '🎁 Бонусы (накоплено)',
+                go_to_work: '🚗 Перейти к работе',
+                order_taxi: '📍 Заказать такси',
+                refresh: '🔄 Обновить данные',
+                // сообщения
+                profile_not_found: '❌ Профиль не найден',
+                load_error: '❌ Ошибка загрузки профиля',
+                updated: '🔄 Данные обновлены',
+                driver: '🚗 Водитель',
+                client: '👤 Клиент'
+            },
+            en: {
+                cabinet_title: 'Cabinet',
+                logout: '🚪 Logout',
+                profile_title: '👤 Profile',
+                name_label: 'Name',
+                email_label: 'Email',
+                role_label: 'Role',
+                balance_label: '💰 Balance',
+                rating_label: '⭐ Rating',
+                bonus_label: '🎁 Bonuses (accumulated)',
+                go_to_work: '🚗 Go to work',
+                order_taxi: '📍 Order taxi',
+                refresh: '🔄 Refresh data',
+                profile_not_found: '❌ Profile not found',
+                load_error: '❌ Profile load error',
+                updated: '🔄 Data updated',
+                driver: '🚗 Driver',
+                client: '👤 Client'
+            },
+            he: {
+                cabinet_title: 'חשבון',
+                logout: '🚪 יציאה',
+                profile_title: '👤 פרופיל',
+                name_label: 'שם',
+                email_label: 'אימייל',
+                role_label: 'תפקיד',
+                balance_label: '💰 יתרה',
+                rating_label: '⭐ דירוג',
+                bonus_label: '🎁 בונוסים (נצבר)',
+                go_to_work: '🚗 עבודה',
+                order_taxi: '📍 הזמנת מונית',
+                refresh: '🔄 רענן נתונים',
+                profile_not_found: '❌ פרופיל לא נמצא',
+                load_error: '❌ שגיאת טעינת פרופיל',
+                updated: '🔄 הנתונים עודכנו',
+                driver: '🚗 נהג',
+                client: '👤 לקוח'
+            }
+        };
+
+        let currentLang = 'ru';
+
+        function applyLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+
+            document.getElementById('htmlRoot').lang = lang;
+            const body = document.getElementById('bodyRoot');
+            if (lang === 'he') {
+                body.dir = 'rtl';
+            } else {
+                body.dir = 'ltr';
+            }
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key] !== undefined) {
+                    el.textContent = t[key];
+                }
+            });
+
+            document.getElementById('currentLangLabel').textContent = lang.toUpperCase();
+            document.getElementById('langDropdown').classList.remove('open');
+            localStorage.setItem('wheel_lang', lang);
+        }
+
+        // Переключатель языка
+        document.getElementById('langToggle').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('langDropdown').classList.toggle('open');
+        });
+
+        document.querySelectorAll('.lang-dropdown .item').forEach(item => {
+            item.addEventListener('click', () => {
+                const lang = item.getAttribute('data-lang');
+                applyLanguage(lang);
+            });
+        });
+
+        document.addEventListener('click', () => {
+            document.getElementById('langDropdown').classList.remove('open');
+        });
+
+        const savedLang = localStorage.getItem('wheel_lang');
+        if (savedLang && translations[savedLang]) {
+            applyLanguage(savedLang);
+        } else {
+            applyLanguage('ru');
+        }
+
         // ===== LOAD PROFILE =====
         function loadProfile() {
             if (!currentUser) return;
 
+            const t = translations[currentLang];
+
             db.collection('users').doc(currentUser.uid).get()
                 .then(doc => {
                     if (!doc.exists) {
-                        showToast('❌ Профиль не найден', 'error');
+                        showToast(t.profile_not_found, 'error');
                         return;
                     }
                     userData = doc.data();
@@ -302,8 +539,13 @@
 
                     const role = userData.role || 'client';
                     const roleEl = $('userRole');
-                    roleEl.textContent = role === 'driver' ? '🚗 Водитель' : '👤 Клиент';
-                    roleEl.className = 'value ' + (role === 'driver' ? 'gold' : 'blue');
+                    if (role === 'driver') {
+                        roleEl.textContent = t.driver;
+                        roleEl.className = 'value gold';
+                    } else {
+                        roleEl.textContent = t.client;
+                        roleEl.className = 'value blue';
+                    }
 
                     if (role === 'driver') {
                         $('driverActions').style.display = 'block';
@@ -314,7 +556,7 @@
                     }
                 })
                 .catch(err => {
-                    showToast('❌ Ошибка загрузки профиля', 'error');
+                    showToast(t.load_error, 'error');
                     console.error(err);
                 });
         }
@@ -329,7 +571,8 @@
         });
 
         $('refreshBtn').addEventListener('click', () => {
-            showToast('🔄 Данные обновлены', 'info');
+            const t = translations[currentLang];
+            showToast(t.updated, 'info');
             loadProfile();
         });
 
@@ -350,7 +593,7 @@
             loadProfile();
         });
 
-        console.log('✅ cabinet.html загружен (с бонусами)');
+        console.log('✅ cabinet.html загружен (с языковой поддержкой)');
     </script>
 </body>
 </html>
